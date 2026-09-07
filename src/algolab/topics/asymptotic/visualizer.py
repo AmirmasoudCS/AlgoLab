@@ -42,6 +42,9 @@ class AsymptoticVisualizer:
 
         y_min, y_max = self._bounds_calculator.calculate_y_bounds(curves)
 
+        if y_min <= 0:
+            y_min = 1
+
         graph = GraphCoordinateSystem(
             x=self.layout.x,
             y=self.layout.y,
