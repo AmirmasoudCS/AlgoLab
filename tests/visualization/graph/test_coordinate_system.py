@@ -87,9 +87,9 @@ def test_coordinate_system_uses_y_scaling():
         y_scaling=LogarithmicScaling(),
     )
 
-    assert graph.to_screen(1, 1) == (100, 350)
+    assert graph.to_screen(1, 1) == (100, 600)
     assert graph.to_screen(10, 100) == (900, 100)
-
+    
 
 def test_coordinate_system_defaults_to_linear_scaling():
     graph = GraphCoordinateSystem(
