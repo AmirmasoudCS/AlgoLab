@@ -82,13 +82,14 @@ def test_coordinate_system_uses_y_scaling():
         height=500,
         x_min=1,
         x_max=10,
-        y_min=0,
-        y_max=2,
+        y_min=1,
+        y_max=100,
         y_scaling=LogarithmicScaling(),
     )
 
     assert graph.to_screen(1, 1) == (100, 600)
     assert graph.to_screen(10, 100) == (900, 100)
+    assert graph.to_screen(10, 10) == (900, 350)
     
 
 def test_coordinate_system_defaults_to_linear_scaling():
