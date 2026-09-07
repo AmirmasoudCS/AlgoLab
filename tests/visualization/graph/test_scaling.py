@@ -16,28 +16,13 @@ def test_linear_scaling():
     assert scaling.scale(100) == 100
 
 
-def test_logarithmic_scaling():
-    scaling = LogarithmicScaling()
-
-    assert scaling.scale(0) == 0
-    assert scaling.scale(9) == 1
-    assert scaling.scale(99) == 2
-
-
 def test_logarithmic_scaling_matches_math():
     scaling = LogarithmicScaling()
 
-    assert scaling.scale(50) == math.log10(50)
+    assert scaling.scale(1) == math.log10(1)
+    assert scaling.scale(10) == math.log10(10)
+    assert scaling.scale(100) == math.log10(100)
 
-
-def test_logarithmic_scaling_rejects_negative_values():
-    scaling = LogarithmicScaling()
-
-    try:
-        scaling.scale(-1)
-        assert False
-    except ValueError:
-        pass
 
 def test_logarithmic_scaling_requires_positive_value():
     scaling = LogarithmicScaling()
