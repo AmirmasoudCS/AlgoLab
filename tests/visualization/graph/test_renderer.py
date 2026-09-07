@@ -127,3 +127,21 @@ def test_draw_curve_with_insufficient_points():
 
     renderer.draw_curve([])
     renderer.draw_curve([(5, 50)])
+
+def test_renderer_can_render_large_bounds():
+    surface = pygame.Surface((1000, 700))
+
+    graph = GraphCoordinateSystem(
+        x=100,
+        y=100,
+        width=800,
+        height=500,
+        x_min=1,
+        x_max=10,
+        y_min=1,
+        y_max=10_000_000_000,
+    )
+
+    renderer = GraphRenderer(surface, graph)
+
+    renderer.render()
