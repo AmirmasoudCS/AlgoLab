@@ -9,6 +9,7 @@ from algolab.visualization.graph.coordinate_system import (
     GraphCoordinateSystem,
 )
 from algolab.visualization.graph.renderer import GraphRenderer
+from algolab.visualization.graph.scaling import LogarithmicScaling
 
 
 @pytest.fixture
@@ -140,6 +141,25 @@ def test_renderer_can_render_large_bounds():
         x_max=10,
         y_min=1,
         y_max=10_000_000_000,
+    )
+
+    renderer = GraphRenderer(surface, graph)
+
+    renderer.render()
+
+def test_renderer_can_render_logarithmic_graph():
+    surface = pygame.Surface((1000, 700))
+
+    graph = GraphCoordinateSystem(
+        x=100,
+        y=100,
+        width=800,
+        height=500,
+        x_min=1,
+        x_max=10,
+        y_min=1,
+        y_max=100,
+        y_scaling=LogarithmicScaling(),
     )
 
     renderer = GraphRenderer(surface, graph)
