@@ -12,7 +12,7 @@ class AsymptoticModel:
         self._visible_complexities = list(COMPLEXITIES)
         self._selected_complexity = COMPLEXITIES[0]
 
-        self._minimum_input = 2
+        self._minimum_input = 1
         self._maximum_input = 10
 
     @property
