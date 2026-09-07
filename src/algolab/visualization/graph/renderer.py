@@ -70,27 +70,29 @@ class GraphRenderer:
     def _draw_axes(self) -> None:
         graph = self.coordinate_system
 
-        x_axis_start = graph.to_screen(graph.x_min, 0)
-        x_axis_end = graph.to_screen(graph.x_max, 0)
+        if graph.y_min <= 0 <= graph.y_max:
+            x_axis_start = graph.to_screen(graph.x_min, 0)
+            x_axis_end = graph.to_screen(graph.x_max, 0)
 
-        y_axis_start = graph.to_screen(0, graph.y_min)
-        y_axis_end = graph.to_screen(0, graph.y_max)
+            pygame.draw.line(
+                self.surface,
+                (30, 30, 30),
+                x_axis_start,
+                x_axis_end,
+                2,
+            )
 
-        pygame.draw.line(
-            self.surface,
-            (30, 30, 30),
-            x_axis_start,
-            x_axis_end,
-            2,
-        )
+        if graph.x_min <= 0 <= graph.x_max:
+            y_axis_start = graph.to_screen(0, graph.y_min)
+            y_axis_end = graph.to_screen(0, graph.y_max)
 
-        pygame.draw.line(
-            self.surface,
-            (30, 30, 30),
-            y_axis_start,
-            y_axis_end,
-            2,
-        )
+            pygame.draw.line(
+                self.surface,
+                (30, 30, 30),
+                y_axis_start,
+                y_axis_end,
+                2,
+            )
 
     def draw_curve(
         self,
