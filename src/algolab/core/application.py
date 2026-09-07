@@ -1,6 +1,8 @@
 import pygame
 
 from algolab.core.configuration import Configuration
+from algolab.ui.screens.main_menu import MainMenuScreen
+from algolab.ui.screens.screen_manager import ScreenManager
 
 
 class Application:
@@ -34,6 +36,11 @@ class Application:
 
         self.running = True
 
+        self.screen_manager = ScreenManager()
+        self.screen_manager.set_screen(
+            MainMenuScreen(self.screen)
+        )
+
     def run(self) -> None:
         """Run the main application loop."""
         while self.running:
@@ -46,16 +53,15 @@ class Application:
         pygame.quit()
 
     def _handle_events(self) -> None:
-        """Handle application-level events."""
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
+            else:
+                self.screen_manager.handle_event(event)
 
     def _update(self, dt: float) -> None:
-        """Update application state."""
-        pass
+        self.screen_manager.update(dt)
 
     def _render(self) -> None:
-        """Render the current application state."""
-        self.screen.fill((30, 30, 30))
+        self.screen_manager.render()
         pygame.display.flip()
