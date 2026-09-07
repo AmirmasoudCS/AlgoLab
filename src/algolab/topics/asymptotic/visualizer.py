@@ -4,6 +4,7 @@ from algolab.topics.asymptotic.model import AsymptoticModel
 from algolab.visualization.graph.bounds import BoundsCalculator
 from algolab.visualization.graph.coordinate_system import GraphCoordinateSystem
 from algolab.visualization.graph.curve import CurveGenerator
+from algolab.visualization.graph.layout import GraphLayout
 from algolab.visualization.graph.renderer import GraphRenderer
 
 
@@ -14,9 +15,11 @@ class AsymptoticVisualizer:
         self,
         surface: pygame.Surface,
         model: AsymptoticModel,
+        layout: GraphLayout,
     ) -> None:
         self.surface = surface
         self.model = model
+        self.layout = layout
 
         self._curve_generator = CurveGenerator()
         self._bounds_calculator = BoundsCalculator()
@@ -39,10 +42,10 @@ class AsymptoticVisualizer:
         y_min, y_max = self._bounds_calculator.calculate_y_bounds(curves)
 
         graph = GraphCoordinateSystem(
-            x=100,
-            y=100,
-            width=800,
-            height=500,
+            x=self.layout.x,
+            y=self.layout.y,
+            width=self.layout.width,
+            height=self.layout.height,
             x_min=self.model.minimum_input,
             x_max=self.model.maximum_input,
             y_min=y_min,
