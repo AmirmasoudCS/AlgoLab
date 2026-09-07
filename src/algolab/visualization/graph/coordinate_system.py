@@ -1,5 +1,10 @@
 from dataclasses import dataclass
 
+from algolab.visualization.graph.scaling import (
+    LinearScaling,
+    ScalingStrategy,
+)
+
 
 @dataclass
 class GraphCoordinateSystem:
@@ -15,14 +20,17 @@ class GraphCoordinateSystem:
     y_min: float
     y_max: float
 
+    y_scaling: ScalingStrategy = LinearScaling()
+
     def to_screen(self, x_value: float, y_value: float) -> tuple[int, int]:
         """Convert mathematical coordinates to screen coordinates."""
 
+        scaled_y = self.y_scaling.scale(y_value)
+
         x_ratio = (x_value - self.x_min) / (self.x_max - self.x_min)
-        y_ratio = (y_value - self.y_min) / (self.y_max - self.y_min)
+        y_ratio = (scaled_y - self.y_min) / (self.y_max - self.y_min)
 
         screen_x = self.x + x_ratio * self.width
-
         screen_y = self.y + (1 - y_ratio) * self.height
 
         return round(screen_x), round(screen_y)
