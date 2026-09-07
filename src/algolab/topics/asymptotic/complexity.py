@@ -47,3 +47,24 @@ QUADRATIC = ComplexityFunction(
     description="The running time grows proportionally to the square of the input size.",
     function=lambda n: n**2,
 )
+
+CUBIC = ComplexityFunction(
+    name="Cubic",
+    notation="O(n³)",
+    description="The running time grows proportionally to the cube of the input size.",
+    function=lambda n: n**3,
+)
+
+EXPONENTIAL = ComplexityFunction(
+    name="Exponential",
+    notation="O(2ⁿ)",
+    description="The running time doubles as the input size increases by one.",
+    function=lambda n: 2**n,
+)
+
+N_TO_N = ComplexityFunction(
+    name="n to the n",
+    notation="O(nⁿ)",
+    description="The running time grows as n raised to the power of n.",
+    function=lambda n: n**n,
+)
