@@ -23,12 +23,16 @@ class GraphCoordinateSystem:
     y_scaling: ScalingStrategy = LinearScaling()
 
     def to_screen(self, x_value: float, y_value: float) -> tuple[int, int]:
-        """Convert mathematical coordinates to screen coordinates."""
+        """Convert mathematical coordinates into screen coordinates."""
 
         scaled_y = self.y_scaling.scale(y_value)
+        scaled_y_min = self.y_scaling.scale(self.y_min)
+        scaled_y_max = self.y_scaling.scale(self.y_max)
 
         x_ratio = (x_value - self.x_min) / (self.x_max - self.x_min)
-        y_ratio = (scaled_y - self.y_min) / (self.y_max - self.y_min)
+        y_ratio = (scaled_y - scaled_y_min) / (
+            scaled_y_max - scaled_y_min
+        )
 
         screen_x = self.x + x_ratio * self.width
         screen_y = self.y + (1 - y_ratio) * self.height
