@@ -88,3 +88,26 @@ class GraphRenderer:
             y_axis_end,
             2,
         )
+
+    def draw_curve(
+        self,
+        points: list[tuple[float, float]],
+        width: int = 2,
+    ) -> None:
+        """Draw a curve through mathematical points."""
+
+        screen_points = [
+            self.coordinate_system.to_screen(x, y)
+            for x, y in points
+        ]
+
+        if len(screen_points) < 2:
+            return
+
+        pygame.draw.lines(
+            self.surface,
+            (50, 50, 50),
+            False,
+            screen_points,
+            width,
+        )
