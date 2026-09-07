@@ -104,3 +104,62 @@ def test_coordinate_system_defaults_to_linear_scaling():
     )
 
     assert graph.to_screen(5, 50) == (500, 350)
+
+from algolab.visualization.graph.coordinate_system import (
+    GraphCoordinateSystem,
+)
+from algolab.visualization.graph.scaling import (
+    LinearScaling,
+    LogarithmicScaling,
+)
+
+
+def test_coordinate_system_converts_coordinates():
+    graph = GraphCoordinateSystem(
+        x=100,
+        y=100,
+        width=800,
+        height=500,
+        x_min=0,
+        x_max=10,
+        y_min=0,
+        y_max=10,
+    )
+
+    assert graph.to_screen(0, 0) == (100, 600)
+    assert graph.to_screen(10, 10) == (900, 100)
+    assert graph.to_screen(5, 5) == (500, 350)
+
+
+def test_coordinate_system_contains_point():
+    graph = GraphCoordinateSystem(
+        x=100,
+        y=100,
+        width=800,
+        height=500,
+        x_min=0,
+        x_max=10,
+        y_min=0,
+        y_max=10,
+    )
+
+    assert graph.contains(5, 5)
+    assert not graph.contains(11, 5)
+
+
+def test_coordinate_system_supports_logarithmic_scaling():
+    graph = GraphCoordinateSystem(
+        x=100,
+        y=100,
+        width=800,
+        height=500,
+        x_min=1,
+        x_max=10,
+        y_min=1,
+        y_max=100,
+        y_scaling=LogarithmicScaling(),
+    )
+
+    assert graph.to_screen(1, 1) == (100, 600)
+    assert graph.to_screen(10, 100) == (900, 100)
+    assert graph.to_screen(10, 10) == (900, 350)
