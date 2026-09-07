@@ -19,12 +19,12 @@ class LinearScaling(ScalingStrategy):
 
 
 class LogarithmicScaling(ScalingStrategy):
-    """Applies a base-10 logarithmic transformation that supports zero."""
+    """Applies a base-10 logarithmic transformation."""
 
     def scale(self, value: float) -> float:
-        if value < 0:
-            raise ValueError("Logarithmic scaling requires a non-negative value.")
-        return math.log10(value + 1)
+        if value <= 0:
+            raise ValueError("Logarithmic scaling requires a positive value.")
+        return math.log10(value)
 
 
 class NormalizedScaling(ScalingStrategy):
