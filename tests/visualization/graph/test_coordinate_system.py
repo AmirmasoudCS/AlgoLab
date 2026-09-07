@@ -65,3 +65,42 @@ def test_contains_outside_point(graph):
 
 def test_fractional_coordinates(graph):
     assert graph.to_screen(2.5, 25) == (300, 475)
+
+from algolab.visualization.graph.coordinate_system import (
+    GraphCoordinateSystem,
+)
+from algolab.visualization.graph.scaling import (
+    LogarithmicScaling,
+)
+
+
+def test_coordinate_system_uses_y_scaling():
+    graph = GraphCoordinateSystem(
+        x=100,
+        y=100,
+        width=800,
+        height=500,
+        x_min=1,
+        x_max=10,
+        y_min=0,
+        y_max=2,
+        y_scaling=LogarithmicScaling(),
+    )
+
+    assert graph.to_screen(1, 1) == (100, 350)
+    assert graph.to_screen(10, 100) == (900, 100)
+
+
+def test_coordinate_system_defaults_to_linear_scaling():
+    graph = GraphCoordinateSystem(
+        x=100,
+        y=100,
+        width=800,
+        height=500,
+        x_min=0,
+        x_max=10,
+        y_min=0,
+        y_max=100,
+    )
+
+    assert graph.to_screen(5, 50) == (500, 350)
