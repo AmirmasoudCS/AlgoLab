@@ -108,3 +108,22 @@ def test_draw_curve_with_multiple_points():
             (10, 100),
         ]
     )
+
+def test_draw_curve_with_insufficient_points():
+    surface = pygame.Surface((1000, 700))
+
+    graph = GraphCoordinateSystem(
+        x=100,
+        y=100,
+        width=800,
+        height=500,
+        x_min=0,
+        x_max=10,
+        y_min=0,
+        y_max=100,
+    )
+
+    renderer = GraphRenderer(surface, graph)
+
+    renderer.draw_curve([])
+    renderer.draw_curve([(5, 50)])
