@@ -29,13 +29,19 @@ class AsymptoticVisualizer:
         """Render the asymptotic complexity graph."""
 
         curves = [
-            self._curve_generator.generate(
-                complexity.function,
-                self.model.minimum_input,
-                self.model.maximum_input,
-            )
+            [
+                point
+                for point in self._curve_generator.generate(
+                    complexity.function,
+                    self.model.minimum_input,
+                    self.model.maximum_input,
+                )
+                if point[1] > 0
+            ]
             for complexity in self.model.visible_complexities
         ]
+
+        curves = [curve for curve in curves if curve]
 
         if not curves:
             return
