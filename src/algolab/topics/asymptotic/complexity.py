@@ -68,3 +68,14 @@ N_TO_N = ComplexityFunction(
     description="The running time grows as n raised to the power of n.",
     function=lambda n: n**n,
 )
+
+COMPLEXITIES = (
+    CONSTANT,
+    LOGARITHMIC,
+    LINEAR,
+    LINEARITHMIC,
+    QUADRATIC,
+    CUBIC,
+    EXPONENTIAL,
+    N_TO_N,
+)
