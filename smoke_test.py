@@ -1,21 +1,19 @@
-from algolab.topics.asymptotic.complexity import QUADRATIC
-from algolab.topics.asymptotic.model import AsymptoticModel
+from algolab.visualization.graph.coordinate_system import (
+    GraphCoordinateSystem,
+)
 
 
-model = AsymptoticModel()
+graph = GraphCoordinateSystem(
+    x=100,
+    y=100,
+    width=800,
+    height=500,
+    x_min=0,
+    x_max=10,
+    y_min=0,
+    y_max=100,
+)
 
-print(model.selected_complexity.notation)
-print(len(model.visible_complexities))
-
-model.select_complexity(QUADRATIC)
-
-print(model.selected_complexity.notation)
-
-model.set_input_range(1, 100)
-
-print(model.minimum_input)
-print(model.maximum_input)
-
-model.set_visible(QUADRATIC, False)
-
-print(len(model.visible_complexities))
+print(graph.to_screen(0, 0))
+print(graph.to_screen(10, 100))
+print(graph.to_screen(5, 50))
