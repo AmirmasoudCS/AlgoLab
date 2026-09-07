@@ -1,0 +1,8 @@
+[window]
+width = 1280
+height = 720
+title = "AlgoLab"
+resizable = true
+
+[performance]
+fps = 60
