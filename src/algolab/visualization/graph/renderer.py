@@ -36,10 +36,14 @@ class GraphRenderer:
     def _draw_grid(self) -> None:
         graph = self.coordinate_system
 
-        for x_value in range(
-            int(graph.x_min),
-            int(graph.x_max) + 1,
-        ):
+        grid_lines = 10
+
+        x_step = (graph.x_max - graph.x_min) / grid_lines
+        y_step = (graph.y_max - graph.y_min) / grid_lines
+
+        for index in range(grid_lines + 1):
+            x_value = graph.x_min + index * x_step
+
             start = graph.to_screen(x_value, graph.y_min)
             end = graph.to_screen(x_value, graph.y_max)
 
@@ -50,10 +54,9 @@ class GraphRenderer:
                 end,
             )
 
-        for y_value in range(
-            int(graph.y_min),
-            int(graph.y_max) + 1,
-        ):
+        for index in range(grid_lines + 1):
+            y_value = graph.y_min + index * y_step
+
             start = graph.to_screen(graph.x_min, y_value)
             end = graph.to_screen(graph.x_max, y_value)
 
