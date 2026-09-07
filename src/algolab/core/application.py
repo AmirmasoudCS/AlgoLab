@@ -1,22 +1,43 @@
 import pygame
 
+from algolab.core.configuration import Configuration
+
 
 class Application:
     """Main application responsible for the Pygame lifecycle."""
 
-    def __init__(self) -> None:
+    def __init__(self, config: Configuration) -> None:
+        self.config = config
+
         pygame.init()
 
-        self.screen = pygame.display.set_mode((1280, 720))
-        pygame.display.set_caption("AlgoLab")
+        window_config = self.config.window
+        performance_config = self.config.performance
+
+        flags = 0
+
+        if window_config["resizable"]:
+            flags |= pygame.RESIZABLE
+
+        self.screen = pygame.display.set_mode(
+            (
+                window_config["width"],
+                window_config["height"],
+            ),
+            flags,
+        )
+
+        pygame.display.set_caption(window_config["title"])
 
         self.clock = pygame.time.Clock()
+        self.target_fps = performance_config["fps"]
+
         self.running = True
 
     def run(self) -> None:
         """Run the main application loop."""
         while self.running:
-            dt = self.clock.tick(60) / 1000.0
+            dt = self.clock.tick(self.target_fps) / 1000.0
 
             self._handle_events()
             self._update(dt)
