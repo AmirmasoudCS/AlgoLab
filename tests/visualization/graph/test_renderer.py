@@ -84,3 +84,27 @@ def test_render_draws_axes(surface, renderer, graph):
 
     assert surface.get_at((x_axis_x, x_axis_y))[:3] == (30, 30, 30)
     assert surface.get_at((y_axis_x, y_axis_y))[:3] == (30, 30, 30)
+
+def test_draw_curve_with_multiple_points():
+    surface = pygame.Surface((1000, 700))
+
+    graph = GraphCoordinateSystem(
+        x=100,
+        y=100,
+        width=800,
+        height=500,
+        x_min=0,
+        x_max=10,
+        y_min=0,
+        y_max=100,
+    )
+
+    renderer = GraphRenderer(surface, graph)
+
+    renderer.draw_curve(
+        [
+            (0, 0),
+            (5, 50),
+            (10, 100),
+        ]
+    )
