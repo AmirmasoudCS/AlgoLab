@@ -15,8 +15,9 @@ class ScalingStrategy(ABC):
         self,
         minimum: float,
         maximum: float,
+        count: int = 10,
     ) -> list[float]:
-        """Return meaningful tick values for the scaling strategy."""
+        """Return suitable tick values for the scale."""
         pass
 
 
