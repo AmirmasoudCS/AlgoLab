@@ -6,7 +6,7 @@ from algolab.visualization.graph.coordinate_system import GraphCoordinateSystem
 from algolab.visualization.graph.curve import CurveGenerator
 from algolab.visualization.graph.layout import GraphLayout
 from algolab.visualization.graph.renderer import GraphRenderer
-from algolab.visualization.graph.scaling import LogarithmicScaling
+from algolab.visualization.graph.scaling import LogarithmicScaling, LinearScaling
 
 
 class AsymptoticVisualizer:
@@ -186,7 +186,7 @@ class AsymptoticVisualizer:
             x_max=self.model.maximum_input,
             y_min=y_min,
             y_max=y_max,
-            y_scaling=LogarithmicScaling(),
+            y_scaling=LinearScaling(),
         )
 
         renderer = GraphRenderer(
