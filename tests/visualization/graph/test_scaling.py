@@ -49,3 +49,32 @@ def test_normalized_scaling_rejects_invalid_maximum():
 
     with pytest.raises(ValueError):
         NormalizedScaling(-100)
+
+def test_linear_scaling_returns_evenly_spaced_ticks():
+    scaling = LinearScaling()
+
+    ticks = scaling.get_ticks(0, 100)
+
+    assert len(ticks) == 11
+    assert ticks[0] == 0
+    assert ticks[-1] == 100
+
+
+def test_logarithmic_scaling_returns_powers_of_ten():
+    scaling = LogarithmicScaling()
+
+    ticks = scaling.get_ticks(1, 10_000)
+
+    assert ticks == [
+        1,
+        10,
+        100,
+        1_000,
+        10_000,
+    ]
+
+def test_logarithmic_scaling_rejects_non_positive_minimum():
+    scaling = LogarithmicScaling()
+
+    with pytest.raises(ValueError):
+        scaling.get_ticks(0, 100)
