@@ -98,14 +98,14 @@ class NormalizedScaling(ScalingStrategy):
         self,
         minimum: float,
         maximum: float,
+        count: int = 10,
     ) -> list[float]:
         if maximum <= minimum:
             raise ValueError("Maximum must be greater than minimum.")
 
-        divisions = 10
-        step = (maximum - minimum) / divisions
+        step = (maximum - minimum) / count
 
         return [
             minimum + index * step
-            for index in range(divisions + 1)
+            for index in range(count + 1)
         ]
