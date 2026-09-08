@@ -1,11 +1,15 @@
-import pygame
 import math
+import pygame
 
 from algolab.visualization.graph.coordinate_system import (
     GraphCoordinateSystem,
 )
 
-from algolab.visualization.graph.scaling import LinearScaling
+from algolab.visualization.graph.scaling import (
+    LinearScaling,
+    LogarithmicScaling,
+)
+
 
 class GraphRenderer:
     """Renders a coordinate system onto a Pygame surface."""
@@ -159,6 +163,11 @@ class GraphRenderer:
             graph.y_max,
         )
 
+        logarithmic = isinstance(
+            graph.y_scaling,
+            LogarithmicScaling,
+        )
+
         for x_value in x_ticks:
             screen_x, screen_y = graph.to_screen(
                 x_value,
@@ -184,7 +193,7 @@ class GraphRenderer:
             )
 
             label = self.font.render(
-                self._format_tick(y_value),
+                self._format_tick(y_value, logarithmic),
                 True,
                 (30, 30, 30),
             )
