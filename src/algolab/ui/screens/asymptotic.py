@@ -15,9 +15,9 @@ class AsymptoticScreen(Screen):
         self.model = AsymptoticModel()
 
         self.layout = GraphLayout(
-            x=80,
+            x=110,
             y=80,
-            width=1120,
+            width=1090,
             height=580,
         )
 
