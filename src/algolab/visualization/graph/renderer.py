@@ -26,6 +26,7 @@ class GraphRenderer:
         self._draw_background()
         self._draw_grid()
         self._draw_axes()
+        self._draw_tick_labels()
 
     def _draw_background(self) -> None:
         pygame.draw.rect(
@@ -123,3 +124,61 @@ class GraphRenderer:
             screen_points,
             width,
         )
+
+    def _format_tick(self, value: float) -> str:
+        if value >= 1000:
+            return f"{value:.0e}"
+
+        if value.is_integer():
+            return str(int(value))
+
+        return f"{value:.1f}"
+
+    def _draw_tick_labels(self) -> None:
+        graph = self.coordinate_system
+
+        x_ticks = LinearScaling().get_ticks(
+            graph.x_min,
+            graph.x_max,
+        )
+
+        y_ticks = graph.y_scaling.get_ticks(
+            graph.y_min,
+            graph.y_max,
+        )
+
+        for x_value in x_ticks:
+            screen_x, screen_y = graph.to_screen(
+                x_value,
+                graph.y_min,
+            )
+
+            label = self.font.render(
+                self._format_tick(x_value),
+                True,
+                (30, 30, 30),
+            )
+
+            label_rect = label.get_rect(
+                center=(screen_x, screen_y + 18)
+            )
+
+            self.surface.blit(label, label_rect)
+
+        for y_value in y_ticks:
+            screen_x, screen_y = graph.to_screen(
+                graph.x_min,
+                y_value,
+            )
+
+            label = self.font.render(
+                self._format_tick(y_value),
+                True,
+                (30, 30, 30),
+            )
+
+            label_rect = label.get_rect(
+                midright=(screen_x - 8, screen_y)
+            )
+
+            self.surface.blit(label, label_rect)
