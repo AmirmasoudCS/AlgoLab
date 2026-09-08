@@ -18,7 +18,7 @@ class AsymptoticScreen(Screen):
             x=110,
             y=100,
             width=1090,
-            height=470,
+            height=400,
         )
 
         self.visualizer = AsymptoticVisualizer(
