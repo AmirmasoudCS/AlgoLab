@@ -34,6 +34,12 @@ class LinearScaling(ScalingStrategy):
         if maximum <= minimum:
             raise ValueError("Maximum must be greater than minimum.")
 
+        if maximum - minimum <= 20:
+            start = math.ceil(minimum)
+            end = math.floor(maximum)
+
+            return list(range(start, end + 1))
+
         divisions = 10
         step = (maximum - minimum) / divisions
 
@@ -92,12 +98,6 @@ class NormalizedScaling(ScalingStrategy):
     ) -> list[float]:
         if maximum <= minimum:
             raise ValueError("Maximum must be greater than minimum.")
-
-        if maximum - minimum <= 20:
-            start = math.ceil(minimum)
-            end = math.floor(maximum)
-
-            return list(range(start, end + 1))
 
         divisions = 10
         step = (maximum - minimum) / divisions
