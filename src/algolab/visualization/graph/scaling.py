@@ -31,22 +31,19 @@ class LinearScaling(ScalingStrategy):
         self,
         minimum: float,
         maximum: float,
+        count: int = 10,
     ) -> list[float]:
         if maximum <= minimum:
             raise ValueError("Maximum must be greater than minimum.")
 
-        if maximum - minimum <= 20:
-            start = math.ceil(minimum)
-            end = math.floor(maximum)
+        if maximum - minimum <= count:
+            return list(range(int(minimum), int(maximum) + 1))
 
-            return list(range(start, end + 1))
-
-        divisions = 10
-        step = (maximum - minimum) / divisions
+        step = (maximum - minimum) / count
 
         return [
             minimum + index * step
-            for index in range(divisions + 1)
+            for index in range(count + 1)
         ]
 
 
