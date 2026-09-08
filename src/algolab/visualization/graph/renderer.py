@@ -17,6 +17,11 @@ class GraphRenderer:
         self.surface = surface
         self.coordinate_system = coordinate_system
 
+        if not pygame.font.get_init():
+            pygame.font.init()
+
+        self.font = pygame.font.Font(None, 20)
+
     def render(self) -> None:
         self._draw_background()
         self._draw_grid()
