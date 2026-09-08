@@ -165,3 +165,24 @@ def test_renderer_can_render_logarithmic_graph():
     renderer = GraphRenderer(surface, graph)
 
     renderer.render()
+
+def test_renderer_can_draw_curve_with_custom_color():
+    surface = pygame.Surface((1000, 700))
+
+    graph = GraphCoordinateSystem(
+        x=100,
+        y=100,
+        width=800,
+        height=500,
+        x_min=1,
+        x_max=10,
+        y_min=1,
+        y_max=100,
+    )
+
+    renderer = GraphRenderer(surface, graph)
+
+    renderer.draw_curve(
+        [(1, 1), (5, 25), (10, 100)],
+        color=(255, 0, 0),
+    )
