@@ -105,6 +105,7 @@ class GraphRenderer:
     def draw_curve(
         self,
         points: list[tuple[float, float]],
+        color: tuple[int, int, int] = (50, 50, 50),
         width: int = 2,
     ) -> None:
         """Draw a curve through mathematical points."""
@@ -119,7 +120,7 @@ class GraphRenderer:
 
         pygame.draw.lines(
             self.surface,
-            (50, 50, 50),
+            color,
             False,
             screen_points,
             width,
