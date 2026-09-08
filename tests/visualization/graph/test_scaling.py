@@ -60,6 +60,14 @@ def test_linear_scaling_returns_evenly_spaced_ticks():
     assert ticks[-1] == 100
 
 
+def test_linear_scaling_uses_integer_ticks_for_small_ranges():
+    scaling = LinearScaling()
+
+    ticks = scaling.get_ticks(1, 10)
+
+    assert ticks == list(range(1, 11))
+    
+
 def test_logarithmic_scaling_returns_powers_of_ten():
     scaling = LogarithmicScaling()
 
