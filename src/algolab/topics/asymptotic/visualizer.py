@@ -28,8 +28,10 @@ class AsymptoticVisualizer:
     def render(self) -> None:
         """Render the asymptotic complexity graph."""
 
-        curves = [
-            [
+        curve_data = []
+
+        for complexity in self.model.visible_complexities:
+            curve = [
                 point
                 for point in self._curve_generator.generate(
                     complexity.function,
@@ -38,13 +40,14 @@ class AsymptoticVisualizer:
                 )
                 if point[1] > 0
             ]
-            for complexity in self.model.visible_complexities
-        ]
 
-        curves = [curve for curve in curves if curve]
+            if curve:
+                curve_data.append((complexity, curve))
 
-        if not curves:
+        if not curve_data:
             return
+
+        curves = [curve for _, curve in curve_data]
 
         y_min, y_max = self._bounds_calculator.calculate_y_bounds(curves)
 
@@ -70,5 +73,8 @@ class AsymptoticVisualizer:
 
         renderer.render()
 
-        for curve in curves:
-            renderer.draw_curve(curve)
+        for complexity, curve in curve_data:
+            renderer.draw_curve(
+                curve,
+                color=self.CURVE_COLORS[complexity.notation],
+            )
