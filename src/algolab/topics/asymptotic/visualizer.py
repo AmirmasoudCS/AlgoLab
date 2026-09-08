@@ -43,6 +43,9 @@ class AsymptoticVisualizer:
         self.title_font = pygame.font.Font(None, 32)
         self.label_font = pygame.font.Font(None, 22)    
 
+    def set_y_scaling(self, scaling: ScalingStrategy) -> None:
+        self.y_scaling = scaling
+
     def _draw_title(self) -> None:
         title = self.title_font.render(
             "Asymptotic Complexity",
