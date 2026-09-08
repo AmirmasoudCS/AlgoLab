@@ -60,9 +60,12 @@ class LogarithmicScaling(ScalingStrategy):
         self,
         minimum: float,
         maximum: float,
+        count: int = 10,
     ) -> list[float]:
-        if minimum <= 0:
-            raise ValueError("Logarithmic ticks require positive values.")
+        if minimum <= 0 or maximum <= 0:
+            raise ValueError(
+                "Logarithmic ticks require positive values."
+            )
 
         if maximum <= minimum:
             raise ValueError("Maximum must be greater than minimum.")
@@ -72,8 +75,10 @@ class LogarithmicScaling(ScalingStrategy):
 
         return [
             10**power
-            for power in range(minimum_power, maximum_power + 1)
-            if minimum <= 10**power <= maximum
+            for power in range(
+                minimum_power,
+                maximum_power + 1,
+            )
         ]
 
 
