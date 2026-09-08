@@ -4,6 +4,7 @@ from algolab.topics.asymptotic.model import AsymptoticModel
 from algolab.topics.asymptotic.visualizer import AsymptoticVisualizer
 from algolab.ui.screens.screen import Screen
 from algolab.visualization.graph.layout import GraphLayout
+from algolab.visualization.graph.scaling import LinearScaling
 
 
 class AsymptoticScreen(Screen):
@@ -21,10 +22,13 @@ class AsymptoticScreen(Screen):
             height=400,
         )
 
+        self.y_scaling = LinearScaling()
+
         self.visualizer = AsymptoticVisualizer(
             surface,
             self.model,
             self.layout,
+            self.y_scaling,
         )
 
     def handle_event(self, event: pygame.event.Event) -> None:
