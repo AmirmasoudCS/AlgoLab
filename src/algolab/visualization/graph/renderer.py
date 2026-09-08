@@ -4,6 +4,7 @@ from algolab.visualization.graph.coordinate_system import (
     GraphCoordinateSystem,
 )
 
+from algolab.visualization.graph.scaling import LinearScaling
 
 class GraphRenderer:
     """Renders a coordinate system onto a Pygame surface."""
@@ -36,14 +37,17 @@ class GraphRenderer:
     def _draw_grid(self) -> None:
         graph = self.coordinate_system
 
-        grid_lines = 10
+        x_ticks = LinearScaling().get_ticks(
+            graph.x_min,
+            graph.x_max,
+        )
 
-        x_step = (graph.x_max - graph.x_min) / grid_lines
-        y_step = (graph.y_max - graph.y_min) / grid_lines
+        y_ticks = graph.y_scaling.get_ticks(
+            graph.y_min,
+            graph.y_max,
+        )
 
-        for index in range(grid_lines + 1):
-            x_value = graph.x_min + index * x_step
-
+        for x_value in x_ticks:
             start = graph.to_screen(x_value, graph.y_min)
             end = graph.to_screen(x_value, graph.y_max)
 
@@ -54,9 +58,7 @@ class GraphRenderer:
                 end,
             )
 
-        for index in range(grid_lines + 1):
-            y_value = graph.y_min + index * y_step
-
+        for y_value in y_ticks:
             start = graph.to_screen(graph.x_min, y_value)
             end = graph.to_screen(graph.x_max, y_value)
 
