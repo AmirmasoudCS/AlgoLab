@@ -1,4 +1,5 @@
 import pygame
+import math
 
 from algolab.visualization.graph.coordinate_system import (
     GraphCoordinateSystem,
@@ -126,7 +127,17 @@ class GraphRenderer:
             width,
         )
 
-    def _format_tick(self, value: float) -> str:
+    def _format_tick(
+        self,
+        value: float,
+        logarithmic: bool = False,
+    ) -> str:
+        if logarithmic:
+            exponent = round(math.log10(value))
+
+            if math.isclose(value, 10**exponent):
+                return f"10^{exponent}"
+
         if value >= 1000:
             return f"{value:.0e}"
 
