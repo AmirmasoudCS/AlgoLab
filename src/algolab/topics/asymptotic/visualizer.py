@@ -6,7 +6,7 @@ from algolab.visualization.graph.coordinate_system import GraphCoordinateSystem
 from algolab.visualization.graph.curve import CurveGenerator
 from algolab.visualization.graph.layout import GraphLayout
 from algolab.visualization.graph.renderer import GraphRenderer
-from algolab.visualization.graph.scaling import LogarithmicScaling, LinearScaling
+from algolab.visualization.graph.scaling import ScalingStrategy
 
 
 class AsymptoticVisualizer:
@@ -28,6 +28,7 @@ class AsymptoticVisualizer:
         surface: pygame.Surface,
         model: AsymptoticModel,
         layout: GraphLayout,
+        y_scaling: ScalingStrategy
     ) -> None:
 
         pygame.font.init()
@@ -35,6 +36,7 @@ class AsymptoticVisualizer:
         self.surface = surface
         self.model = model
         self.layout = layout
+        self.y_scaling = y_scaling
 
         self._curve_generator = CurveGenerator()
         self._bounds_calculator = BoundsCalculator()
@@ -186,7 +188,7 @@ class AsymptoticVisualizer:
             x_max=self.model.maximum_input,
             y_min=y_min,
             y_max=y_max,
-            y_scaling=LinearScaling(),
+            y_scaling=self.y_scaling,
         )
 
         renderer = GraphRenderer(
