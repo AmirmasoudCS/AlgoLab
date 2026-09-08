@@ -4,7 +4,7 @@ from algolab.topics.asymptotic.model import AsymptoticModel
 from algolab.topics.asymptotic.visualizer import AsymptoticVisualizer
 from algolab.ui.screens.screen import Screen
 from algolab.visualization.graph.layout import GraphLayout
-from algolab.visualization.graph.scaling import LinearScaling
+from algolab.visualization.graph.scaling import LinearScaling, LogarithmicScaling, ScalingStrategy
 
 
 class AsymptoticScreen(Screen):
@@ -36,6 +36,10 @@ class AsymptoticScreen(Screen):
 
     def update(self, dt: float) -> None:
         pass
+
+    def set_y_scaling(self, scaling: ScalingStrategy) -> None:
+        self.y_scaling = scaling
+        self.visualizer.set_y_scaling(scaling)
 
     def render(self) -> None:
         self.surface.fill((30, 30, 30))
