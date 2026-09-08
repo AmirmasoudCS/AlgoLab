@@ -29,6 +29,9 @@ class AsymptoticVisualizer:
         model: AsymptoticModel,
         layout: GraphLayout,
     ) -> None:
+
+        pygame.font.init()
+        
         self.surface = surface
         self.model = model
         self.layout = layout
