@@ -85,7 +85,7 @@ class AsymptoticScreen(Screen):
             (40, 40, 40),
             pygame.Rect(
                 10,
-                100,
+                90,
                 250,
                 400,
             ),
@@ -102,7 +102,7 @@ class AsymptoticScreen(Screen):
 
         self.surface.blit(
             text,
-            (25, 110),
+            (25, 100),
         )
 
         self.visualizer.render()
