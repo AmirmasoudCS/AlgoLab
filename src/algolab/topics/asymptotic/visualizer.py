@@ -68,7 +68,7 @@ class AsymptoticVisualizer:
         self.surface.blit(title, title_rect)
 
         scale = self.label_font.render(
-            "Y-axis: Logarithmic Scale",
+            f"Y-axis: {self._get_scaling_label()} Scale",
             True,
             (200, 200, 200),
         )
