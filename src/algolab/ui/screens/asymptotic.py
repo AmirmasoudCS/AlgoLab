@@ -39,8 +39,8 @@ class AsymptoticScreen(Screen):
 
         checkboxes = []
 
-        x = 20
-        y = 120
+        x = 25
+        y = 140
         spacing = 35
 
         for index, complexity in enumerate(self.model.complexities):
