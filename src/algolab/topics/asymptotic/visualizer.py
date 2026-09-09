@@ -6,7 +6,7 @@ from algolab.visualization.graph.coordinate_system import GraphCoordinateSystem
 from algolab.visualization.graph.curve import CurveGenerator
 from algolab.visualization.graph.layout import GraphLayout
 from algolab.visualization.graph.renderer import GraphRenderer
-from algolab.visualization.graph.scaling import ScalingStrategy
+from algolab.visualization.graph.scaling import ScalingStrategy, LinearScaling, LogarithmicScaling
 
 
 class AsymptoticVisualizer:
@@ -45,6 +45,14 @@ class AsymptoticVisualizer:
 
     def set_y_scaling(self, scaling: ScalingStrategy) -> None:
         self.y_scaling = scaling
+
+    def _get_scaling_label(self) -> str:
+        """Return the display name of the current Y-axis scaling."""
+
+        if isinstance(self.y_scaling, LogarithmicScaling):
+            return "Logarithmic"
+
+        return "Linear"
 
     def _draw_title(self) -> None:
         title = self.title_font.render(
