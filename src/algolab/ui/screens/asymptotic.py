@@ -60,8 +60,19 @@ class AsymptoticScreen(Screen):
         return checkboxes
 
     def handle_event(self, event: pygame.event.Event) -> None:
-        for checkbox in self.checkboxes:
+        for checkbox, complexity in zip(
+            self.checkboxes,
+            self.model.complexities,
+        ):
+            previous_state = checkbox.checked
+
             checkbox.handle_event(event)
+
+            if checkbox.checked != previous_state:
+                self.model.set_visible(
+                    complexity,
+                    checkbox.checked,
+                )
 
     def update(self, dt: float) -> None:
         pass
