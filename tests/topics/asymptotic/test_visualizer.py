@@ -3,7 +3,7 @@ import pygame
 from algolab.topics.asymptotic.model import AsymptoticModel
 from algolab.topics.asymptotic.visualizer import AsymptoticVisualizer
 from algolab.visualization.graph.layout import GraphLayout
-from algolab.visualization.graph.scaling import LogarithmicScaling
+from algolab.visualization.graph.scaling import LogarithmicScaling, LinearScaling
 
 
 def test_visualizer_can_be_created():
@@ -21,6 +21,7 @@ def test_visualizer_can_be_created():
         surface,
         model,
         layout,
+        y_scaling=LinearScaling,
     )
 
     assert visualizer.surface is surface
@@ -46,6 +47,7 @@ def test_visualizer_uses_provided_scaling():
         model,
         layout,
         scaling,
+        y_scaling=LinearScaling,
     )
 
     assert visualizer.y_scaling is scaling
@@ -66,6 +68,7 @@ def test_visualizer_can_render():
         surface,
         model,
         layout,
+        y_scaling=LinearScaling,
     )
 
     visualizer.render()
@@ -89,6 +92,7 @@ def test_visualizer_can_render_without_visible_complexities():
         surface,
         model,
         layout,
+        y_scaling=LinearScaling,
     )
 
     visualizer.render()
