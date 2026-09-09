@@ -80,6 +80,18 @@ class AsymptoticScreen(Screen):
     def render(self) -> None:
         self.surface.fill((30, 30, 30))
 
+        pygame.draw.rect(
+            self.surface,
+            (40, 40, 40),
+            pygame.Rect(
+                10,
+                100,
+                250,
+                400,
+            ),
+            border_radius=8,
+        )
+
         self.visualizer.render()
 
         for checkbox in self.checkboxes:
