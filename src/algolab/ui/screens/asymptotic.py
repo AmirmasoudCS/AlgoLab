@@ -92,6 +92,19 @@ class AsymptoticScreen(Screen):
             border_radius=8,
         )
 
+        font = pygame.font.Font(None, 30)
+
+        text = font.render(
+            "TA Controls",
+            True,
+            (240, 240, 240),
+        )
+
+        self.surface.blit(
+            text,
+            (25, 110),
+        )
+
         self.visualizer.render()
 
         for checkbox in self.checkboxes:
