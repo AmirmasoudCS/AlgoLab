@@ -40,14 +40,13 @@ def test_visualizer_uses_provided_scaling():
         height=500,
     )
 
-    scaling = LogarithmicScaling()
+    scaling = LinearScaling()
 
     visualizer = AsymptoticVisualizer(
         surface,
         model,
         layout,
         scaling,
-        y_scaling=LinearScaling,
     )
 
     assert visualizer.y_scaling is scaling
@@ -68,7 +67,7 @@ def test_visualizer_can_render():
         surface,
         model,
         layout,
-        y_scaling=LinearScaling,
+        y_scaling=LinearScaling(),
     )
 
     visualizer.render()
