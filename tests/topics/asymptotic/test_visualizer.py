@@ -95,3 +95,41 @@ def test_visualizer_can_render_without_visible_complexities():
     )
 
     visualizer.render()
+
+def test_visualizer_uses_linear_scaling_label():
+    surface = pygame.Surface((1000, 700))
+    model = AsymptoticModel()
+    layout = GraphLayout(
+        x=100,
+        y=100,
+        width=800,
+        height=500,
+    )
+
+    visualizer = AsymptoticVisualizer(
+        surface,
+        model,
+        layout,
+        LinearScaling(),
+    )
+
+    assert visualizer._get_scaling_label() == "Linear"
+
+def test_visualizer_uses_logarithmic_scaling_label():
+    surface = pygame.Surface((1000, 700))
+    model = AsymptoticModel()
+    layout = GraphLayout(
+        x=100,
+        y=100,
+        width=800,
+        height=500,
+    )
+
+    visualizer = AsymptoticVisualizer(
+        surface,
+        model,
+        layout,
+        LogarithmicScaling(),
+    )
+
+    assert visualizer._get_scaling_label() == "Logarithmic"
