@@ -44,9 +44,9 @@ class AsymptoticScreen(Screen):
         self.scale_buttons = self._create_scale_buttons()
         self.maximum_input = NumericInput(
             pygame.Rect(
-                120,
-                225,
-                100,
+                135,
+                240,
+                75,
                 30,
             ),
             self.model.maximum_input,
@@ -186,7 +186,7 @@ class AsymptoticScreen(Screen):
             (40, 40, 40),
             pygame.Rect(
                 10,
-                90,
+                70,
                 250,
                 500,
             ),
@@ -195,13 +195,13 @@ class AsymptoticScreen(Screen):
 
         self._draw_text(
             "TA Controls",
-            (25, 100),
+            (25, 80),
             self.control_font,
         )
 
         self._draw_text(
             "Scale",
-            (25, 135),
+            (25, 115),
             self.section_font,
         )
 
@@ -210,13 +210,13 @@ class AsymptoticScreen(Screen):
 
         self._draw_text(
             "Input Size (N)",
-            (25, 215),
+            (25, 220),
             self.section_font,
         )
 
         self._draw_text(
             "Maximum:",
-            (25, 230),
+            (25, 245),
             self.section_font,
         )
 
