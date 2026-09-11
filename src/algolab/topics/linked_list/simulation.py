@@ -3,6 +3,14 @@ from dataclasses import dataclass
 from algolab.simulation.events import SimulationEvent
 from algolab.simulation.state import SimulationState
 from algolab.topics.linked_list.model import LinkedListModel
+from algolab.topics.linked_list.operations import (
+    DeleteAtOperation,
+    InsertAtBeginningOperation,
+    InsertAtEndOperation,
+    InsertAtOperation,
+    LinkedListOperation,
+    SearchOperation,
+)
 
 
 @dataclass(frozen=True)
@@ -60,6 +68,19 @@ class LinkedListSimulationState:
     deleted_index: int | None = None
 
 
+@dataclass(frozen=True)
+class LinkedListSimulation:
+    """Represents a complete linked-list simulation."""
+
+    states: tuple[SimulationState, ...]
+    operation: LinkedListOperation
+
+    def commit(self, model: LinkedListModel) -> object | None:
+        """Commit the simulated operation to the linked-list model."""
+
+        return self.operation.commit(model)
+
+
 class LinkedListSimulator:
     """Creates step-by-step simulations for linked-list operations."""
 
@@ -69,7 +90,7 @@ class LinkedListSimulator:
     def insert_at_beginning(
         self,
         data: object,
-    ) -> list[SimulationState]:
+    ) -> LinkedListSimulation:
         """Create a simulation for inserting a node at the beginning."""
 
         states: list[SimulationState] = []
@@ -123,12 +144,17 @@ class LinkedListSimulator:
             )
         )
 
-        return states
+        return LinkedListSimulation(
+            states=tuple(states),
+            operation=InsertAtBeginningOperation(
+                data=data,
+            ),
+        )
 
     def insert_at_end(
         self,
         data: object,
-    ) -> list[SimulationState]:
+    ) -> LinkedListSimulation:
         """Create a simulation for inserting a node at the end."""
 
         states: list[SimulationState] = []
@@ -184,7 +210,12 @@ class LinkedListSimulator:
                 )
             )
 
-            return states
+            return LinkedListSimulation(
+                states=tuple(states),
+                operation=InsertAtEndOperation(
+                    data=data,
+                ),
+            )
 
         for index in range(len(values)):
             states.append(
@@ -242,13 +273,18 @@ class LinkedListSimulator:
             )
         )
 
-        return states
+        return LinkedListSimulation(
+            states=tuple(states),
+            operation=InsertAtEndOperation(
+                data=data,
+            ),
+        )
 
     def insert_at(
         self,
         index: int,
         data: object,
-    ) -> list[SimulationState]:
+    ) -> LinkedListSimulation:
         """Create a simulation for inserting a node at an index."""
 
         if index < 0 or index > self.model.size:
@@ -331,12 +367,18 @@ class LinkedListSimulator:
             )
         )
 
-        return states
+        return LinkedListSimulation(
+            states=tuple(states),
+            operation=InsertAtOperation(
+                index=index,
+                data=data,
+            ),
+        )
 
     def delete_at(
         self,
         index: int,
-    ) -> list[SimulationState]:
+    ) -> LinkedListSimulation:
         """Create a simulation for deleting a node at an index."""
 
         if index < 0 or index >= self.model.size:
@@ -422,12 +464,17 @@ class LinkedListSimulator:
             )
         )
 
-        return states
+        return LinkedListSimulation(
+            states=tuple(states),
+            operation=DeleteAtOperation(
+                index=index,
+            ),
+        )
 
     def search(
         self,
         data: object,
-    ) -> list[SimulationState]:
+    ) -> LinkedListSimulation:
         """Create a simulation for searching for a value."""
 
         states: list[SimulationState] = []
@@ -470,7 +517,12 @@ class LinkedListSimulator:
                     )
                 )
 
-                return states
+                return LinkedListSimulation(
+                    states=tuple(states),
+                    operation=SearchOperation(
+                        data=data,
+                    ),
+                )
 
         states.append(
             self._create_state(
@@ -484,7 +536,12 @@ class LinkedListSimulator:
             )
         )
 
-        return states
+        return LinkedListSimulation(
+            states=tuple(states),
+            operation=SearchOperation(
+                data=data,
+            ),
+        )
 
     def _create_state(
         self,
