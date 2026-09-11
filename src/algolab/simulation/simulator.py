@@ -13,8 +13,15 @@ class Simulator:
     def state(self) -> SimulationState | None:
         return self.history.current
 
-    def start(self, states: list[SimulationState]) -> None:
-        """Start a simulation from a sequence of states."""
+    def start(self, initial_state: SimulationState) -> None:
+        """Start a simulation from an initial state."""
+
+        self.history.clear()
+        self.history.add(initial_state)
+        self.running = True
+
+    def load_states(self, states: list[SimulationState]) -> None:
+        """Load a complete sequence of simulation states."""
 
         if not states:
             raise ValueError("At least one simulation state is required.")
@@ -24,6 +31,7 @@ class Simulator:
         for state in states:
             self.history.add(state)
 
+        self.history.previous_to_start()
         self.running = True
 
     def pause(self) -> None:
