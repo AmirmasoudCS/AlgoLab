@@ -9,6 +9,7 @@ from algolab.topics.linked_list.simulation import (
     CreateNodeEvent,
     UpdateHeadEvent,
     UpdateLinkEvent,
+    UpdatePointerEvent,
     DeleteNodeEvent,
     CompleteOperationEvent,
 )
@@ -46,6 +47,23 @@ class LinkedListScreen(Screen):
 
         # A longer interval gives students time to understand each step.
         self.step_interval = 1.8
+
+        # Temporary algorithmic pointers.
+        #
+        # These are different from HEAD and NEXT:
+        #
+        # previous -> temporary traversal pointer
+        # current  -> temporary traversal pointer
+        # new      -> temporary pointer to a newly created node
+        #
+        # None means the pointer is not currently active.
+        self.algorithm_pointers: dict[str, int | None] = {
+            "previous": None,
+            "current": None,
+            "new": None,
+        }
+
+        self._pointer_state_step: int | None = None
 
     def _create_operation_buttons(self) -> list[Button]:
         labels = [
@@ -135,6 +153,7 @@ class LinkedListScreen(Screen):
             else:
                 if current_line:
                     lines.append(current_line)
+
                 current_line = word
 
         if current_line:
@@ -192,6 +211,7 @@ class LinkedListScreen(Screen):
                 simulation = self.linked_list_simulator.search(value)
             else:
                 return
+
         except IndexError:
             return
 
@@ -203,6 +223,8 @@ class LinkedListScreen(Screen):
         )
 
         self.step_timer = 0.0
+
+        self._reset_algorithm_pointers()
 
     def _handle_navigation(self, index: int) -> None:
         if self.current_simulation is None:
@@ -227,6 +249,7 @@ class LinkedListScreen(Screen):
             else:
                 self.simulator.resume()
 
+        self._rebuild_algorithm_pointers()
         self._commit_if_finished()
 
     def _commit_if_finished(self) -> None:
@@ -245,6 +268,7 @@ class LinkedListScreen(Screen):
         self.current_simulation = None
 
         self.simulator.reset()
+        self._reset_algorithm_pointers()
 
     def update(self, dt: float) -> None:
         if self.current_simulation is None:
@@ -263,6 +287,8 @@ class LinkedListScreen(Screen):
         if self.step_timer >= self.step_interval:
             self.step_timer = 0.0
             self.simulator.next()
+
+            self._rebuild_algorithm_pointers()
             self._commit_if_finished()
 
     def render(self) -> None:
@@ -402,6 +428,55 @@ class LinkedListScreen(Screen):
 
         return events
 
+    def _reset_algorithm_pointers(self) -> None:
+        self.algorithm_pointers = {
+            "previous": None,
+            "current": None,
+            "new": None,
+        }
+
+        self._pointer_state_step = None
+
+    def _rebuild_algorithm_pointers(self) -> None:
+        """
+        Reconstruct algorithm-pointer positions from the simulation history.
+
+        Pointer events describe movement rather than the complete pointer
+        state, so we replay all events up to the current simulation state.
+        This also makes backward navigation work correctly.
+        """
+
+        state = self.simulator.state
+
+        if state is None:
+            self._reset_algorithm_pointers()
+            return
+
+        current_step = state.step
+
+        if self._pointer_state_step == current_step:
+            return
+
+        pointers = {
+            "previous": None,
+            "current": None,
+            "new": None,
+        }
+
+        history_states = self.simulator.history._states
+
+        for history_state in history_states:
+            if history_state.step > current_step:
+                break
+
+            for event in history_state.events:
+                if isinstance(event, UpdatePointerEvent):
+                    if event.name in pointers:
+                        pointers[event.name] = event.index
+
+        self.algorithm_pointers = pointers
+        self._pointer_state_step = current_step
+
     def _render_linked_list(self) -> None:
         x = 320
         y = 320
@@ -414,9 +489,12 @@ class LinkedListScreen(Screen):
             current_index = None
             created_index = None
             deleted_index = None
-            pointer_target = None
             pointer_source = None
+            pointer_target = None
             head_index = 0 if values else None
+
+            self._reset_algorithm_pointers()
+
         else:
             values = state.values
             current_index = state.current_index
@@ -445,6 +523,14 @@ class LinkedListScreen(Screen):
                     elif isinstance(event, DeleteNodeEvent):
                         deleted_index = event.index
 
+            self._rebuild_algorithm_pointers()
+
+        self._render_algorithm_pointers(
+            x,
+            y,
+            values,
+        )
+
         self._render_head_pointer(
             x,
             y,
@@ -471,6 +557,132 @@ class LinkedListScreen(Screen):
             pointer_target,
         )
 
+    def _render_algorithm_pointers(
+        self,
+        x: int,
+        y: int,
+        values: tuple[object, ...],
+    ) -> None:
+        """
+        Draw temporary algorithmic pointers above the linked list.
+
+        The pointers are deliberately separated from HEAD and NEXT because
+        they represent variables used by the algorithm rather than actual
+        links belonging to the data structure.
+        """
+
+        if not values:
+            return
+
+        active_pointers = [
+            name
+            for name, index in self.algorithm_pointers.items()
+            if index is not None
+        ]
+
+        if not active_pointers:
+            return
+
+        node_width = 120
+        node_height = 70
+        spacing = 90
+
+        pointer_colors = {
+            "previous": (235, 165, 75),
+            "current": (95, 165, 235),
+            "new": (100, 200, 140),
+        }
+
+        pointer_labels = {
+            "previous": "PREVIOUS",
+            "current": "CURRENT",
+            "new": "NEW",
+        }
+
+        # Separate horizontal lanes keep multiple pointers readable.
+        lane_y = {
+            "previous": y - 72,
+            "current": y - 105,
+            "new": y - 138,
+        }
+
+        for name in ("previous", "current", "new"):
+            target_index = self.algorithm_pointers.get(name)
+
+            if target_index is None:
+                continue
+
+            if target_index < 0 or target_index >= len(values):
+                continue
+
+            color = pointer_colors[name]
+            label = pointer_labels[name]
+
+            target_x = (
+                x
+                + target_index * (node_width + spacing)
+                + node_width // 2
+            )
+
+            start_x = target_x
+            start_y = lane_y[name]
+
+            end_x = target_x
+            end_y = y - 5
+
+            # Pointer label.
+            label_surface = self.pointer_font.render(
+                f"{label} → node {target_index}",
+                True,
+                color,
+            )
+
+            label_rect = label_surface.get_rect(
+                centerx=start_x,
+                bottom=start_y - 5,
+            )
+
+            # Keep the label inside the right side of the screen.
+            if label_rect.left < 280:
+                label_rect.left = 280
+
+            if label_rect.right > self.surface.get_width() - 10:
+                label_rect.right = self.surface.get_width() - 10
+
+            self.surface.blit(
+                label_surface,
+                label_rect,
+            )
+
+            pygame.draw.line(
+                self.surface,
+                color,
+                (start_x, start_y),
+                (end_x, end_y),
+                3,
+            )
+
+            self._draw_arrow_head(
+                (end_x, end_y),
+                color,
+                "down",
+            )
+
+            # Small marker at the target node.
+            target_marker = pygame.Rect(
+                target_x - 5,
+                y - 5,
+                10,
+                10,
+            )
+
+            pygame.draw.circle(
+                self.surface,
+                color,
+                target_marker.center,
+                5,
+            )
+
     def _render_head_pointer(
         self,
         x: int,
@@ -480,11 +692,11 @@ class LinkedListScreen(Screen):
     ) -> None:
         self._draw_text(
             "HEAD",
-            (x, y - 125),
+            (x, y - 180),
             self.control_font,
         )
 
-        head_start = (x + 25, y - 90)
+        head_start = (x + 25, y - 145)
 
         if head_index is None or not values:
             head_end = (x + 25, y - 10)
@@ -515,7 +727,10 @@ class LinkedListScreen(Screen):
         node_height = 70
         spacing = 90
 
-        target_x = x + head_index * (node_width + spacing)
+        target_x = (
+            x
+            + head_index * (node_width + spacing)
+        )
 
         head_end = (
             target_x + node_width // 2,
@@ -538,7 +753,7 @@ class LinkedListScreen(Screen):
 
         self._draw_text(
             f"node {head_index}",
-            (x + 55, y - 70),
+            (x + 55, y - 130),
             self.pointer_font,
         )
 
@@ -593,6 +808,17 @@ class LinkedListScreen(Screen):
             if index == pointer_source:
                 border_color = (255, 215, 90)
 
+            # Give nodes targeted by temporary algorithm pointers a subtle
+            # outer outline without replacing their normal node colors.
+            algorithm_pointer_names = [
+                name
+                for name, target in self.algorithm_pointers.items()
+                if target == index
+            ]
+
+            if algorithm_pointer_names:
+                border_color = (235, 235, 235)
+
             pygame.draw.rect(
                 self.surface,
                 border_color,
@@ -625,7 +851,7 @@ class LinkedListScreen(Screen):
         data_rect = pygame.Rect(
             rect.x,
             rect.y,
-            rect.width * 0.55,
+            int(rect.width * 0.55),
             rect.height,
         )
 
@@ -715,10 +941,7 @@ class LinkedListScreen(Screen):
                 + spacing
             )
 
-            target_x = (
-                next_x
-                + 10
-            )
+            target_x = next_x + 10
 
             pointer_end = (
                 target_x,
