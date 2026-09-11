@@ -178,3 +178,46 @@ def test_simulator_rejects_empty_state_list():
 
     with pytest.raises(ValueError):
         simulator.start([])
+
+def test_load_states_starts_at_first_state():
+    simulator = Simulator()
+
+    state_0 = make_state([1], 0)
+    state_1 = make_state([2], 1)
+    state_2 = make_state([3], 2)
+
+    simulator.load_states(
+        [
+            state_0,
+            state_1,
+            state_2,
+        ]
+    )
+
+    assert simulator.state is state_0
+
+def test_load_states_supports_navigation():
+    simulator = Simulator()
+
+    state_0 = make_state([1], 0)
+    state_1 = make_state([2], 1)
+    state_2 = make_state([3], 2)
+
+    simulator.load_states(
+        [
+            state_0,
+            state_1,
+            state_2,
+        ]
+    )
+
+    assert simulator.next() is state_1
+    assert simulator.next() is state_2
+    assert simulator.previous() is state_1
+    assert simulator.previous() is state_0
+
+def test_load_states_rejects_empty_list():
+    simulator = Simulator()
+
+    with pytest.raises(ValueError):
+        simulator.load_states([])
