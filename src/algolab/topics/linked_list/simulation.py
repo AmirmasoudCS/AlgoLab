@@ -121,6 +121,7 @@ class LinkedListSimulator:
                 step=1,
                 description=f"Create a new node containing {data}.",
                 created_index=0,
+                created_data=data,
             )
         )
 
@@ -192,6 +193,7 @@ class LinkedListSimulator:
                     step=1,
                     description=f"Create a new node containing {data}.",
                     created_index=0,
+                    created_data=data,
                 )
             )
 
@@ -266,6 +268,7 @@ class LinkedListSimulator:
                 step=len(states),
                 description=f"Create a new node containing {data}.",
                 created_index=new_index,
+                created_data=data,
             )
         )
 
@@ -341,7 +344,7 @@ class LinkedListSimulator:
                     values=values,
                     events=[
                         VisitNodeEvent(
-                            index=current_index
+                            index=current_index,
                         )
                     ],
                     step=len(states),
@@ -368,6 +371,7 @@ class LinkedListSimulator:
                     f"at index {index}."
                 ),
                 created_index=index,
+                created_data=data,
             )
         )
 
@@ -494,6 +498,7 @@ class LinkedListSimulator:
                     ),
                 )
             )
+
         else:
             states.append(
                 self._create_state(
@@ -566,7 +571,7 @@ class LinkedListSimulator:
                     values=values,
                     events=[
                         VisitNodeEvent(
-                            index=index
+                            index=index,
                         )
                     ],
                     step=len(states),
@@ -632,6 +637,7 @@ class LinkedListSimulator:
         description: str,
         current_index: int | None = None,
         created_index: int | None = None,
+        created_data: object | None = None,
         deleted_index: int | None = None,
     ) -> SimulationState:
         """Create a snapshot of the current simulation state."""
@@ -641,6 +647,7 @@ class LinkedListSimulator:
             description=description,
             current_index=current_index,
             created_index=created_index,
+            created_data=created_data,
             deleted_index=deleted_index,
         )
 
