@@ -3,7 +3,6 @@ import pygame
 from algolab.core.configuration import Configuration
 from algolab.ui.screens.main_menu import MainMenuScreen
 from algolab.ui.screens.screen_manager import ScreenManager
-from algolab.ui.screens.asymptotic import AsymptoticScreen
 
 
 class Application:
@@ -38,9 +37,12 @@ class Application:
         self.running = True
 
         self.screen_manager = ScreenManager()
-        self.screen_manager.set_screen(
-            AsymptoticScreen(self.screen)
 
+        self.screen_manager.set_screen(
+            MainMenuScreen(
+                self.screen,
+                self.screen_manager,
+            )
         )
 
     def run(self) -> None:
