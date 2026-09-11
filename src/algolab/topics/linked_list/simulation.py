@@ -63,6 +63,7 @@ class LinkedListSimulationState:
     """Represents the visual state of a linked-list simulation."""
 
     values: tuple[object, ...]
+    description: str
     current_index: int | None = None
     created_index: int | None = None
     deleted_index: int | None = None
