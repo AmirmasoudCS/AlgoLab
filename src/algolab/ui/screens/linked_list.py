@@ -5,6 +5,12 @@ from algolab.topics.linked_list.model import LinkedListModel
 from algolab.topics.linked_list.simulation import (
     LinkedListSimulation,
     LinkedListSimulator,
+    VisitNodeEvent,
+    CreateNodeEvent,
+    UpdateHeadEvent,
+    UpdateLinkEvent,
+    DeleteNodeEvent,
+    CompleteOperationEvent,
 )
 from algolab.ui.components.button import Button
 from algolab.ui.components.numeric_input import NumericInput
@@ -12,16 +18,12 @@ from algolab.ui.screens.screen import Screen
 
 
 class LinkedListScreen(Screen):
-    """Screen for visualizing linked-list operations."""
-
     def __init__(self, surface: pygame.Surface) -> None:
         super().__init__(surface)
 
         self.model = LinkedListModel()
         self.simulator = Simulator()
-        self.linked_list_simulator = LinkedListSimulator(
-            self.model
-        )
+        self.linked_list_simulator = LinkedListSimulator(self.model)
 
         self.current_simulation: LinkedListSimulation | None = None
         self.operation_committed = False
@@ -30,36 +32,22 @@ class LinkedListScreen(Screen):
         self.section_font = pygame.font.Font(None, 24)
         self.node_font = pygame.font.Font(None, 30)
         self.small_font = pygame.font.Font(None, 22)
+        self.explanation_font = pygame.font.Font(None, 25)
+        self.pointer_font = pygame.font.Font(None, 20)
+        self.index_font = pygame.font.Font(None, 18)
 
         self.operation_buttons = self._create_operation_buttons()
         self.navigation_buttons = self._create_navigation_buttons()
 
-        self.value_input = NumericInput(
-            pygame.Rect(
-                135,
-                375,
-                75,
-                30,
-            ),
-            10,
-        )
-
-        self.index_input = NumericInput(
-            pygame.Rect(
-                135,
-                415,
-                75,
-                30,
-            ),
-            0,
-        )
+        self.value_input = NumericInput(pygame.Rect(135, 375, 75, 30), 10)
+        self.index_input = NumericInput(pygame.Rect(135, 415, 75, 30), 0)
 
         self.step_timer = 0.0
-        self.step_interval = 0.8
+
+        # A longer interval gives students time to understand each step.
+        self.step_interval = 1.8
 
     def _create_operation_buttons(self) -> list[Button]:
-        """Create buttons for linked-list operations."""
-
         labels = [
             "Insert Beginning",
             "Insert End",
@@ -69,7 +57,6 @@ class LinkedListScreen(Screen):
         ]
 
         buttons = []
-
         x = 25
         y = 145
         width = 220
@@ -92,18 +79,9 @@ class LinkedListScreen(Screen):
         return buttons
 
     def _create_navigation_buttons(self) -> list[Button]:
-        """Create buttons for simulation navigation."""
-
-        labels = [
-            "|<",
-            "<",
-            ">",
-            ">|",
-            "P",
-        ]
+        labels = ["|<", "<", ">", ">|", "P"]
 
         buttons = []
-
         x = 25
         y = 485
         width = 40
@@ -131,22 +109,49 @@ class LinkedListScreen(Screen):
         position: tuple[int, int],
         font: pygame.font.Font,
     ) -> None:
-        """Draw text in the TA control panel."""
+        rendered_text = font.render(text, True, (240, 240, 240))
+        self.surface.blit(rendered_text, position)
 
-        rendered_text = font.render(
-            text,
-            True,
-            (240, 240, 240),
-        )
+    def _draw_wrapped_text(
+        self,
+        text: str,
+        rect: pygame.Rect,
+        font: pygame.font.Font,
+        color: tuple[int, int, int] = (235, 235, 235),
+    ) -> None:
+        words = text.split()
+        lines = []
+        current_line = ""
 
-        self.surface.blit(
-            rendered_text,
-            position,
-        )
+        for word in words:
+            test_line = (
+                word
+                if not current_line
+                else f"{current_line} {word}"
+            )
+
+            if font.size(test_line)[0] <= rect.width:
+                current_line = test_line
+            else:
+                if current_line:
+                    lines.append(current_line)
+                current_line = word
+
+        if current_line:
+            lines.append(current_line)
+
+        line_height = font.get_height()
+        y = rect.y
+
+        for line in lines:
+            if y + line_height > rect.bottom:
+                break
+
+            rendered_text = font.render(line, True, color)
+            self.surface.blit(rendered_text, (rect.x, y))
+            y += line_height
 
     def handle_event(self, event: pygame.event.Event) -> None:
-        """Handle user interaction."""
-
         self.value_input.handle_event(event)
         self.index_input.handle_event(event)
 
@@ -159,8 +164,6 @@ class LinkedListScreen(Screen):
                 self._handle_navigation(index)
 
     def _select_operation(self, index: int) -> None:
-        """Create and start the selected linked-list simulation."""
-
         if self.current_simulation is not None:
             return
 
@@ -172,31 +175,23 @@ class LinkedListScreen(Screen):
                 simulation = self.linked_list_simulator.insert_at_beginning(
                     value
                 )
-
             elif index == 1:
                 simulation = self.linked_list_simulator.insert_at_end(
                     value
                 )
-
             elif index == 2:
                 simulation = self.linked_list_simulator.insert_at(
                     list_index,
                     value,
                 )
-
             elif index == 3:
                 simulation = self.linked_list_simulator.delete_at(
                     list_index
                 )
-
             elif index == 4:
-                simulation = self.linked_list_simulator.search(
-                    value
-                )
-
+                simulation = self.linked_list_simulator.search(value)
             else:
                 return
-
         except IndexError:
             return
 
@@ -210,8 +205,6 @@ class LinkedListScreen(Screen):
         self.step_timer = 0.0
 
     def _handle_navigation(self, index: int) -> None:
-        """Handle simulation navigation controls."""
-
         if self.current_simulation is None:
             return
 
@@ -231,15 +224,12 @@ class LinkedListScreen(Screen):
         elif index == 4:
             if self.simulator.running:
                 self.simulator.pause()
-
             else:
                 self.simulator.resume()
 
         self._commit_if_finished()
 
     def _commit_if_finished(self) -> None:
-        """Commit the operation when its final state is reached."""
-
         if self.operation_committed:
             return
 
@@ -250,14 +240,13 @@ class LinkedListScreen(Screen):
             return
 
         self.current_simulation.commit(self.model)
-        self.operation_committed = True
 
+        self.operation_committed = True
         self.current_simulation = None
+
         self.simulator.reset()
 
     def update(self, dt: float) -> None:
-        """Advance the simulation automatically while running."""
-
         if self.current_simulation is None:
             return
 
@@ -274,29 +263,20 @@ class LinkedListScreen(Screen):
         if self.step_timer >= self.step_interval:
             self.step_timer = 0.0
             self.simulator.next()
-
             self._commit_if_finished()
 
     def render(self) -> None:
-        """Render the linked-list screen."""
-
         self.surface.fill((30, 30, 30))
 
         self._render_control_panel()
+        self._render_explanation_panel()
         self._render_linked_list()
 
     def _render_control_panel(self) -> None:
-        """Render the TA control panel."""
-
         pygame.draw.rect(
             self.surface,
             (40, 40, 40),
-            pygame.Rect(
-                10,
-                70,
-                250,
-                500,
-            ),
+            pygame.Rect(10, 70, 250, 500),
             border_radius=8,
         )
 
@@ -345,47 +325,132 @@ class LinkedListScreen(Screen):
 
             if state is not None:
                 self._draw_text(
-                    f"Step: {state.step + 1}/"
-                    f"{len(self.current_simulation.states)}",
+                    (
+                        f"Step: {state.step + 1}/"
+                        f"{len(self.current_simulation.states)}"
+                    ),
                     (25, 535),
                     self.small_font,
                 )
 
-    def _render_linked_list(self) -> None:
-        """Render the linked list visualization."""
-
-        x = 320
-        y = 300
-
-        self._draw_text(
-            "HEAD",
-            (x, 180),
-            self.control_font,
+    def _render_explanation_panel(self) -> None:
+        panel_rect = pygame.Rect(
+            280,
+            70,
+            self.surface.get_width() - 300,
+            130,
         )
 
-        pygame.draw.line(
+        pygame.draw.rect(
             self.surface,
-            (100, 200, 140),
-            (x + 25, 215),
-            (x + 25, y),
-            3,
+            (40, 40, 40),
+            panel_rect,
+            border_radius=8,
+        )
+
+        pygame.draw.rect(
+            self.surface,
+            (90, 90, 90),
+            panel_rect,
+            2,
+            border_radius=8,
+        )
+
+        self._draw_text(
+            "What is happening?",
+            (295, 82),
+            self.section_font,
         )
 
         state = self.simulator.state
+
+        if state is None:
+            description = "Select an operation to start a simulation."
+        else:
+            simulation_state = state.data
+            description = simulation_state.description
+
+        description_rect = pygame.Rect(
+            295,
+            112,
+            panel_rect.width - 30,
+            75,
+        )
+
+        self._draw_wrapped_text(
+            description,
+            description_rect,
+            self.explanation_font,
+        )
+
+    def _get_simulation_state(self):
+        if self.simulator.state is None:
+            return None
+
+        return self.simulator.state.data
+
+    def _get_event_info(self):
+        state = self.simulator.state
+
+        if state is None:
+            return None
+
+        events = state.events
+
+        if not events:
+            return None
+
+        return events
+
+    def _render_linked_list(self) -> None:
+        x = 320
+        y = 320
+
+        state = self._get_simulation_state()
+        events = self._get_event_info()
 
         if state is None:
             values = tuple(self.model.to_list())
             current_index = None
             created_index = None
             deleted_index = None
-
+            pointer_target = None
+            pointer_source = None
+            head_index = 0 if values else None
         else:
-            simulation_state = state.data
+            values = state.values
+            current_index = state.current_index
+            created_index = state.created_index
+            deleted_index = state.deleted_index
 
-            values = simulation_state.values
-            current_index = simulation_state.current_index
-            created_index = simulation_state.created_index
-            deleted_index = simulation_state.deleted_index
+            pointer_source = None
+            pointer_target = None
+            head_index = 0 if values else None
+
+            if events:
+                for event in events:
+                    if isinstance(event, UpdateLinkEvent):
+                        pointer_source = event.index
+                        pointer_target = event.next_index
+
+                    elif isinstance(event, UpdateHeadEvent):
+                        head_index = event.index
+
+                    elif isinstance(event, VisitNodeEvent):
+                        current_index = event.index
+
+                    elif isinstance(event, CreateNodeEvent):
+                        created_index = event.index
+
+                    elif isinstance(event, DeleteNodeEvent):
+                        deleted_index = event.index
+
+        self._render_head_pointer(
+            x,
+            y,
+            head_index,
+            values,
+        )
 
         if not values:
             self._draw_text(
@@ -395,30 +460,105 @@ class LinkedListScreen(Screen):
             )
             return
 
-        node_width = 100
-        node_height = 60
-        spacing = 70
+        self._render_nodes(
+            x,
+            y,
+            values,
+            current_index,
+            created_index,
+            deleted_index,
+            pointer_source,
+            pointer_target,
+        )
+
+    def _render_head_pointer(
+        self,
+        x: int,
+        y: int,
+        head_index: int | None,
+        values: tuple[object, ...],
+    ) -> None:
+        self._draw_text(
+            "HEAD",
+            (x, y - 125),
+            self.control_font,
+        )
+
+        head_start = (x + 25, y - 90)
+
+        if head_index is None or not values:
+            head_end = (x + 25, y - 10)
+
+            pygame.draw.line(
+                self.surface,
+                (100, 200, 140),
+                head_start,
+                head_end,
+                3,
+            )
+
+            self._draw_arrow_head(
+                head_end,
+                (100, 200, 140),
+                "down",
+            )
+
+            self._draw_text(
+                "NULL",
+                (x + 40, y - 25),
+                self.pointer_font,
+            )
+
+            return
+
+        node_width = 120
+        node_height = 70
+        spacing = 90
+
+        target_x = x + head_index * (node_width + spacing)
+
+        head_end = (
+            target_x + node_width // 2,
+            y - 5,
+        )
+
+        pygame.draw.line(
+            self.surface,
+            (100, 200, 140),
+            head_start,
+            head_end,
+            3,
+        )
+
+        self._draw_arrow_head(
+            head_end,
+            (100, 200, 140),
+            "down",
+        )
+
+        self._draw_text(
+            f"node {head_index}",
+            (x + 55, y - 70),
+            self.pointer_font,
+        )
+
+    def _render_nodes(
+        self,
+        x: int,
+        y: int,
+        values: tuple[object, ...],
+        current_index: int | None,
+        created_index: int | None,
+        deleted_index: int | None,
+        pointer_source: int | None,
+        pointer_target: int | None,
+    ) -> None:
+        node_width = 120
+        node_height = 70
+        spacing = 90
 
         for index, value in enumerate(values):
             node_x = x + index * (node_width + spacing)
-
-            if index == deleted_index:
-                background = (150, 70, 70)
-
-            elif index == created_index:
-                background = (70, 150, 100)
-
-            elif index == current_index:
-                background = (70, 105, 170)
-
-            elif index == 0:
-                background = (55, 110, 90)
-
-            elif index == len(values) - 1:
-                background = (105, 80, 50)
-
-            else:
-                background = (55, 75, 110)
 
             rect = pygame.Rect(
                 node_x,
@@ -427,6 +567,20 @@ class LinkedListScreen(Screen):
                 node_height,
             )
 
+            background = (65, 85, 115)
+
+            if index == current_index:
+                background = (70, 110, 180)
+
+            if index == created_index:
+                background = (65, 150, 105)
+
+            if index == deleted_index:
+                background = (165, 75, 75)
+
+            if index == pointer_source:
+                background = (180, 135, 55)
+
             pygame.draw.rect(
                 self.surface,
                 background,
@@ -434,69 +588,243 @@ class LinkedListScreen(Screen):
                 border_radius=8,
             )
 
+            border_color = (210, 210, 210)
+
+            if index == pointer_source:
+                border_color = (255, 215, 90)
+
             pygame.draw.rect(
                 self.surface,
-                (210, 210, 210),
+                border_color,
                 rect,
                 2,
                 border_radius=8,
             )
 
-            text = self.node_font.render(
-                str(value),
-                True,
-                (245, 245, 245),
+            self._draw_node_contents(
+                rect,
+                index,
+                value,
             )
 
-            text_rect = text.get_rect(
-                center=rect.center,
+            self._render_next_pointer(
+                rect,
+                index,
+                len(values),
+                spacing,
+                pointer_source,
+                pointer_target,
             )
 
-            self.surface.blit(
-                text,
-                text_rect,
-            )
-
-            if index < len(values) - 1:
-                start = (
-                    rect.right,
-                    rect.centery,
-                )
-
-                end = (
-                    node_x + node_width + spacing,
-                    rect.centery,
-                )
-
-                pygame.draw.line(
-                    self.surface,
-                    (150, 180, 210),
-                    start,
-                    end,
-                    3,
-                )
-
-                arrow_x = end[0] - 10
-
-                pygame.draw.polygon(
-                    self.surface,
-                    (150, 180, 210),
-                    [
-                        (arrow_x, end[1] - 6),
-                        (end[0], end[1]),
-                        (arrow_x, end[1] + 6),
-                    ],
-                )
-
-        null_x = (
-            x
-            + len(values) * (node_width + spacing)
-            - spacing
-            + 15
+    def _draw_node_contents(
+        self,
+        rect: pygame.Rect,
+        index: int,
+        value: object,
+    ) -> None:
+        data_rect = pygame.Rect(
+            rect.x,
+            rect.y,
+            rect.width * 0.55,
+            rect.height,
         )
 
-        self._draw_text(
-            "NULL",
-            (null_x, y + 15),
-            self.node_font,
+        next_rect = pygame.Rect(
+            data_rect.right,
+            rect.y,
+            rect.width - data_rect.width,
+            rect.height,
+        )
+
+        pygame.draw.line(
+            self.surface,
+            (180, 180, 180),
+            (data_rect.right, rect.top),
+            (data_rect.right, rect.bottom),
+            1,
+        )
+
+        index_text = self.index_font.render(
+            f"node {index}",
+            True,
+            (200, 200, 200),
+        )
+
+        index_rect = index_text.get_rect(
+            centerx=data_rect.centerx,
+            bottom=data_rect.bottom - 5,
+        )
+
+        self.surface.blit(
+            index_text,
+            index_rect,
+        )
+
+        value_text = self.node_font.render(
+            str(value),
+            True,
+            (245, 245, 245),
+        )
+
+        value_rect = value_text.get_rect(
+            centerx=data_rect.centerx,
+            top=data_rect.top + 8,
+        )
+
+        self.surface.blit(
+            value_text,
+            value_rect,
+        )
+
+        next_text = self.pointer_font.render(
+            "NEXT",
+            True,
+            (215, 215, 215),
+        )
+
+        next_rect_text = next_text.get_rect(
+            centerx=next_rect.centerx,
+            top=next_rect.top + 10,
+        )
+
+        self.surface.blit(
+            next_text,
+            next_rect_text,
+        )
+
+    def _render_next_pointer(
+        self,
+        rect: pygame.Rect,
+        index: int,
+        value_count: int,
+        spacing: int,
+        pointer_source: int | None,
+        pointer_target: int | None,
+    ) -> None:
+        pointer_start = (
+            rect.right,
+            rect.centery,
+        )
+
+        is_active_pointer = index == pointer_source
+
+        if index < value_count - 1:
+            next_x = (
+                rect.x
+                + rect.width
+                + spacing
+            )
+
+            target_x = (
+                next_x
+                + 10
+            )
+
+            pointer_end = (
+                target_x,
+                rect.centery,
+            )
+
+            if is_active_pointer:
+                pointer_color = (255, 215, 90)
+                width = 5
+            else:
+                pointer_color = (150, 180, 210)
+                width = 3
+
+            pygame.draw.line(
+                self.surface,
+                pointer_color,
+                pointer_start,
+                pointer_end,
+                width,
+            )
+
+            self._draw_arrow_head(
+                pointer_end,
+                pointer_color,
+                "right",
+            )
+
+            target_label = (
+                pointer_target
+                if is_active_pointer
+                else index + 1
+            )
+
+            self._draw_text(
+                f"node {target_label}",
+                (
+                    rect.right + 12,
+                    rect.y - 22,
+                ),
+                self.pointer_font,
+            )
+
+        else:
+            pointer_end = (
+                rect.right + spacing - 10,
+                rect.centery,
+            )
+
+            if is_active_pointer:
+                pointer_color = (255, 215, 90)
+                width = 5
+            else:
+                pointer_color = (150, 180, 210)
+                width = 3
+
+            pygame.draw.line(
+                self.surface,
+                pointer_color,
+                pointer_start,
+                pointer_end,
+                width,
+            )
+
+            self._draw_arrow_head(
+                pointer_end,
+                pointer_color,
+                "right",
+            )
+
+            self._draw_text(
+                "NULL",
+                (
+                    rect.right + 12,
+                    rect.y - 22,
+                ),
+                self.pointer_font,
+            )
+
+    def _draw_arrow_head(
+        self,
+        position: tuple[int, int],
+        color: tuple[int, int, int],
+        direction: str,
+    ) -> None:
+        x, y = position
+        size = 8
+
+        if direction == "right":
+            points = [
+                (x, y),
+                (x - size, y - size // 2),
+                (x - size, y + size // 2),
+            ]
+
+        elif direction == "down":
+            points = [
+                (x, y),
+                (x - size // 2, y - size),
+                (x + size // 2, y - size),
+            ]
+
+        else:
+            return
+
+        pygame.draw.polygon(
+            self.surface,
+            color,
+            points,
         )
