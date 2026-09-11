@@ -66,6 +66,7 @@ class LinkedListSimulationState:
     description: str
     current_index: int | None = None
     created_index: int | None = None
+    created_data: object | None = None
     deleted_index: int | None = None
 
 
