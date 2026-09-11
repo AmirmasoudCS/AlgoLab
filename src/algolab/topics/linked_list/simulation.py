@@ -104,6 +104,7 @@ class LinkedListSimulator:
                 values=values,
                 events=[],
                 step=0,
+                description="Initial state of the linked list.",
             )
         )
 
@@ -117,6 +118,7 @@ class LinkedListSimulator:
                     )
                 ],
                 step=1,
+                description=f"Create a new node containing {data}.",
                 created_index=0,
             )
         )
@@ -130,6 +132,10 @@ class LinkedListSimulator:
                     )
                 ],
                 step=2,
+                description=(
+                    "Update HEAD to point to the new node. "
+                    "The new node becomes the first node."
+                ),
             )
         )
 
@@ -142,6 +148,7 @@ class LinkedListSimulator:
                     )
                 ],
                 step=3,
+                description="Insertion at the beginning is complete.",
             )
         )
 
@@ -167,6 +174,7 @@ class LinkedListSimulator:
                 values=values,
                 events=[],
                 step=0,
+                description="Initial state of the linked list.",
             )
         )
 
@@ -181,6 +189,7 @@ class LinkedListSimulator:
                         )
                     ],
                     step=1,
+                    description=f"Create a new node containing {data}.",
                     created_index=0,
                 )
             )
@@ -196,6 +205,10 @@ class LinkedListSimulator:
                         )
                     ],
                     step=2,
+                    description=(
+                        "The list is empty, so HEAD must point "
+                        "to the new node."
+                    ),
                 )
             )
 
@@ -208,6 +221,7 @@ class LinkedListSimulator:
                         )
                     ],
                     step=3,
+                    description="Insertion at the end is complete.",
                 )
             )
 
@@ -228,6 +242,10 @@ class LinkedListSimulator:
                         )
                     ],
                     step=len(states),
+                    description=(
+                        f"Visit node {index} containing "
+                        f"{values[index]} and follow its next pointer."
+                    ),
                     current_index=index,
                 )
             )
@@ -245,6 +263,7 @@ class LinkedListSimulator:
                     )
                 ],
                 step=len(states),
+                description=f"Create a new node containing {data}.",
                 created_index=new_index,
             )
         )
@@ -259,6 +278,10 @@ class LinkedListSimulator:
                     )
                 ],
                 step=len(states),
+                description=(
+                    f"Update node {new_index - 1}'s next pointer "
+                    f"to point to the new node."
+                ),
             )
         )
 
@@ -271,6 +294,7 @@ class LinkedListSimulator:
                     )
                 ],
                 step=len(states),
+                description="Insertion at the end is complete.",
             )
         )
 
@@ -306,6 +330,7 @@ class LinkedListSimulator:
                 values=values,
                 events=[],
                 step=0,
+                description="Initial state of the linked list.",
             )
         )
 
@@ -315,10 +340,14 @@ class LinkedListSimulator:
                     values=values,
                     events=[
                         VisitNodeEvent(
-                            index=current_index,
+                            index=current_index
                         )
                     ],
                     step=len(states),
+                    description=(
+                        f"Visit node {current_index} containing "
+                        f"{values[current_index]}."
+                    ),
                     current_index=current_index,
                 )
             )
@@ -333,6 +362,10 @@ class LinkedListSimulator:
                     )
                 ],
                 step=len(states),
+                description=(
+                    f"Create a new node containing {data} "
+                    f"at index {index}."
+                ),
                 created_index=index,
             )
         )
@@ -353,6 +386,10 @@ class LinkedListSimulator:
                     )
                 ],
                 step=len(states),
+                description=(
+                    f"Update node {index - 1}'s next pointer "
+                    f"to point to the new node."
+                ),
             )
         )
 
@@ -365,6 +402,9 @@ class LinkedListSimulator:
                     )
                 ],
                 step=len(states),
+                description=(
+                    f"Insertion at index {index} is complete."
+                ),
             )
         )
 
@@ -394,6 +434,7 @@ class LinkedListSimulator:
                 values=values,
                 events=[],
                 step=0,
+                description="Initial state of the linked list.",
             )
         )
 
@@ -407,6 +448,10 @@ class LinkedListSimulator:
                         )
                     ],
                     step=len(states),
+                    description=(
+                        f"Visit node {current_index} containing "
+                        f"{values[current_index]}."
+                    ),
                     current_index=current_index,
                 )
             )
@@ -421,6 +466,10 @@ class LinkedListSimulator:
                     )
                 ],
                 step=len(states),
+                description=(
+                    f"Delete node {index} containing "
+                    f"{values[index]}."
+                ),
                 deleted_index=index,
             )
         )
@@ -437,6 +486,11 @@ class LinkedListSimulator:
                         )
                     ],
                     step=len(states),
+                    description=(
+                        "Update HEAD to point to the next node."
+                        if new_values
+                        else "The node was the only node, so HEAD is now NULL."
+                    ),
                 )
             )
         else:
@@ -446,10 +500,18 @@ class LinkedListSimulator:
                     events=[
                         UpdateLinkEvent(
                             index=index - 1,
-                            next_index=index if index < len(new_values) else None,
+                            next_index=(
+                                index
+                                if index < len(new_values)
+                                else None
+                            ),
                         )
                     ],
                     step=len(states),
+                    description=(
+                        f"Update node {index - 1}'s next pointer "
+                        "to skip the deleted node."
+                    ),
                 )
             )
 
@@ -462,6 +524,9 @@ class LinkedListSimulator:
                     )
                 ],
                 step=len(states),
+                description=(
+                    f"Deletion of node {index} is complete."
+                ),
             )
         )
 
@@ -487,6 +552,10 @@ class LinkedListSimulator:
                 values=values,
                 events=[],
                 step=0,
+                description=(
+                    f"Start searching for {data} "
+                    "from the HEAD node."
+                ),
             )
         )
 
@@ -496,10 +565,14 @@ class LinkedListSimulator:
                     values=values,
                     events=[
                         VisitNodeEvent(
-                            index=index,
+                            index=index
                         )
                     ],
                     step=len(states),
+                    description=(
+                        f"Check node {index}: "
+                        f"{value} == {data}?"
+                    ),
                     current_index=index,
                 )
             )
@@ -514,6 +587,9 @@ class LinkedListSimulator:
                             )
                         ],
                         step=len(states),
+                        description=(
+                            f"Found {data} at index {index}."
+                        ),
                         current_index=index,
                     )
                 )
@@ -534,6 +610,9 @@ class LinkedListSimulator:
                     )
                 ],
                 step=len(states),
+                description=(
+                    f"{data} was not found in the linked list."
+                ),
             )
         )
 
@@ -541,7 +620,7 @@ class LinkedListSimulator:
             states=tuple(states),
             operation=SearchOperation(
                 data=data,
-            ),
+            )
         )
 
     def _create_state(
