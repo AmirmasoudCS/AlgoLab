@@ -1,9 +1,8 @@
 from dataclasses import dataclass
-from copy import deepcopy
 
 from algolab.simulation.events import SimulationEvent
 from algolab.simulation.state import SimulationState
-from algolab.topics.linked_list.model import LinkedListModel, Node
+from algolab.topics.linked_list.model import LinkedListModel
 
 
 @dataclass(frozen=True)
@@ -19,6 +18,13 @@ class CreateNodeEvent(SimulationEvent):
 
     index: int
     data: object
+
+
+@dataclass(frozen=True)
+class UpdateHeadEvent(SimulationEvent):
+    """Indicates that the head reference is being updated."""
+
+    index: int | None
 
 
 @dataclass(frozen=True)
@@ -44,11 +50,11 @@ class CompleteOperationEvent(SimulationEvent):
     operation: str
 
 
-@dataclass
+@dataclass(frozen=True)
 class LinkedListSimulationState:
     """Represents the visual state of a linked-list simulation."""
 
-    values: list[object]
+    values: tuple[object, ...]
     current_index: int | None = None
     created_index: int | None = None
     deleted_index: int | None = None
@@ -69,6 +75,7 @@ class LinkedListSimulator:
         states: list[SimulationState] = []
 
         values = self.model.to_list()
+        new_values = [data, *values]
 
         states.append(
             self._create_state(
@@ -77,8 +84,6 @@ class LinkedListSimulator:
                 step=0,
             )
         )
-
-        new_values = [data, *values]
 
         states.append(
             self._create_state(
@@ -98,9 +103,8 @@ class LinkedListSimulator:
             self._create_state(
                 values=new_values,
                 events=[
-                    UpdateLinkEvent(
+                    UpdateHeadEvent(
                         index=0,
-                        next_index=1 if values else None,
                     )
                 ],
                 step=2,
@@ -139,12 +143,57 @@ class LinkedListSimulator:
             )
         )
 
+        if not values:
+            states.append(
+                self._create_state(
+                    values=values,
+                    events=[
+                        CreateNodeEvent(
+                            index=0,
+                            data=data,
+                        )
+                    ],
+                    step=1,
+                    created_index=0,
+                )
+            )
+
+            new_values = [data]
+
+            states.append(
+                self._create_state(
+                    values=new_values,
+                    events=[
+                        UpdateHeadEvent(
+                            index=0,
+                        )
+                    ],
+                    step=2,
+                )
+            )
+
+            states.append(
+                self._create_state(
+                    values=new_values,
+                    events=[
+                        CompleteOperationEvent(
+                            operation="insert_at_end",
+                        )
+                    ],
+                    step=3,
+                )
+            )
+
+            return states
+
         for index in range(len(values)):
             states.append(
                 self._create_state(
                     values=values,
                     events=[
-                        VisitNodeEvent(index=index),
+                        VisitNodeEvent(
+                            index=index,
+                        )
                     ],
                     step=len(states),
                     current_index=index,
@@ -173,8 +222,8 @@ class LinkedListSimulator:
                 values=new_values,
                 events=[
                     UpdateLinkEvent(
-                        index=new_index - 1 if values else 0,
-                        next_index=new_index if values else None,
+                        index=new_index - 1,
+                        next_index=new_index,
                     )
                 ],
                 step=len(states),
@@ -207,6 +256,9 @@ class LinkedListSimulator:
 
         if index == 0:
             return self.insert_at_beginning(data)
+
+        if index == self.model.size:
+            return self.insert_at_end(data)
 
         states: list[SimulationState] = []
 
@@ -332,18 +384,31 @@ class LinkedListSimulator:
 
         new_values = values[:index] + values[index + 1:]
 
-        states.append(
-            self._create_state(
-                values=new_values,
-                events=[
-                    UpdateLinkEvent(
-                        index=index - 1 if index > 0 else 0,
-                        next_index=index if index < len(new_values) else None,
-                    )
-                ],
-                step=len(states),
+        if index == 0:
+            states.append(
+                self._create_state(
+                    values=new_values,
+                    events=[
+                        UpdateHeadEvent(
+                            index=0 if new_values else None,
+                        )
+                    ],
+                    step=len(states),
+                )
             )
-        )
+        else:
+            states.append(
+                self._create_state(
+                    values=new_values,
+                    events=[
+                        UpdateLinkEvent(
+                            index=index - 1,
+                            next_index=index if index < len(new_values) else None,
+                        )
+                    ],
+                    step=len(states),
+                )
+            )
 
         states.append(
             self._create_state(
@@ -382,7 +447,9 @@ class LinkedListSimulator:
                 self._create_state(
                     values=values,
                     events=[
-                        VisitNodeEvent(index=index),
+                        VisitNodeEvent(
+                            index=index,
+                        )
                     ],
                     step=len(states),
                     current_index=index,
@@ -428,10 +495,10 @@ class LinkedListSimulator:
         created_index: int | None = None,
         deleted_index: int | None = None,
     ) -> SimulationState:
-        """Create an immutable snapshot of the current simulation state."""
+        """Create a snapshot of the current simulation state."""
 
         data = LinkedListSimulationState(
-            values=deepcopy(values),
+            values=tuple(values),
             current_index=current_index,
             created_index=created_index,
             deleted_index=deleted_index,
