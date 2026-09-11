@@ -24,7 +24,7 @@ from algolab.topics.linked_list.operations import (
 
 @dataclass(frozen=True)
 class LinkedListSimulationState:
-    """State used to visualize a linked-list simulation."""
+    """Represents the visual state of a linked-list simulation."""
 
     values: tuple[object, ...]
     description: str
@@ -36,13 +36,13 @@ class LinkedListSimulationState:
 
 @dataclass(frozen=True)
 class LinkedListSimulation:
-    """Collection of states representing one linked-list operation."""
+    """Represents a complete linked-list simulation."""
 
     states: tuple[SimulationState, ...]
     operation: LinkedListOperation
 
     def commit(self, model: LinkedListModel) -> object | None:
-        """Apply the simulated operation to the real model."""
+        """Commit the simulated operation to the linked-list model."""
 
         return self.operation.commit(model)
 
@@ -53,20 +53,23 @@ class LinkedListSimulator:
     def __init__(self, model: LinkedListModel) -> None:
         self.model = model
 
-    def insert_at_beginning(self, data: object) -> LinkedListSimulation:
-        """Simulate inserting a new node at the beginning."""
-
-        values = tuple(self.model.to_list())
-        new_index = 0
+    def insert_at_beginning(
+        self,
+        data: object,
+    ) -> LinkedListSimulation:
+        """Create a simulation for inserting a node at the beginning."""
 
         states: list[SimulationState] = []
+
+        values = self.model.to_list()
+        new_values = [data, *values]
 
         states.append(
             self._create_state(
                 values=values,
                 events=[],
                 step=0,
-                description="Start: prepare to insert a new node at the beginning.",
+                description="Initial state of the linked list.",
             )
         )
 
@@ -75,36 +78,38 @@ class LinkedListSimulator:
                 values=values,
                 events=[
                     CreateNodeEvent(
-                        index=new_index,
+                        index=0,
                         data=data,
                     ),
                     UpdatePointerEvent(
                         name="new",
-                        index=new_index,
+                        index=0,
                     ),
                 ],
                 step=1,
-                description="Create the new node and let NEW point to it.",
-                created_index=new_index,
+                description=f"Create a new node containing {data}.",
+                created_index=0,
                 created_data=data,
             )
         )
-
-        new_values = (data,) + values
 
         states.append(
             self._create_state(
                 values=new_values,
                 events=[
+                    UpdateHeadEvent(
+                        index=0,
+                    ),
                     UpdatePointerEvent(
                         name="new",
                         index=0,
                     ),
-                    UpdateHeadEvent(index=0),
                 ],
                 step=2,
-                description="Set HEAD to the new node. The old chain remains connected.",
-                current_index=0,
+                description=(
+                    "Update HEAD to point to the new node. "
+                    "The new node becomes the first node."
+                ),
             )
         )
 
@@ -114,34 +119,40 @@ class LinkedListSimulator:
                 events=[
                     CompleteOperationEvent(
                         operation="insert_at_beginning",
-                    )
+                    ),
                 ],
                 step=3,
-                description="Insertion complete.",
+                description="Insertion at the beginning is complete.",
             )
         )
 
         return LinkedListSimulation(
             states=tuple(states),
-            operation=InsertAtBeginningOperation(data=data),
+            operation=InsertAtBeginningOperation(
+                data=data,
+            ),
         )
 
-    def insert_at_end(self, data: object) -> LinkedListSimulation:
-        """Simulate inserting a new node at the end."""
+    def insert_at_end(
+        self,
+        data: object,
+    ) -> LinkedListSimulation:
+        """Create a simulation for inserting a node at the end."""
 
-        values = tuple(self.model.to_list())
         states: list[SimulationState] = []
 
-        if not values:
-            states.append(
-                self._create_state(
-                    values=values,
-                    events=[],
-                    step=0,
-                    description="Start: the linked list is empty.",
-                )
-            )
+        values = self.model.to_list()
 
+        states.append(
+            self._create_state(
+                values=values,
+                events=[],
+                step=0,
+                description="Initial state of the linked list.",
+            )
+        )
+
+        if not values:
             states.append(
                 self._create_state(
                     values=values,
@@ -156,26 +167,31 @@ class LinkedListSimulator:
                         ),
                     ],
                     step=1,
-                    description="Create the new node and let NEW point to it.",
+                    description=f"Create a new node containing {data}.",
                     created_index=0,
                     created_data=data,
                 )
             )
 
-            new_values = (data,)
+            new_values = [data]
 
             states.append(
                 self._create_state(
                     values=new_values,
                     events=[
+                        UpdateHeadEvent(
+                            index=0,
+                        ),
                         UpdatePointerEvent(
                             name="new",
                             index=0,
                         ),
-                        UpdateHeadEvent(index=0),
                     ],
                     step=2,
-                    description="Because the list was empty, HEAD now points to NEW.",
+                    description=(
+                        "The list is empty, so HEAD must point "
+                        "to the new node."
+                    ),
                 )
             )
 
@@ -185,68 +201,54 @@ class LinkedListSimulator:
                     events=[
                         CompleteOperationEvent(
                             operation="insert_at_end",
-                        )
+                        ),
                     ],
                     step=3,
-                    description="Insertion complete.",
+                    description="Insertion at the end is complete.",
                 )
             )
 
             return LinkedListSimulation(
                 states=tuple(states),
-                operation=InsertAtEndOperation(data=data),
+                operation=InsertAtEndOperation(
+                    data=data,
+                ),
             )
 
-        # Start with both traversal pointers at the head.
-        states.append(
-            self._create_state(
-                values=values,
-                events=[
+        for index in range(len(values)):
+            events: list[SimulationEvent] = [
+                VisitNodeEvent(
+                    index=index,
+                ),
+                UpdatePointerEvent(
+                    name="current",
+                    index=index,
+                ),
+            ]
+
+            if index > 0:
+                events.append(
                     UpdatePointerEvent(
                         name="previous",
-                        index=None,
-                    ),
-                    UpdatePointerEvent(
-                        name="current",
-                        index=0,
-                    ),
-                ],
-                step=0,
-                description="Start at HEAD. CURRENT points to the first node.",
-                current_index=0,
-            )
-        )
-
-        step = 1
-
-        # Move CURRENT through the list.
-        for index in range(len(values)):
-            if index > 0:
-                states.append(
-                    self._create_state(
-                        values=values,
-                        events=[
-                            UpdatePointerEvent(
-                                name="previous",
-                                index=index - 1,
-                            ),
-                            UpdatePointerEvent(
-                                name="current",
-                                index=index,
-                            ),
-                            VisitNodeEvent(index=index),
-                        ],
-                        step=step,
-                        description=(
-                            f"Move PREVIOUS to node {index - 1} "
-                            f"and CURRENT to node {index}."
-                        ),
-                        current_index=index,
+                        index=index - 1,
                     )
                 )
-                step += 1
+
+            states.append(
+                self._create_state(
+                    values=values,
+                    events=events,
+                    step=len(states),
+                    description=(
+                        f"Visit node {index} containing "
+                        f"{values[index]} and follow its next pointer."
+                    ),
+                    current_index=index,
+                )
+            )
 
         new_index = len(values)
+        new_values = [*values, data]
 
         states.append(
             self._create_state(
@@ -260,40 +262,42 @@ class LinkedListSimulator:
                         name="new",
                         index=new_index,
                     ),
+                    UpdatePointerEvent(
+                        name="previous",
+                        index=new_index - 1,
+                    ),
                 ],
-                step=step,
-                description="Create the new node. NEW points to the new node.",
+                step=len(states),
+                description=f"Create a new node containing {data}.",
                 created_index=new_index,
                 created_data=data,
             )
         )
-        step += 1
 
         states.append(
             self._create_state(
-                values=values,
+                values=new_values,
                 events=[
+                    UpdateLinkEvent(
+                        index=new_index - 1,
+                        next_index=new_index,
+                    ),
+                    UpdatePointerEvent(
+                        name="previous",
+                        index=new_index - 1,
+                    ),
                     UpdatePointerEvent(
                         name="new",
                         index=new_index,
                     ),
-                    UpdateLinkEvent(
-                        index=len(values) - 1,
-                        next_index=new_index,
-                    ),
                 ],
-                step=step,
+                step=len(states),
                 description=(
-                    f"Set node {len(values) - 1}.next to NEW. "
-                    "The new node is now connected to the chain."
+                    f"Update node {new_index - 1}'s next pointer "
+                    f"to point to the new node."
                 ),
-                created_index=new_index,
-                created_data=data,
             )
         )
-        step += 1
-
-        new_values = values + (data,)
 
         states.append(
             self._create_state(
@@ -301,16 +305,18 @@ class LinkedListSimulator:
                 events=[
                     CompleteOperationEvent(
                         operation="insert_at_end",
-                    )
+                    ),
                 ],
-                step=step,
-                description="Insertion complete.",
+                step=len(states),
+                description="Insertion at the end is complete.",
             )
         )
 
         return LinkedListSimulation(
             states=tuple(states),
-            operation=InsertAtEndOperation(data=data),
+            operation=InsertAtEndOperation(
+                data=data,
+            ),
         )
 
     def insert_at(
@@ -318,162 +324,118 @@ class LinkedListSimulator:
         index: int,
         data: object,
     ) -> LinkedListSimulation:
-        """Simulate inserting a new node at a specific index."""
+        """Create a simulation for inserting a node at an index."""
 
-        values = tuple(self.model.to_list())
-
-        if not 0 <= index <= len(values):
-            raise IndexError("Linked-list insertion index out of range.")
+        if index < 0 or index > self.model.size:
+            raise IndexError("Linked list index out of range.")
 
         if index == 0:
             return self.insert_at_beginning(data)
 
-        if index == len(values):
+        if index == self.model.size:
             return self.insert_at_end(data)
 
         states: list[SimulationState] = []
 
+        values = self.model.to_list()
+
         states.append(
             self._create_state(
                 values=values,
-                events=[
-                    UpdatePointerEvent(
-                        name="previous",
-                        index=None,
-                    ),
-                    UpdatePointerEvent(
-                        name="current",
-                        index=0,
-                    ),
-                ],
+                events=[],
                 step=0,
-                description=(
-                    f"Start traversal to insert at index {index}. "
-                    "CURRENT begins at HEAD."
-                ),
-                current_index=0,
+                description="Initial state of the linked list.",
             )
         )
 
-        step = 1
+        for current_index in range(index):
+            events: list[SimulationEvent] = [
+                VisitNodeEvent(
+                    index=current_index,
+                ),
+                UpdatePointerEvent(
+                    name="current",
+                    index=current_index,
+                ),
+            ]
 
-        # Traverse until:
-        # previous -> node index - 1
-        # current  -> node index
-        for current_index in range(1, index + 1):
-            previous_index = current_index - 1
+            if current_index > 0:
+                events.append(
+                    UpdatePointerEvent(
+                        name="previous",
+                        index=current_index - 1,
+                    )
+                )
 
             states.append(
                 self._create_state(
                     values=values,
-                    events=[
-                        UpdatePointerEvent(
-                            name="previous",
-                            index=previous_index,
-                        ),
-                        UpdatePointerEvent(
-                            name="current",
-                            index=current_index,
-                        ),
-                        VisitNodeEvent(
-                            index=current_index,
-                        ),
-                    ],
-                    step=step,
+                    events=events,
+                    step=len(states),
                     description=(
-                        f"Move PREVIOUS to node {previous_index} "
-                        f"and CURRENT to node {current_index}."
+                        f"Visit node {current_index} containing "
+                        f"{values[current_index]}."
                     ),
                     current_index=current_index,
                 )
             )
-
-            step += 1
-
-        new_index = index
 
         states.append(
             self._create_state(
                 values=values,
                 events=[
                     CreateNodeEvent(
-                        index=new_index,
+                        index=index,
                         data=data,
                     ),
                     UpdatePointerEvent(
                         name="new",
-                        index=new_index,
+                        index=index,
+                    ),
+                    UpdatePointerEvent(
+                        name="previous",
+                        index=index - 1,
                     ),
                 ],
-                step=step,
+                step=len(states),
                 description=(
-                    f"Create the new node at index {new_index}. "
-                    "NEW points to it."
+                    f"Create a new node containing {data} "
+                    f"at index {index}."
                 ),
-                created_index=new_index,
+                created_index=index,
                 created_data=data,
             )
         )
-        step += 1
+
+        new_values = [
+            *values[:index],
+            data,
+            *values[index:],
+        ]
 
         states.append(
             self._create_state(
-                values=values,
+                values=new_values,
                 events=[
-                    UpdatePointerEvent(
-                        name="new",
-                        index=new_index,
-                    ),
                     UpdateLinkEvent(
-                        index=new_index,
+                        index=index - 1,
                         next_index=index,
                     ),
-                ],
-                step=step,
-                description=(
-                    f"Set NEW.next to CURRENT (node {index}). "
-                    "The remainder of the chain is preserved."
-                ),
-                created_index=new_index,
-                created_data=data,
-                current_index=index,
-            )
-        )
-        step += 1
-
-        states.append(
-            self._create_state(
-                values=values,
-                events=[
                     UpdatePointerEvent(
                         name="previous",
                         index=index - 1,
                     ),
                     UpdatePointerEvent(
                         name="new",
-                        index=new_index,
-                    ),
-                    UpdateLinkEvent(
-                        index=index - 1,
-                        next_index=new_index,
+                        index=index,
                     ),
                 ],
-                step=step,
+                step=len(states),
                 description=(
-                    f"Set node {index - 1}.next to NEW. "
-                    "The new node is now inserted between PREVIOUS and CURRENT."
+                    f"Update node {index - 1}'s next pointer "
+                    f"to point to the new node."
                 ),
-                created_index=new_index,
-                created_data=data,
-                current_index=index,
             )
-        )
-        step += 1
-
-        new_values = (
-            values[:index]
-            + (data,)
-            + values[index:]
         )
 
         states.append(
@@ -482,10 +444,12 @@ class LinkedListSimulator:
                 events=[
                     CompleteOperationEvent(
                         operation="insert_at",
-                    )
+                    ),
                 ],
-                step=step,
-                description="Insertion complete.",
+                step=len(states),
+                description=(
+                    f"Insertion at index {index} is complete."
+                ),
             )
         )
 
@@ -497,136 +461,59 @@ class LinkedListSimulator:
             ),
         )
 
-    def delete_at(self, index: int) -> LinkedListSimulation:
-        """Simulate deleting a node at a specific index."""
+    def delete_at(
+        self,
+        index: int,
+    ) -> LinkedListSimulation:
+        """Create a simulation for deleting a node at an index."""
 
-        values = tuple(self.model.to_list())
-
-        if not 0 <= index < len(values):
-            raise IndexError("Linked-list deletion index out of range.")
+        if index < 0 or index >= self.model.size:
+            raise IndexError("Linked list index out of range.")
 
         states: list[SimulationState] = []
 
-        if index == 0:
-            states.append(
-                self._create_state(
-                    values=values,
-                    events=[
-                        UpdatePointerEvent(
-                            name="current",
-                            index=0,
-                        )
-                    ],
-                    step=0,
-                    description="CURRENT points to HEAD, the node that will be deleted.",
-                    current_index=0,
-                )
-            )
-
-            states.append(
-                self._create_state(
-                    values=values,
-                    events=[
-                        DeleteNodeEvent(
-                            index=0,
-                            data=values[0],
-                        )
-                    ],
-                    step=1,
-                    description="Mark the HEAD node for deletion.",
-                    deleted_index=0,
-                )
-            )
-
-            new_values = values[1:]
-
-            states.append(
-                self._create_state(
-                    values=new_values,
-                    events=[
-                        UpdateHeadEvent(
-                            index=0 if new_values else None,
-                        )
-                    ],
-                    step=2,
-                    description=(
-                        "Move HEAD to the next node. "
-                        "The deleted node is no longer part of the chain."
-                    ),
-                )
-            )
-
-            states.append(
-                self._create_state(
-                    values=new_values,
-                    events=[
-                        CompleteOperationEvent(
-                            operation="delete_at",
-                        )
-                    ],
-                    step=3,
-                    description="Deletion complete.",
-                )
-            )
-
-            return LinkedListSimulation(
-                states=tuple(states),
-                operation=DeleteAtOperation(index=index),
-            )
+        values = self.model.to_list()
 
         states.append(
             self._create_state(
                 values=values,
-                events=[
-                    UpdatePointerEvent(
-                        name="previous",
-                        index=None,
-                    ),
-                    UpdatePointerEvent(
-                        name="current",
-                        index=0,
-                    ),
-                ],
+                events=[],
                 step=0,
-                description=(
-                    f"Start traversal to delete node {index}. "
-                    "CURRENT begins at HEAD."
-                ),
-                current_index=0,
+                description="Initial state of the linked list.",
             )
         )
 
-        step = 1
+        for current_index in range(index + 1):
+            events: list[SimulationEvent] = [
+                VisitNodeEvent(
+                    index=current_index,
+                ),
+                UpdatePointerEvent(
+                    name="current",
+                    index=current_index,
+                ),
+            ]
 
-        for current_index in range(1, index + 1):
-            previous_index = current_index - 1
+            if current_index > 0:
+                events.append(
+                    UpdatePointerEvent(
+                        name="previous",
+                        index=current_index - 1,
+                    )
+                )
 
             states.append(
                 self._create_state(
                     values=values,
-                    events=[
-                        UpdatePointerEvent(
-                            name="previous",
-                            index=previous_index,
-                        ),
-                        UpdatePointerEvent(
-                            name="current",
-                            index=current_index,
-                        ),
-                        VisitNodeEvent(
-                            index=current_index,
-                        ),
-                    ],
-                    step=step,
+                    events=events,
+                    step=len(states),
                     description=(
-                        f"Move PREVIOUS to node {previous_index} "
-                        f"and CURRENT to node {current_index}."
+                        f"Visit node {current_index} containing "
+                        f"{values[current_index]}."
                     ),
                     current_index=current_index,
                 )
             )
-
-            step += 1
 
         states.append(
             self._create_state(
@@ -635,45 +522,84 @@ class LinkedListSimulator:
                     DeleteNodeEvent(
                         index=index,
                         data=values[index],
-                    )
+                    ),
+                    UpdatePointerEvent(
+                        name="current",
+                        index=index,
+                    ),
+                    UpdatePointerEvent(
+                        name="previous",
+                        index=index - 1
+                        if index > 0
+                        else None,
+                    ),
                 ],
-                step=step,
+                step=len(states),
                 description=(
-                    f"CURRENT points to node {index}. "
-                    "This is the node that will be removed."
-                ),
-                current_index=index,
-                deleted_index=index,
-            )
-        )
-        step += 1
-
-        new_values = (
-            values[:index]
-            + values[index + 1:]
-        )
-
-        next_index = index if index < len(new_values) else None
-
-        states.append(
-            self._create_state(
-                values=new_values,
-                events=[
-                    UpdateLinkEvent(
-                        index=index - 1,
-                        next_index=next_index,
-                    )
-                ],
-                step=step,
-                description=(
-                    f"Set PREVIOUS.next to "
-                    f"{'CURRENT.next' if next_index is not None else 'NULL'}. "
-                    "The deleted node is bypassed."
+                    f"Delete node {index} containing "
+                    f"{values[index]}."
                 ),
                 deleted_index=index,
             )
         )
-        step += 1
+
+        new_values = values[:index] + values[index + 1:]
+
+        if index == 0:
+            states.append(
+                self._create_state(
+                    values=new_values,
+                    events=[
+                        UpdateHeadEvent(
+                            index=0 if new_values else None,
+                        ),
+                        UpdatePointerEvent(
+                            name="current",
+                            index=0 if new_values else None,
+                        ),
+                    ],
+                    step=len(states),
+                    description=(
+                        "Update HEAD to point to the next node."
+                        if new_values
+                        else (
+                            "The node was the only node, "
+                            "so HEAD is now NULL."
+                        )
+                    ),
+                )
+            )
+        else:
+            next_index = (
+                index
+                if index < len(new_values)
+                else None
+            )
+
+            states.append(
+                self._create_state(
+                    values=new_values,
+                    events=[
+                        UpdateLinkEvent(
+                            index=index - 1,
+                            next_index=next_index,
+                        ),
+                        UpdatePointerEvent(
+                            name="previous",
+                            index=index - 1,
+                        ),
+                        UpdatePointerEvent(
+                            name="current",
+                            index=next_index,
+                        ),
+                    ],
+                    step=len(states),
+                    description=(
+                        f"Update node {index - 1}'s next pointer "
+                        "to skip the deleted node."
+                    ),
+                )
+            )
 
         states.append(
             self._create_state(
@@ -681,35 +607,41 @@ class LinkedListSimulator:
                 events=[
                     CompleteOperationEvent(
                         operation="delete_at",
-                    )
+                    ),
                 ],
-                step=step,
-                description="Deletion complete.",
+                step=len(states),
+                description=(
+                    f"Deletion of node {index} is complete."
+                ),
             )
         )
 
         return LinkedListSimulation(
             states=tuple(states),
-            operation=DeleteAtOperation(index=index),
+            operation=DeleteAtOperation(
+                index=index,
+            ),
         )
 
-    def search(self, data: object) -> LinkedListSimulation:
-        """Simulate searching for a value in the linked list."""
+    def search(
+        self,
+        data: object,
+    ) -> LinkedListSimulation:
+        """Create a simulation for searching for a value."""
 
-        values = tuple(self.model.to_list())
         states: list[SimulationState] = []
+
+        values = self.model.to_list()
 
         states.append(
             self._create_state(
                 values=values,
-                events=[
-                    UpdatePointerEvent(
-                        name="current",
-                        index=None,
-                    )
-                ],
+                events=[],
                 step=0,
-                description=f"Search for {data!r}. CURRENT starts before the list.",
+                description=(
+                    f"Start searching for {data} "
+                    "from the HEAD node."
+                ),
             )
         )
 
@@ -718,18 +650,18 @@ class LinkedListSimulator:
                 self._create_state(
                     values=values,
                     events=[
+                        VisitNodeEvent(
+                            index=index,
+                        ),
                         UpdatePointerEvent(
                             name="current",
                             index=index,
                         ),
-                        VisitNodeEvent(
-                            index=index,
-                        ),
                     ],
-                    step=index + 1,
+                    step=len(states),
                     description=(
-                        f"CURRENT points to node {index}. "
-                        f"Compare its value {value!r} with {data!r}."
+                        f"Check node {index}: "
+                        f"{value} == {data}?"
                     ),
                     current_index=index,
                 )
@@ -740,17 +672,17 @@ class LinkedListSimulator:
                     self._create_state(
                         values=values,
                         events=[
+                            CompleteOperationEvent(
+                                operation="search_found",
+                            ),
                             UpdatePointerEvent(
                                 name="current",
                                 index=index,
                             ),
-                            CompleteOperationEvent(
-                                operation="search_found",
-                            ),
                         ],
-                        step=index + 2,
+                        step=len(states),
                         description=(
-                            f"Found {data!r} at node {index}."
+                            f"Found {data} at index {index}."
                         ),
                         current_index=index,
                     )
@@ -758,34 +690,40 @@ class LinkedListSimulator:
 
                 return LinkedListSimulation(
                     states=tuple(states),
-                    operation=SearchOperation(data=data),
+                    operation=SearchOperation(
+                        data=data,
+                    ),
                 )
 
         states.append(
             self._create_state(
                 values=values,
                 events=[
+                    CompleteOperationEvent(
+                        operation="search_not_found",
+                    ),
                     UpdatePointerEvent(
                         name="current",
                         index=None,
                     ),
-                    CompleteOperationEvent(
-                        operation="search_not_found",
-                    ),
                 ],
-                step=len(values) + 1,
-                description=f"{data!r} was not found in the linked list.",
+                step=len(states),
+                description=(
+                    f"{data} was not found in the linked list."
+                ),
             )
         )
 
         return LinkedListSimulation(
             states=tuple(states),
-            operation=SearchOperation(data=data),
+            operation=SearchOperation(
+                data=data,
+            ),
         )
 
     def _create_state(
         self,
-        values: tuple[object, ...],
+        values: list[object],
         events: list[SimulationEvent],
         step: int,
         description: str,
@@ -794,17 +732,19 @@ class LinkedListSimulator:
         created_data: object | None = None,
         deleted_index: int | None = None,
     ) -> SimulationState:
-        """Create a generic simulation state."""
+        """Create a snapshot of the current simulation state."""
+
+        data = LinkedListSimulationState(
+            values=tuple(values),
+            description=description,
+            current_index=current_index,
+            created_index=created_index,
+            created_data=created_data,
+            deleted_index=deleted_index,
+        )
 
         return SimulationState(
-            data=LinkedListSimulationState(
-                values=values,
-                description=description,
-                current_index=current_index,
-                created_index=created_index,
-                created_data=created_data,
-                deleted_index=deleted_index,
-            ),
+            data=data,
             events=events,
             step=step,
         )
