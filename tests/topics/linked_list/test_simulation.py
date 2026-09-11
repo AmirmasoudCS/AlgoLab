@@ -265,7 +265,7 @@ def test_delete_at_beginning_simulation():
         DeleteAtOperation,
     )
 
-    assert len(simulation.states) == 4
+    assert len(simulation.states) == 5
 
     assert simulation.states[0].data.values == (
         10,
@@ -297,6 +297,14 @@ def test_delete_at_beginning_simulation():
     )
     assert simulation.states[3].events[0].index == 0
 
+    assert isinstance(
+        simulation.states[4].events[0],
+        CompleteOperationEvent,
+    )
+    assert simulation.states[4].events[0].operation == (
+        "delete_at"
+    )
+
 
 def test_delete_at_middle_simulation():
     model = create_model([10, 20, 30])
@@ -304,7 +312,7 @@ def test_delete_at_middle_simulation():
 
     simulation = simulator.delete_at(1)
 
-    assert len(simulation.states) == 5
+    assert len(simulation.states) == 6
 
     assert simulation.states[0].data.values == (
         10,
@@ -333,6 +341,14 @@ def test_delete_at_middle_simulation():
     )
     assert simulation.states[4].events[0].index == 0
     assert simulation.states[4].events[0].next_index == 1
+
+    assert isinstance(
+        simulation.states[5].events[0],
+        CompleteOperationEvent,
+    )
+    assert simulation.states[5].events[0].operation == (
+        "delete_at"
+    )
 
 
 def test_delete_at_end_simulation():
