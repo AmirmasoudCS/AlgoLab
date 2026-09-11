@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Any
 
 
 @dataclass(frozen=True)
@@ -30,3 +29,11 @@ class MarkSortedEvent(SimulationEvent):
     """Indicates that an element has reached its final position."""
 
     index: int
+
+
+@dataclass(frozen=True)
+class UpdatePointerEvent(SimulationEvent):
+    """Indicates that an algorithmic pointer moved to a node."""
+
+    name: str
+    index: int | None
