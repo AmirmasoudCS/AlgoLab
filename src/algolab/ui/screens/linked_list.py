@@ -478,8 +478,11 @@ class LinkedListScreen(Screen):
         self._pointer_state_step = current_step
 
     def _render_linked_list(self) -> None:
+        # The visualization is intentionally positioned below the
+        # explanation panel so HEAD and the algorithmic pointers do not
+        # overlap with it.
         x = 320
-        y = 320
+        y = 390
 
         state = self._get_simulation_state()
         events = self._get_event_info()
@@ -632,7 +635,7 @@ class LinkedListScreen(Screen):
 
             # Pointer label.
             label_surface = self.pointer_font.render(
-                f"{label} → node {target_index}",
+                f"{label} -> node {target_index}",
                 True,
                 color,
             )
