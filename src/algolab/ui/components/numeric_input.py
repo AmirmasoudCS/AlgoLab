@@ -32,24 +32,17 @@ class NumericInput:
             and self._active
         ):
             if event.key == pygame.K_RETURN:
-                try:
-                    value = int(self._text)
-
-                except ValueError:
-                    self._text = str(self.value)
-                    self._active = False
-                    return None
-
-                self.value = value
                 self._active = False
-
-                return value
+                return self.value
 
             if event.key == pygame.K_BACKSPACE:
                 self._text = self._text[:-1]
 
             elif event.unicode.isdigit():
                 self._text += event.unicode
+
+            if self._text:
+                self.value = int(self._text)
 
         return None
 
