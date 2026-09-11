@@ -5,6 +5,9 @@ from algolab.ui.screens.main_menu import MainMenuScreen
 from algolab.ui.screens.screen_manager import ScreenManager
 
 
+pygame.init()
+
+
 def create_screen():
     surface = pygame.Surface((1280, 720))
     screen_manager = ScreenManager()
