@@ -1,3 +1,5 @@
+import pytest
+
 from algolab.simulation.simulator import Simulator
 from algolab.simulation.state import SimulationState
 
@@ -7,6 +9,14 @@ def make_state(value, step=0):
         data=value,
         step=step,
     )
+
+
+def create_states() -> list[SimulationState]:
+    return [
+        SimulationState(data="A", step=0),
+        SimulationState(data="B", step=1),
+        SimulationState(data="C", step=2),
+    ]
 
 
 def test_simulator_starts_not_running():
@@ -73,88 +83,74 @@ def test_reset():
     assert simulator.state is None
     assert simulator.running is False
 
-import pytest
 
-from algolab.simulation.simulator import Simulator
-from algolab.simulation.state import SimulationState
-
-
-def create_states() -> list[SimulationState]:
-    return [
-        SimulationState(data="A", step=0),
-        SimulationState(data="B", step=1),
-        SimulationState(data="C", step=2),
-    ]
-
-
-def test_simulator_starts_with_first_state():
+def test_load_states_starts_at_first_state():
     simulator = Simulator()
     states = create_states()
 
-    simulator.start(states)
+    simulator.load_states(states)
 
-    assert simulator.state == states[0]
+    assert simulator.state is states[0]
 
 
-def test_simulator_moves_forward():
+def test_load_states_moves_forward():
     simulator = Simulator()
     states = create_states()
 
-    simulator.start(states)
+    simulator.load_states(states)
 
-    simulator.next()
+    assert simulator.next() is states[1]
+    assert simulator.next() is states[2]
 
-    assert simulator.state == states[1]
 
-
-def test_simulator_moves_backward():
+def test_load_states_moves_backward():
     simulator = Simulator()
     states = create_states()
 
-    simulator.start(states)
+    simulator.load_states(states)
 
     simulator.next()
-    simulator.previous()
+    simulator.next()
 
-    assert simulator.state == states[0]
+    assert simulator.previous() is states[1]
+    assert simulator.previous() is states[0]
 
 
-def test_simulator_cannot_move_beyond_last_state():
+def test_load_states_cannot_move_beyond_last_state():
     simulator = Simulator()
     states = create_states()
 
-    simulator.start(states)
+    simulator.load_states(states)
 
     simulator.next()
     simulator.next()
-    simulator.next()
 
-    assert simulator.state == states[-1]
+    assert simulator.next() is states[-1]
+    assert simulator.state is states[-1]
 
 
-def test_simulator_cannot_move_before_first_state():
+def test_load_states_cannot_move_before_first_state():
     simulator = Simulator()
     states = create_states()
 
-    simulator.start(states)
+    simulator.load_states(states)
 
-    simulator.previous()
+    assert simulator.previous() is states[0]
+    assert simulator.state is states[0]
 
-    assert simulator.state == states[0]
 
-
-def test_simulator_is_running_after_start():
+def test_load_states_is_running_after_load():
     simulator = Simulator()
 
-    simulator.start(create_states())
+    simulator.load_states(create_states())
 
     assert simulator.running is True
 
 
-def test_simulator_can_pause_and_resume():
+def test_load_states_can_pause_and_resume():
     simulator = Simulator()
 
-    simulator.start(create_states())
+    simulator.load_states(create_states())
 
     simulator.pause()
     assert simulator.running is False
@@ -162,59 +158,6 @@ def test_simulator_can_pause_and_resume():
     simulator.resume()
     assert simulator.running is True
 
-
-def test_simulator_reset():
-    simulator = Simulator()
-
-    simulator.start(create_states())
-    simulator.reset()
-
-    assert simulator.state is None
-    assert simulator.running is False
-
-
-def test_simulator_rejects_empty_state_list():
-    simulator = Simulator()
-
-    with pytest.raises(ValueError):
-        simulator.start([])
-
-def test_load_states_starts_at_first_state():
-    simulator = Simulator()
-
-    state_0 = make_state([1], 0)
-    state_1 = make_state([2], 1)
-    state_2 = make_state([3], 2)
-
-    simulator.load_states(
-        [
-            state_0,
-            state_1,
-            state_2,
-        ]
-    )
-
-    assert simulator.state is state_0
-
-def test_load_states_supports_navigation():
-    simulator = Simulator()
-
-    state_0 = make_state([1], 0)
-    state_1 = make_state([2], 1)
-    state_2 = make_state([3], 2)
-
-    simulator.load_states(
-        [
-            state_0,
-            state_1,
-            state_2,
-        ]
-    )
-
-    assert simulator.next() is state_1
-    assert simulator.next() is state_2
-    assert simulator.previous() is state_1
-    assert simulator.previous() is state_0
 
 def test_load_states_rejects_empty_list():
     simulator = Simulator()
