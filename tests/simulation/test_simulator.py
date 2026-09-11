@@ -72,3 +72,109 @@ def test_reset():
 
     assert simulator.state is None
     assert simulator.running is False
+
+import pytest
+
+from algolab.simulation.simulator import Simulator
+from algolab.simulation.state import SimulationState
+
+
+def create_states() -> list[SimulationState]:
+    return [
+        SimulationState(data="A", step=0),
+        SimulationState(data="B", step=1),
+        SimulationState(data="C", step=2),
+    ]
+
+
+def test_simulator_starts_with_first_state():
+    simulator = Simulator()
+    states = create_states()
+
+    simulator.start(states)
+
+    assert simulator.state == states[0]
+
+
+def test_simulator_moves_forward():
+    simulator = Simulator()
+    states = create_states()
+
+    simulator.start(states)
+
+    simulator.next()
+
+    assert simulator.state == states[1]
+
+
+def test_simulator_moves_backward():
+    simulator = Simulator()
+    states = create_states()
+
+    simulator.start(states)
+
+    simulator.next()
+    simulator.previous()
+
+    assert simulator.state == states[0]
+
+
+def test_simulator_cannot_move_beyond_last_state():
+    simulator = Simulator()
+    states = create_states()
+
+    simulator.start(states)
+
+    simulator.next()
+    simulator.next()
+    simulator.next()
+
+    assert simulator.state == states[-1]
+
+
+def test_simulator_cannot_move_before_first_state():
+    simulator = Simulator()
+    states = create_states()
+
+    simulator.start(states)
+
+    simulator.previous()
+
+    assert simulator.state == states[0]
+
+
+def test_simulator_is_running_after_start():
+    simulator = Simulator()
+
+    simulator.start(create_states())
+
+    assert simulator.running is True
+
+
+def test_simulator_can_pause_and_resume():
+    simulator = Simulator()
+
+    simulator.start(create_states())
+
+    simulator.pause()
+    assert simulator.running is False
+
+    simulator.resume()
+    assert simulator.running is True
+
+
+def test_simulator_reset():
+    simulator = Simulator()
+
+    simulator.start(create_states())
+    simulator.reset()
+
+    assert simulator.state is None
+    assert simulator.running is False
+
+
+def test_simulator_rejects_empty_state_list():
+    simulator = Simulator()
+
+    with pytest.raises(ValueError):
+        simulator.start([])
