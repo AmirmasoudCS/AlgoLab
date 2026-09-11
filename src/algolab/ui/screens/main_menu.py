@@ -77,10 +77,7 @@ class MainMenuScreen(Screen):
 
         if index == 0:
             self.screen_manager.set_screen(
-                AsymptoticScreen(
-                    self.surface,
-                    self.screen_manager,
-                )
+                AsymptoticScreen(self.surface)
             )
 
     def update(self, dt: float) -> None:
@@ -120,7 +117,11 @@ class MainMenuScreen(Screen):
                 border_radius=8,
             )
 
-            text_color = (255, 255, 255) if enabled else (120, 120, 120)
+            text_color = (
+                (255, 255, 255)
+                if enabled
+                else (120, 120, 120)
+            )
 
             text = self.font.render(
                 label,
