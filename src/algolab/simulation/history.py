@@ -53,3 +53,13 @@ class SimulationHistory:
     def clear(self) -> None:
         self._states.clear()
         self._current_index = -1
+
+    def previous_to_start(self) -> SimulationState | None:
+        """Move the current position to the first state."""
+
+        if not self._states:
+            return None
+
+        self._current_index = 0
+
+        return self.current
