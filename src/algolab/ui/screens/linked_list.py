@@ -365,7 +365,7 @@ class LinkedListScreen(Screen):
 
         pygame.draw.line(
             self.surface,
-            (180, 180, 180),
+            (100, 200, 140),
             (x + 25, 215),
             (x + 25, y),
             3,
@@ -402,17 +402,23 @@ class LinkedListScreen(Screen):
         for index, value in enumerate(values):
             node_x = x + index * (node_width + spacing)
 
-            if index == current_index:
-                background = (70, 100, 160)
-
-            elif index == created_index:
-                background = (70, 140, 90)
-
-            elif index == deleted_index:
+            if index == deleted_index:
                 background = (150, 70, 70)
 
+            elif index == created_index:
+                background = (70, 150, 100)
+
+            elif index == current_index:
+                background = (70, 105, 170)
+
+            elif index == 0:
+                background = (55, 110, 90)
+
+            elif index == len(values) - 1:
+                background = (105, 80, 50)
+
             else:
-                background = (55, 55, 55)
+                background = (55, 75, 110)
 
             rect = pygame.Rect(
                 node_x,
@@ -430,7 +436,7 @@ class LinkedListScreen(Screen):
 
             pygame.draw.rect(
                 self.surface,
-                (180, 180, 180),
+                (210, 210, 210),
                 rect,
                 2,
                 border_radius=8,
@@ -439,7 +445,7 @@ class LinkedListScreen(Screen):
             text = self.node_font.render(
                 str(value),
                 True,
-                (240, 240, 240),
+                (245, 245, 245),
             )
 
             text_rect = text.get_rect(
@@ -464,7 +470,7 @@ class LinkedListScreen(Screen):
 
                 pygame.draw.line(
                     self.surface,
-                    (180, 180, 180),
+                    (150, 180, 210),
                     start,
                     end,
                     3,
@@ -474,7 +480,7 @@ class LinkedListScreen(Screen):
 
                 pygame.draw.polygon(
                     self.surface,
-                    (180, 180, 180),
+                    (150, 180, 210),
                     [
                         (arrow_x, end[1] - 6),
                         (end[0], end[1]),
@@ -486,6 +492,7 @@ class LinkedListScreen(Screen):
             x
             + len(values) * (node_width + spacing)
             - spacing
+            + 15
         )
 
         self._draw_text(
