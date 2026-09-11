@@ -99,7 +99,7 @@ class LinkedListScreen(Screen):
             "<",
             ">",
             ">|",
-            "Pause",
+            "P",
         ]
 
         buttons = []
