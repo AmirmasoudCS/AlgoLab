@@ -3,6 +3,7 @@ import pygame
 from algolab.ui.screens.screen import Screen
 from algolab.ui.screens.screen_manager import ScreenManager
 from algolab.ui.screens.asymptotic import AsymptoticScreen
+from algolab.ui.screens.linked_list import LinkedListScreen
 
 
 class MainMenuScreen(Screen):
@@ -22,7 +23,7 @@ class MainMenuScreen(Screen):
 
         self.topic_buttons = [
             ("Asymptotic Notation", True),
-            ("Linked Lists", False),
+            ("Linked Lists", True),
             ("Stacks & Queues", False),
             ("Trees & Heaps", False),
             ("Graphs", False),
@@ -78,6 +79,11 @@ class MainMenuScreen(Screen):
         if index == 0:
             self.screen_manager.set_screen(
                 AsymptoticScreen(self.surface)
+            )
+
+        elif index == 1:
+            self.screen_manager.set_screen(
+                LinkedListScreen(self.surface)
             )
 
     def update(self, dt: float) -> None:
