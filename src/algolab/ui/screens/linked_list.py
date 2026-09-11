@@ -252,6 +252,9 @@ class LinkedListScreen(Screen):
         self.current_simulation.commit(self.model)
         self.operation_committed = True
 
+        self.current_simulation = None
+        self.simulator.reset()
+
     def update(self, dt: float) -> None:
         """Advance the simulation automatically while running."""
 
