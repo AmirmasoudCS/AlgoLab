@@ -549,6 +549,7 @@ class LinkedListSimulator:
         values: list[object],
         events: list[SimulationEvent],
         step: int,
+        description: str,
         current_index: int | None = None,
         created_index: int | None = None,
         deleted_index: int | None = None,
@@ -557,6 +558,7 @@ class LinkedListSimulator:
 
         data = LinkedListSimulationState(
             values=tuple(values),
+            description=description,
             current_index=current_index,
             created_index=created_index,
             deleted_index=deleted_index,
