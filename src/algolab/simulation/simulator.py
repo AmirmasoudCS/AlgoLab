@@ -13,6 +13,23 @@ class Simulator:
     def state(self) -> SimulationState | None:
         return self.history.current
 
+    @property
+    def can_go_backward(self) -> bool:
+        return self.history.can_go_backward
+
+    @property
+    def can_go_forward(self) -> bool:
+        return self.history.can_go_forward
+
+    @property
+    def is_at_end(self) -> bool:
+        """Return whether the simulation is at its final state."""
+
+        return (
+            self.state is not None
+            and not self.history.can_go_forward
+        )
+
     def start(self, initial_state: SimulationState) -> None:
         """Start a simulation from an initial state."""
 
