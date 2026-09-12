@@ -1,6 +1,4 @@
-import pytest
 
-from algolab.simulation.events import SimulationEvent
 from algolab.topics.stack.model import Stack
 from algolab.topics.stack.simulation import (
     CompleteStackOperationEvent,
