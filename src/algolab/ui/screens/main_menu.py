@@ -4,6 +4,7 @@ from algolab.ui.screens.screen import Screen
 from algolab.ui.screens.screen_manager import ScreenManager
 from algolab.ui.screens.asymptotic import AsymptoticScreen
 from algolab.ui.screens.linked_list import LinkedListScreen
+from algolab.ui.screens.stack import StackScreen
 
 
 class MainMenuScreen(Screen):
@@ -24,7 +25,8 @@ class MainMenuScreen(Screen):
         self.topic_buttons = [
             ("Asymptotic Notation", True),
             ("Linked Lists", True),
-            ("Stacks & Queues", False),
+            ("Stacks", True),
+            ("Queues", False),
             ("Trees & Heaps", False),
             ("Graphs", False),
             ("Sorting", False),
@@ -84,6 +86,11 @@ class MainMenuScreen(Screen):
         elif index == 1:
             self.screen_manager.set_screen(
                 LinkedListScreen(self.surface)
+            )
+
+        elif index == 2:
+            self.screen_manager.set_screen(
+                StackScreen(self.surface)
             )
 
     def update(self, dt: float) -> None:
