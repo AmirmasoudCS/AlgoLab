@@ -161,12 +161,12 @@ def test_insert_at_end_empty_list():
 
 
 def test_insert_at_middle_simulation():
-    model = create_model([10, 30, 40])
+    model = create_model([10, 20, 40])
     simulator = LinkedListSimulator(model)
 
     simulation = simulator.insert_at(
-        index=1,
-        data=20,
+        index=2,
+        data=30,
     )
 
     assert isinstance(
@@ -174,28 +174,79 @@ def test_insert_at_middle_simulation():
         InsertAtOperation,
     )
 
-    assert len(simulation.states) == 5
+    assert len(simulation.states) == 7
 
+    # Initial
     assert simulation.states[0].data.values == (
         10,
-        30,
+        20,
         40,
     )
 
-    assert isinstance(
-        simulation.states[1].events[0],
-        VisitNodeEvent,
+    # Traverse to previous/current
+    assert simulation.states[1].data.current_index == 0
+    assert simulation.states[2].data.current_index == 1
+
+    # Create detached NEW
+    create_state = simulation.states[3]
+
+    assert create_state.data.values == (
+        10,
+        20,
+        40,
     )
-    assert simulation.states[1].events[0].index == 0
+    assert create_state.data.created_index == 2
+    assert create_state.data.created_data == 30
+    assert create_state.data.created_next_index is None
 
     assert isinstance(
-        simulation.states[2].events[0],
+        create_state.events[0],
         CreateNodeEvent,
     )
-    assert simulation.states[2].events[0].index == 1
-    assert simulation.states[2].events[0].data == 20
+    assert create_state.events[0].index == 2
+    assert create_state.events[0].data == 30
 
-    assert simulation.states[3].data.values == (
+    # NEW -> CURRENT
+    connect_new_state = simulation.states[4]
+
+    assert connect_new_state.data.values == (
+        10,
+        20,
+        40,
+    )
+    assert connect_new_state.data.created_index == 2
+    assert connect_new_state.data.created_data == 30
+    assert connect_new_state.data.created_next_index == 2
+
+    assert isinstance(
+        connect_new_state.events[0],
+        UpdateLinkEvent,
+    )
+    assert connect_new_state.events[0].index == 2
+    assert connect_new_state.events[0].next_index == 2
+
+    # PREVIOUS -> NEW
+    connect_previous_state = simulation.states[5]
+
+    assert connect_previous_state.data.values == (
+        10,
+        20,
+        30,
+        40,
+    )
+    assert connect_previous_state.data.current_index == 3
+
+    assert isinstance(
+        connect_previous_state.events[0],
+        UpdateLinkEvent,
+    )
+    assert connect_previous_state.events[0].index == 1
+    assert connect_previous_state.events[0].next_index == 2
+
+    # Complete
+    complete_state = simulation.states[6]
+
+    assert complete_state.data.values == (
         10,
         20,
         30,
@@ -203,11 +254,12 @@ def test_insert_at_middle_simulation():
     )
 
     assert isinstance(
-        simulation.states[3].events[0],
-        UpdateLinkEvent,
+        complete_state.events[0],
+        CompleteOperationEvent,
     )
-    assert simulation.states[3].events[0].index == 0
-    assert simulation.states[3].events[0].next_index == 1
+    assert complete_state.events[0].operation == (
+        "insert_at"
+    )
 
 
 def test_insert_at_zero_uses_beginning_simulation():
