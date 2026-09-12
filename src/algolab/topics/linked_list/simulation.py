@@ -31,6 +31,7 @@ class LinkedListSimulationState:
     current_index: int | None = None
     created_index: int | None = None
     created_data: object | None = None
+    created_next_index: int | None = None
     deleted_index: int | None = None
 
 
@@ -380,6 +381,10 @@ class LinkedListSimulator:
                 )
             )
 
+        # ------------------------------------------------------------
+        # Create NEW as a detached node.
+        # ------------------------------------------------------------
+
         states.append(
             self._create_state(
                 values=values,
@@ -407,11 +412,63 @@ class LinkedListSimulator:
             )
         )
 
+        # ------------------------------------------------------------
+        # Connect NEW to CURRENT.
+        #
+        # The actual linked-list values have not changed yet.
+        # NEW is still detached from the chain, but it now has:
+        #
+        #     NEW -> CURRENT
+        #
+        # ------------------------------------------------------------
+
+        states.append(
+            self._create_state(
+                values=values,
+                events=[
+                    UpdateLinkEvent(
+                        index=index,
+                        next_index=index,
+                    ),
+                    UpdatePointerEvent(
+                        name="previous",
+                        index=index - 1,
+                    ),
+                    UpdatePointerEvent(
+                        name="current",
+                        index=index,
+                    ),
+                    UpdatePointerEvent(
+                        name="new",
+                        index=index,
+                    ),
+                ],
+                step=len(states),
+                description=(
+                    f"Set the new node's next pointer "
+                    f"to node {index}."
+                ),
+                current_index=index,
+                created_index=index,
+                created_data=data,
+                created_next_index=index,
+            )
+        )
+
         new_values = [
             *values[:index],
             data,
             *values[index:],
         ]
+
+        # ------------------------------------------------------------
+        # Connect PREVIOUS to NEW.
+        #
+        # The new node now becomes part of the actual chain.
+        #
+        #     PREVIOUS -> NEW -> CURRENT
+        #
+        # ------------------------------------------------------------
 
         states.append(
             self._create_state(
@@ -426,6 +483,10 @@ class LinkedListSimulator:
                         index=index - 1,
                     ),
                     UpdatePointerEvent(
+                        name="current",
+                        index=index + 1,
+                    ),
+                    UpdatePointerEvent(
                         name="new",
                         index=index,
                     ),
@@ -435,6 +496,7 @@ class LinkedListSimulator:
                     f"Update node {index - 1}'s next pointer "
                     f"to point to the new node."
                 ),
+                current_index=index + 1,
             )
         )
 
@@ -730,6 +792,7 @@ class LinkedListSimulator:
         current_index: int | None = None,
         created_index: int | None = None,
         created_data: object | None = None,
+        created_next_index: int | None = None,
         deleted_index: int | None = None,
     ) -> SimulationState:
         """Create a snapshot of the current simulation state."""
@@ -740,6 +803,7 @@ class LinkedListSimulator:
             current_index=current_index,
             created_index=created_index,
             created_data=created_data,
+            created_next_index=created_next_index,
             deleted_index=deleted_index,
         )
 
