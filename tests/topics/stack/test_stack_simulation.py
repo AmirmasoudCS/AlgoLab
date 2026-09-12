@@ -120,8 +120,9 @@ def test_pop_creates_expected_states():
     assert initial.values == (1, 2, 3)
     assert initial.top_index == 2
 
-    assert removed.values == (1, 2, 3)
-    assert removed.top_index == 2
+    # The removed item is already outside the stack in this state.
+    assert removed.values == (1, 2)
+    assert removed.top_index == 1
     assert removed.removed_value == 3
 
     assert popped.values == (1, 2)
@@ -137,13 +138,24 @@ def test_pop_single_item_moves_top_to_none():
 
     simulation = StackSimulator(stack).pop()
 
-    assert simulation.states[0].data.top_index == 0
-    assert simulation.states[1].data.top_index == 0
+    initial = simulation.states[0].data
+    removed = simulation.states[1].data
+    popped = simulation.states[2].data
+    complete = simulation.states[3].data
 
-    assert simulation.states[2].data.values == ()
-    assert simulation.states[2].data.top_index is None
+    assert initial.values == (10,)
+    assert initial.top_index == 0
 
-    assert simulation.states[3].data.top_index is None
+    # The item is already outside the stack in the removal state.
+    assert removed.values == ()
+    assert removed.top_index is None
+    assert removed.removed_value == 10
+
+    assert popped.values == ()
+    assert popped.top_index is None
+
+    assert complete.values == ()
+    assert complete.top_index is None
 
 
 def test_pop_empty_stack_creates_empty_operation_state():
