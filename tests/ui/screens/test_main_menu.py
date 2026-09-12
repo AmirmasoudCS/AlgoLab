@@ -71,10 +71,10 @@ def test_clicking_asymptotic_notation_opens_asymptotic_screen():
     )
 
 
-def test_clicking_disabled_topic_does_nothing():
+def test_clicking_disabled_queue_does_nothing():
     _, screen_manager, screen = create_screen()
 
-    rect, enabled = screen.button_rects[2]
+    rect, enabled = screen.button_rects[3]
 
     assert enabled is False
 
