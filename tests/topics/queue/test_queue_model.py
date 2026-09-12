@@ -106,11 +106,10 @@ def test_peek_returns_front_without_removing():
 def test_peek_empty_queue_raises_error():
     queue = Queue()
 
-    with pytest.raises(
-        IndexError,
-        match="Cannot peek from an empty queue\\.",
-    ):
+    with pytest.raises(IndexError) as error:
         queue.peek()
+
+    assert str(error.value) == "Cannot peek at an empty queue."
 
 
 def test_clear_removes_all_items():

@@ -87,8 +87,7 @@ def test_peek_operation_on_empty_queue_raises_error():
     queue = Queue()
     operation = PeekOperation()
 
-    with pytest.raises(
-        IndexError,
-        match="Cannot peek from an empty queue\\.",
-    ):
+    with pytest.raises(IndexError) as error:
         operation.commit(queue)
+
+    assert str(error.value) == "Cannot peek at an empty queue."
