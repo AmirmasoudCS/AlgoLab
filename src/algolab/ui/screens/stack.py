@@ -5,13 +5,8 @@ import pygame
 from algolab.simulation.simulator import Simulator
 from algolab.topics.stack.model import Stack
 from algolab.topics.stack.simulation import (
-    CompleteStackOperationEvent,
-    PeekItemEvent,
-    PopItemEvent,
-    PushItemEvent,
     StackSimulation,
     StackSimulator,
-    UpdateTopEvent,
 )
 from algolab.ui.components.button import Button
 from algolab.ui.components.numeric_input import NumericInput
@@ -51,6 +46,17 @@ class StackScreen(Screen):
 
         # A longer interval gives students time to understand each step.
         self.step_interval = 1.8
+
+        # Stack visual layout.
+        self.stack_x = 610
+        self.stack_width = 150
+        self.item_height = 55
+        self.item_spacing = 10
+        self.stack_first_y = 300
+
+        # TOP pointer layout.
+        self.pointer_x = self.stack_x - 130
+        self.pointer_start_y = self.stack_first_y - 30
 
     def _create_operation_buttons(self) -> list[Button]:
         labels = [
@@ -398,19 +404,6 @@ class StackScreen(Screen):
 
         return self.simulator.state.data
 
-    def _get_event_info(self):
-        state = self.simulator.state
-
-        if state is None:
-            return None
-
-        events = state.events
-
-        if not events:
-            return None
-
-        return events
-
     def _render_stack(self) -> None:
         """
         Render the stack vertically.
@@ -421,12 +414,9 @@ class StackScreen(Screen):
         """
 
         values = tuple(self.model.to_list())
-
         state = self._get_simulation_state()
-        events = self._get_event_info()
 
-        top_index: int | None
-
+        top_index: int | None = None
         created_value = None
         removed_value = None
         peeked_value = None
@@ -446,25 +436,6 @@ class StackScreen(Screen):
             removed_value = state.removed_value
             peeked_value = state.peeked_value
 
-            if events:
-                for event in events:
-                    if isinstance(event, UpdateTopEvent):
-                        top_index = event.index
-
-                    elif isinstance(event, PushItemEvent):
-                        created_value = event.value
-
-                    elif isinstance(event, PopItemEvent):
-                        removed_value = event.value
-
-                    elif isinstance(event, PeekItemEvent):
-                        peeked_value = event.value
-
-        self._render_top_pointer(
-            top_index,
-            values,
-        )
-
         self._render_stack_items(
             values=values,
             top_index=top_index,
@@ -473,50 +444,58 @@ class StackScreen(Screen):
             peeked_value=peeked_value,
         )
 
+        self._render_top_pointer(
+            top_index=top_index,
+            values=values,
+        )
+
     def _render_top_pointer(
         self,
         top_index: int | None,
         values: tuple[object, ...],
     ) -> None:
-        """
-        Render the TOP pointer.
-
-        TOP is always derived from the simulation's top_index.
-        """
-
-        stack_x = 500
-        stack_width = 150
-        item_height = 55
-        item_spacing = 10
-
-        pointer_x = stack_x - 130
-
-        self._draw_text(
-            "TOP",
-            (pointer_x, 225),
-            self.control_font,
-        )
+        """Render the TOP pointer for the current simulation state."""
 
         if top_index is None or not values:
-            null_y = 285
+            null_start = (
+                self.pointer_x + 25,
+                self.pointer_start_y,
+            )
+
+            null_end = (
+                self.pointer_x + 25,
+                self.stack_first_y + 10,
+            )
+
+            self._draw_text(
+                "TOP",
+                (
+                    self.pointer_x,
+                    self.pointer_start_y - 30,
+                ),
+                self.control_font,
+            )
 
             pygame.draw.line(
                 self.surface,
                 (100, 200, 140),
-                (pointer_x + 25, 255),
-                (pointer_x + 25, null_y),
+                null_start,
+                null_end,
                 3,
             )
 
             self._draw_arrow_head(
-                (pointer_x + 25, null_y),
+                null_end,
                 (100, 200, 140),
                 "down",
             )
 
             self._draw_text(
                 "NULL",
-                (pointer_x + 40, null_y - 10),
+                (
+                    self.pointer_x + 40,
+                    null_end[1] - 10,
+                ),
                 self.pointer_font,
             )
 
@@ -528,19 +507,25 @@ class StackScreen(Screen):
         top_y = self._get_item_y(
             top_index,
             len(values),
-            item_height,
-            item_spacing,
-            285,
         )
 
         start = (
-            pointer_x + 25,
-            255,
+            self.pointer_x + 25,
+            self.pointer_start_y,
         )
 
         end = (
-            stack_x - 10,
-            top_y + item_height // 2,
+            self.stack_x - 10,
+            top_y + self.item_height // 2,
+        )
+
+        self._draw_text(
+            "TOP",
+            (
+                self.pointer_x,
+                self.pointer_start_y - 30,
+            ),
+            self.control_font,
         )
 
         pygame.draw.line(
@@ -559,7 +544,10 @@ class StackScreen(Screen):
 
         self._draw_text(
             f"item {top_index}",
-            (pointer_x - 5, 270),
+            (
+                self.pointer_x - 5,
+                self.pointer_start_y + 10,
+            ),
             self.pointer_font,
         )
 
@@ -571,20 +559,11 @@ class StackScreen(Screen):
         removed_value: object | None,
         peeked_value: object | None,
     ) -> None:
-        stack_x = 500
-        stack_width = 150
-        item_height = 55
-        item_spacing = 10
-        first_y = 285
-
         if values:
             for index, value in enumerate(values):
                 y = self._get_item_y(
                     index,
                     len(values),
-                    item_height,
-                    item_spacing,
-                    first_y,
                 )
 
                 background = (65, 85, 115)
@@ -600,10 +579,10 @@ class StackScreen(Screen):
                     background = (100, 135, 200)
 
                 self._draw_stack_item(
-                    x=stack_x,
+                    x=self.stack_x,
                     y=y,
-                    width=stack_width,
-                    height=item_height,
+                    width=self.stack_width,
+                    height=self.item_height,
                     index=index,
                     value=value,
                     background=background,
@@ -615,10 +594,10 @@ class StackScreen(Screen):
         # the new item must NOT be rendered as part of the stack yet.
         if created_value is not None:
             self._render_detached_item(
-                x=stack_x,
-                y=first_y - 85,
-                width=stack_width,
-                height=item_height,
+                x=self.stack_x,
+                y=self.stack_first_y - 90,
+                width=self.stack_width,
+                height=self.item_height,
                 label="NEW",
                 value=created_value,
                 background=(65, 150, 105),
@@ -626,7 +605,7 @@ class StackScreen(Screen):
 
         # A POP item is rendered separately while it is being removed.
         if removed_value is not None:
-            removed_y = first_y
+            removed_y = self.stack_first_y
 
             if values:
                 removed_index = len(values) - 1
@@ -634,16 +613,13 @@ class StackScreen(Screen):
                 removed_y = self._get_item_y(
                     removed_index,
                     len(values),
-                    item_height,
-                    item_spacing,
-                    first_y,
                 )
 
             self._render_detached_item(
-                x=stack_x + stack_width + 80,
+                x=self.stack_x + self.stack_width + 100,
                 y=removed_y,
-                width=stack_width,
-                height=item_height,
+                width=self.stack_width,
+                height=self.item_height,
                 label="REMOVED",
                 value=removed_value,
                 background=(165, 75, 75),
@@ -779,9 +755,6 @@ class StackScreen(Screen):
         self,
         index: int,
         value_count: int,
-        item_height: int,
-        item_spacing: int,
-        first_y: int,
     ) -> int:
         """
         Convert a stack index into a screen Y coordinate.
@@ -789,12 +762,10 @@ class StackScreen(Screen):
         Index 0 is the bottom item. The largest index is the top item.
         """
 
-        top_y = first_y
-
         return (
-            top_y
+            self.stack_first_y
             + (value_count - 1 - index)
-            * (item_height + item_spacing)
+            * (self.item_height + self.item_spacing)
         )
 
     def _draw_arrow_head(
