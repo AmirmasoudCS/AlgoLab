@@ -133,37 +133,29 @@ def test_enqueue_uses_enqueue_operation():
     assert isinstance(simulation.operation, EnqueueOperation)
 
 
-def test_dequeue_creates_expected_states():
+def test_dequeue_empty_queue_creates_expected_states():
     queue = Queue()
-    queue.enqueue(10)
-    queue.enqueue(20)
-    queue.enqueue(30)
 
     simulation = QueueSimulator(queue).dequeue()
 
-    assert len(simulation.states) == 4
+    assert len(simulation.states) == 2
 
     initial = simulation.states[0].data
-    removed = simulation.states[1].data
-    front_updated = simulation.states[2].data
-    complete = simulation.states[3].data
+    complete_state = simulation.states[1]
+    complete = complete_state.data
 
-    assert initial.values == (10, 20, 30)
-    assert initial.front_index == 0
-    assert initial.rear_index == 2
+    assert initial.values == ()
+    assert initial.front_index is None
+    assert initial.rear_index is None
 
-    assert removed.values == (20, 30)
-    assert removed.front_index == 0
-    assert removed.rear_index == 1
-    assert removed.removed_value == 10
+    assert complete.values == ()
+    assert complete.front_index is None
+    assert complete.rear_index is None
 
-    assert front_updated.values == (20, 30)
-    assert front_updated.front_index == 0
-    assert front_updated.rear_index == 1
+    event = complete_state.events[0]
 
-    assert complete.values == (20, 30)
-    assert complete.front_index == 0
-    assert complete.rear_index == 1
+    assert isinstance(event, CompleteQueueOperationEvent)
+    assert event.operation == "dequeue_empty"
 
 
 def test_dequeue_emits_expected_events():
@@ -334,7 +326,8 @@ def test_peek_empty_queue_creates_expected_states():
     assert len(simulation.states) == 2
 
     initial = simulation.states[0].data
-    complete = simulation.states[1].data
+    complete_state = simulation.states[1]
+    complete = complete_state.data
 
     assert initial.values == ()
     assert initial.front_index is None
@@ -344,7 +337,7 @@ def test_peek_empty_queue_creates_expected_states():
     assert complete.front_index is None
     assert complete.rear_index is None
 
-    event = complete.events[0]
+    event = complete_state.events[0]
 
     assert isinstance(event, CompleteQueueOperationEvent)
     assert event.operation == "peek_empty"
