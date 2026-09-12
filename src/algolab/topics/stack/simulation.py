@@ -200,9 +200,13 @@ class StackSimulator:
 
         removed_value = values[-1]
 
+        # The item is considered removed from the stack immediately.
+        new_values = values[:-1]
+        new_top_index = len(new_values) - 1 if new_values else None
+
         states.append(
             self._create_state(
-                values=values,
+                values=new_values,
                 events=[
                     PopItemEvent(
                         value=removed_value,
@@ -213,13 +217,10 @@ class StackSimulator:
                     f"Remove the top item containing {removed_value} "
                     "from the stack."
                 ),
-                top_index=current_top_index,
+                top_index=new_top_index,
                 removed_value=removed_value,
             )
         )
-
-        new_values = values[:-1]
-        new_top_index = len(new_values) - 1 if new_values else None
 
         states.append(
             self._create_state(
@@ -247,7 +248,9 @@ class StackSimulator:
                     )
                 ],
                 step=3,
-                description=f"Pop operation is complete. Removed {removed_value}.",
+                description=(
+                    f"Pop operation is complete. Removed {removed_value}."
+                ),
                 top_index=new_top_index,
             )
         )
