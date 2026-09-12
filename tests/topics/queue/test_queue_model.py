@@ -1,3 +1,5 @@
+import pytest
+
 from algolab.topics.queue.model import Queue
 
 
@@ -104,11 +106,11 @@ def test_peek_returns_front_without_removing():
 def test_peek_empty_queue_raises_error():
     queue = Queue()
 
-    try:
+    with pytest.raises(
+        IndexError,
+        match="Cannot peek from an empty queue\\.",
+    ):
         queue.peek()
-        assert False
-    except IndexError as error:
-        assert str(error) == "Cannot peek at the front of an empty queue."
 
 
 def test_clear_removes_all_items():

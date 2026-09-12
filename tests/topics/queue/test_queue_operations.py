@@ -89,6 +89,6 @@ def test_peek_operation_on_empty_queue_raises_error():
 
     with pytest.raises(
         IndexError,
-        match="Cannot peek at the front of an empty queue.",
+        match="Cannot peek from an empty queue\\.",
     ):
         operation.commit(queue)
