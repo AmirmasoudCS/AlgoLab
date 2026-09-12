@@ -5,7 +5,6 @@ from algolab.topics.stack.simulation import (
     PeekItemEvent,
     PopItemEvent,
     PushItemEvent,
-    StackSimulation,
     StackSimulationState,
     StackSimulator,
     UpdateTopEvent,
