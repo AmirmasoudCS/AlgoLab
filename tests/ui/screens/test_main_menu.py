@@ -2,6 +2,7 @@ import pygame
 
 from algolab.ui.screens.asymptotic import AsymptoticScreen
 from algolab.ui.screens.main_menu import MainMenuScreen
+from algolab.ui.screens.queue import QueueScreen
 from algolab.ui.screens.screen_manager import ScreenManager
 
 
@@ -71,12 +72,12 @@ def test_clicking_asymptotic_notation_opens_asymptotic_screen():
     )
 
 
-def test_clicking_disabled_queue_does_nothing():
+def test_clicking_queue_opens_queue_screen():
     _, screen_manager, screen = create_screen()
 
     rect, enabled = screen.button_rects[3]
 
-    assert enabled is False
+    assert enabled is True
 
     event = pygame.event.Event(
         pygame.MOUSEBUTTONDOWN,
@@ -88,4 +89,7 @@ def test_clicking_disabled_queue_does_nothing():
 
     screen.handle_event(event)
 
-    assert screen_manager.current_screen is None
+    assert isinstance(
+        screen_manager.current_screen,
+        QueueScreen,
+    )
