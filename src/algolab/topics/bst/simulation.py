@@ -248,6 +248,7 @@ class BSTSimulator:
                 )
             )
 
+            # Duplicate value.
             if value == current.value:
                 states.append(
                     self._create_state(
@@ -268,6 +269,7 @@ class BSTSimulator:
                     should_commit=False,
                 )
 
+            # Insert into the left subtree.
             if value < current.value:
                 if current.left is not None:
                     current = current.left
@@ -336,6 +338,7 @@ class BSTSimulator:
                     operation=InsertOperation(value),
                 )
 
+            # Insert into the right subtree.
             if current.right is not None:
                 current = current.right
                 continue
@@ -483,16 +486,13 @@ class BSTSimulator:
             else:
                 current = current.right
 
-        not_found_description = (
-            f"Value {value} is not present in the tree."
-        )
-
         states.append(
             self._create_state(
                 root=root,
                 step=len(states),
-                description=not_found_description,
-                events=[],
+                description=(
+                    f"Value {value} is not present in the tree."
+                ),
             )
         )
 
@@ -515,6 +515,7 @@ class BSTSimulator:
         return BSTSimulation(
             states=tuple(states),
             operation=SearchOperation(value),
+            should_commit=False,
         )
 
     # --------------------------------------------------------
@@ -554,6 +555,7 @@ class BSTSimulator:
             return BSTSimulation(
                 states=tuple(states),
                 operation=DeleteOperation(value),
+                should_commit=False,
             )
 
         parent: _SimulationNode | None = None
@@ -615,6 +617,7 @@ class BSTSimulator:
             return BSTSimulation(
                 states=tuple(states),
                 operation=DeleteOperation(value),
+                should_commit=False,
             )
 
         # Case 1: leaf node.
@@ -904,6 +907,7 @@ class BSTSimulator:
             return BSTSimulation(
                 states=tuple(states),
                 operation=FindMinOperation(),
+                should_commit=False,
             )
 
         current = root
@@ -1005,6 +1009,7 @@ class BSTSimulator:
             return BSTSimulation(
                 states=tuple(states),
                 operation=FindMaxOperation(),
+                should_commit=False,
             )
 
         current = root
@@ -1075,6 +1080,7 @@ class BSTSimulator:
 
     def in_order(self) -> BSTSimulation:
         """Create a simulation for in-order traversal."""
+
         return self._traversal(
             operation=InOrderTraversalOperation(),
             traversal_name="in-order",
@@ -1083,6 +1089,7 @@ class BSTSimulator:
 
     def pre_order(self) -> BSTSimulation:
         """Create a simulation for pre-order traversal."""
+
         return self._traversal(
             operation=PreOrderTraversalOperation(),
             traversal_name="pre-order",
@@ -1091,6 +1098,7 @@ class BSTSimulator:
 
     def post_order(self) -> BSTSimulation:
         """Create a simulation for post-order traversal."""
+
         return self._traversal(
             operation=PostOrderTraversalOperation(),
             traversal_name="post-order",
