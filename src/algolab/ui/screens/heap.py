@@ -72,7 +72,7 @@ class HeapScreen(Screen):
         buttons = []
 
         x = 25
-        y = 145
+        y = 195
         width = 220
         height = 34
         spacing = 38
