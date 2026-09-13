@@ -118,19 +118,17 @@ class HeapScreen(Screen):
 
         return buttons
 
-    def _create_heap_type_buttons(self) -> tuple[Button, Button]:
-        return (
+    def _create_heap_type_buttons(self) -> list[Button]:
+        return [
             Button(
-                pygame.Rect(25, 95, 105, 34),
+                pygame.Rect(15, 115, 110, 34),
                 "Min Heap",
-                enabled=True,
             ),
             Button(
-                pygame.Rect(140, 95, 105, 34),
+                pygame.Rect(130, 115, 105, 34),
                 "Max Heap",
-                enabled=True,
             ),
-        )
+        ]
 
     # ------------------------------------------------------------------
     # Event handling
