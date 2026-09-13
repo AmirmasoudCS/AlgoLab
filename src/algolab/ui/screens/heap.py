@@ -307,63 +307,55 @@ class HeapScreen(Screen):
 
         self._draw_text(
             "TA Controls",
-            (25, 80),
             self.control_font,
+            (25, 80),
         )
 
+        # Heap type
         self._draw_text(
             "Heap Type",
-            (25, 115),
             self.section_font,
+            (25, 115),
         )
 
-        if not hasattr(self, "min_heap_button"):
-            (
-                self.min_heap_button,
-                self.max_heap_button,
-            ) = self._create_heap_type_buttons()
+        for button in self.heap_type_buttons:
+            button.render(self.surface)
 
-        self.min_heap_button.render(self.surface)
-        self.max_heap_button.render(self.surface)
-
+        # Operations
         self._draw_text(
             "Operations",
-            (25, 140),
             self.section_font,
+            (25, 165),
         )
 
         for button in self.operation_buttons:
             button.render(self.surface)
 
+        # Value input
         self._draw_text(
             "Value:",
-            (25, 410),
-            self.section_font,
+            self.control_font,
+            (25, 405),
         )
 
         self.value_input.render(self.surface)
 
+        # Simulation
         self._draw_text(
             "Simulation",
-            (25, 495),
             self.section_font,
+            (25, 490),
         )
 
         for button in self.navigation_buttons:
             button.render(self.surface)
 
-        if self.current_simulation is not None:
-            state = self.simulator.state
-
-            if state is not None:
-                self._draw_text(
-                    (
-                        f"Step: {state.step + 1}/"
-                        f"{len(self.current_simulation.states)}"
-                    ),
-                    (25, 575),
-                    self.small_font,
-                )
+        self._draw_text(
+            f"Step: {self.simulator.current_index + 1} / "
+            f"{len(self.simulator.states)}",
+            self.small_font,
+            (25, 570),
+        )
 
     def _render_explanation_panel(self) -> None:
         panel_rect = pygame.Rect(
