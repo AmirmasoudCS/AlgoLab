@@ -7,7 +7,7 @@ from algolab.ui.screens.linked_list import LinkedListScreen
 from algolab.ui.screens.queue import QueueScreen
 from algolab.ui.screens.stack import StackScreen
 from algolab.ui.screens.bst import BSTScreen
-from algolab.ui.screens.heap import Heap
+from algolab.ui.screens.heap import HeapScreen
 
 
 class MainMenuScreen(Screen):
@@ -109,7 +109,7 @@ class MainMenuScreen(Screen):
 
         elif index == 5:
             self.screen_manager.set_screen(
-                Heap(self.surface)
+                HeapScreen(self.surface)
             )
 
     def update(self, dt: float) -> None:
