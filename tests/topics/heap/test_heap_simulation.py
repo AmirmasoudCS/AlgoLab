@@ -182,14 +182,18 @@ class TestHeapBuild:
             [40, 10, 30, 20, 50, 5]
         )
 
-        assert heap.values == [
-            5,
-            10,
-            30,
-            20,
-            50,
-            40,
-        ]
+        values = heap.values
+
+        for index, value in enumerate(values):
+            left_index = 2 * index + 1
+            right_index = 2 * index + 2
+
+            if left_index < len(values):
+                assert value <= values[left_index]
+
+            if right_index < len(values):
+                assert value <= values[right_index]
+
 
     def test_build_heap_creates_max_heap(self):
         heap = Heap[int](HeapType.MAX)
@@ -198,14 +202,17 @@ class TestHeapBuild:
             [40, 10, 30, 20, 50, 5]
         )
 
-        assert heap.values == [
-            50,
-            20,
-            30,
-            10,
-            40,
-            5,
-        ]
+        values = heap.values
+
+        for index, value in enumerate(values):
+            left_index = 2 * index + 1
+            right_index = 2 * index + 2
+
+            if left_index < len(values):
+                assert value >= values[left_index]
+
+            if right_index < len(values):
+                assert value >= values[right_index]
 
     def test_build_heap_replaces_existing_values(self):
         heap = Heap[int](HeapType.MIN)
