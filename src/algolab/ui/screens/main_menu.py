@@ -6,6 +6,7 @@ from algolab.ui.screens.asymptotic import AsymptoticScreen
 from algolab.ui.screens.linked_list import LinkedListScreen
 from algolab.ui.screens.queue import QueueScreen
 from algolab.ui.screens.stack import StackScreen
+from algolab.ui.screens.bst import BSTScreen
 
 
 class MainMenuScreen(Screen):
@@ -28,7 +29,7 @@ class MainMenuScreen(Screen):
             ("Linked Lists", True),
             ("Stacks", True),
             ("Queues", True),
-            ("Trees & Heaps", False),
+            ("Trees & Heaps", True),
             ("Graphs", False),
             ("Sorting", False),
             ("Hash Tables & Sets", False),
@@ -97,6 +98,11 @@ class MainMenuScreen(Screen):
         elif index == 3:
             self.screen_manager.set_screen(
                 QueueScreen(self.surface)
+            )
+
+        elif index == 4:
+            self.screen_manager.set_screen(
+                BSTScreen(self.surface)
             )
 
     def update(self, dt: float) -> None:
