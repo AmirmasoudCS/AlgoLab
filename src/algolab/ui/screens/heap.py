@@ -320,8 +320,15 @@ class HeapScreen(Screen):
             (25, 115),
         )
 
-        for button in self.heap_type_buttons:
-            button.render(self.surface)
+        self._render_heap_type_button(
+            self.heap_type_buttons[0],
+            self.model.heap_type is HeapType.MIN,
+        )
+
+        self._render_heap_type_button(
+            self.heap_type_buttons[1],
+            self.model.heap_type is HeapType.MAX,
+        )
 
         # Operations
         self._draw_text(
