@@ -2,11 +2,16 @@ from __future__ import annotations
 
 import pygame
 
+from algolab.simulation.events import SimulationEvent
 from algolab.topics.heap.model import Heap, HeapType
 from algolab.topics.heap.simulation import (
+    CompareHeapElementsEvent,
+    CreateHeapElementEvent,
+    ExtractHeapElementEvent,
     HeapSimulation,
-    HeapSimulationState,
     HeapSimulator,
+    MoveLastElementEvent,
+    SwapHeapElementsEvent,
 )
 from algolab.ui.components.button import Button
 from algolab.ui.components.numeric_input import NumericInput
@@ -14,161 +19,258 @@ from algolab.ui.screens.screen import Screen
 
 
 class HeapScreen(Screen):
-    """Screen for visualizing binary heap operations."""
+    """Screen for interacting with and visualizing a binary heap."""
 
-    BACKGROUND = (245, 245, 245)
-    PANEL = (255, 255, 255)
-    BORDER = (210, 210, 210)
-    TEXT = (35, 35, 35)
-    MUTED_TEXT = (100, 100, 100)
-
-    NODE = (225, 235, 245)
-    NODE_BORDER = (80, 110, 140)
-
-    COMPARE = (255, 220, 120)
-    SWAP = (255, 150, 120)
-    CREATED = (150, 220, 170)
-    EXTRACTED = (240, 150, 150)
-
-    BUTTON = (220, 225, 230)
-    BUTTON_HOVER = (200, 210, 220)
-
-    def __init__(
-        self,
-        surface: pygame.Surface,
-    ) -> None:
+    def __init__(self, surface: pygame.Surface) -> None:
         super().__init__(surface)
 
-        self.model = Heap[int](HeapType.MIN)
-        self.simulator = HeapSimulator(self.model)
+        self.heap = Heap[int](HeapType.MIN)
 
-        self.current_simulation: HeapSimulation | None = None
-        self.current_step = 0
+        self.simulation: HeapSimulation | None = None
+        self.simulation_index = 0
 
-        self.operation_committed = False
-        self.status_message: str | None = None
-
-        self.font = pygame.font.Font(None, 28)
+        self.title_font = pygame.font.Font(None, 42)
+        self.text_font = pygame.font.Font(None, 26)
         self.small_font = pygame.font.Font(None, 22)
-        self.title_font = pygame.font.Font(None, 40)
 
-        self.input_box = NumericInput(
-            pygame.Rect(30, 95, 130, 42),
+        self._create_components()
+
+    def _create_components(self) -> None:
+        """Create the controls used by the screen."""
+
+        self.min_heap_button = Button(
+            pygame.Rect(30, 80, 120, 42),
+            "Min Heap",
+        )
+
+        self.max_heap_button = Button(
+            pygame.Rect(160, 80, 120, 42),
+            "Max Heap",
+        )
+
+        self.value_input = NumericInput(
+            pygame.Rect(30, 140, 120, 40),
+            10,
         )
 
         self.insert_button = Button(
-            pygame.Rect(175, 95, 100, 42),
+            pygame.Rect(160, 140, 100, 40),
             "Insert",
         )
 
         self.peek_button = Button(
-            pygame.Rect(285, 95, 100, 42),
+            pygame.Rect(270, 140, 100, 40),
             "Peek",
         )
 
         self.extract_button = Button(
-            pygame.Rect(395, 95, 100, 42),
+            pygame.Rect(380, 140, 100, 40),
             "Extract",
         )
 
         self.build_button = Button(
-            pygame.Rect(505, 95, 125, 42),
+            pygame.Rect(490, 140, 120, 40),
             "Build Heap",
         )
 
         self.clear_button = Button(
-            pygame.Rect(640, 95, 90, 42),
+            pygame.Rect(620, 140, 100, 40),
             "Clear",
         )
 
-        self.min_button = Button(
-            pygame.Rect(30, 150, 110, 38),
-            "Min Heap",
-        )
-
-        self.max_button = Button(
-            pygame.Rect(150, 150, 110, 38),
-            "Max Heap",
-        )
-
         self.previous_button = Button(
-            pygame.Rect(760, 610, 100, 42),
+            pygame.Rect(30, 650, 100, 40),
             "Previous",
         )
 
         self.next_button = Button(
-            pygame.Rect(870, 610, 100, 42),
+            pygame.Rect(140, 650, 100, 40),
             "Next",
         )
 
         self.commit_button = Button(
-            pygame.Rect(650, 610, 100, 42),
+            pygame.Rect(250, 650, 100, 40),
             "Commit",
         )
 
-    def handle_event(
-        self,
-        event: pygame.event.Event,
-    ) -> None:
-        """Handle an incoming Pygame event."""
+    def handle_event(self, event: pygame.event.Event) -> None:
+        """Handle input events."""
 
-        self.input_box.handle_event(event)
+        value = self.value_input.handle_event(event)
 
-        if event.type != pygame.MOUSEBUTTONDOWN:
+        if value is not None:
             return
 
-        position = event.pos
-
-        if self.insert_button.rect.collidepoint(position):
-            self._start_insert()
-
-        elif self.peek_button.rect.collidepoint(position):
-            self._start_peek()
-
-        elif self.extract_button.rect.collidepoint(position):
-            self._start_extract()
-
-        elif self.build_button.rect.collidepoint(position):
-            self._start_build_heap()
-
-        elif self.clear_button.rect.collidepoint(position):
-            self._start_clear()
-
-        elif self.min_button.rect.collidepoint(position):
+        if self.min_heap_button.handle_event(event):
             self._set_heap_type(HeapType.MIN)
+            return
 
-        elif self.max_button.rect.collidepoint(position):
+        if self.max_heap_button.handle_event(event):
             self._set_heap_type(HeapType.MAX)
+            return
 
-        elif self.previous_button.rect.collidepoint(position):
+        if self.insert_button.handle_event(event):
+            self._start_insert()
+            return
+
+        if self.peek_button.handle_event(event):
+            self._start_peek()
+            return
+
+        if self.extract_button.handle_event(event):
+            self._start_extract()
+            return
+
+        if self.build_button.handle_event(event):
+            self._start_build_heap()
+            return
+
+        if self.clear_button.handle_event(event):
+            self._start_clear()
+            return
+
+        if self.previous_button.handle_event(event):
             self._previous_step()
+            return
 
-        elif self.next_button.rect.collidepoint(position):
+        if self.next_button.handle_event(event):
             self._next_step()
+            return
 
-        elif self.commit_button.rect.collidepoint(position):
+        if self.commit_button.handle_event(event):
             self._commit_simulation()
 
     def update(self, dt: float) -> None:
-        """Update the heap screen."""
+        """Update the screen."""
 
     def render(self) -> None:
         """Render the heap screen."""
 
-        self.surface.fill(self.BACKGROUND)
+        self.surface.fill((20, 20, 20))
 
         self._render_title()
         self._render_controls()
-        self._render_heap_panel()
-        self._render_array_panel()
-        self._render_description()
-        self._render_simulation_controls()
+        self._render_heap_tree()
+        self._render_array()
+        self._render_simulation_info()
+
+    # ------------------------------------------------------------------
+    # Operations
+    # ------------------------------------------------------------------
+
+    def _set_heap_type(self, heap_type: HeapType) -> None:
+        """Change the heap type and clear the current heap."""
+
+        if self.heap.heap_type is heap_type:
+            return
+
+        self.heap = Heap[int](heap_type)
+        self._reset_simulation()
+
+    def _start_insert(self) -> None:
+        """Start an insert simulation."""
+
+        self.simulation = HeapSimulator(self.heap).insert(
+            self.value_input.value
+        )
+
+        self.simulation_index = 0
+
+    def _start_peek(self) -> None:
+        """Start a peek simulation."""
+
+        self.simulation = HeapSimulator(self.heap).peek()
+        self.simulation_index = 0
+
+    def _start_extract(self) -> None:
+        """Start an extract simulation."""
+
+        self.simulation = HeapSimulator(self.heap).extract()
+        self.simulation_index = 0
+
+    def _start_build_heap(self) -> None:
+        """Start a build-heap simulation."""
+
+        values = self.heap.values
+
+        if not values:
+            return
+
+        self.simulation = HeapSimulator(self.heap).build_heap(values)
+        self.simulation_index = 0
+
+    def _start_clear(self) -> None:
+        """Start a clear simulation."""
+
+        self.simulation = HeapSimulator(self.heap).clear()
+        self.simulation_index = 0
+
+    def _reset_simulation(self) -> None:
+        """Clear the current simulation."""
+
+        self.simulation = None
+        self.simulation_index = 0
+
+    def _commit_simulation(self) -> None:
+        """Commit the current simulation to the actual heap."""
+
+        if self.simulation is None:
+            return
+
+        self.simulation.commit(self.heap)
+
+        self._reset_simulation()
+
+    # ------------------------------------------------------------------
+    # Simulation navigation
+    # ------------------------------------------------------------------
+
+    def _previous_step(self) -> None:
+        """Move to the previous simulation state."""
+
+        if self.simulation is None:
+            return
+
+        if self.simulation_index > 0:
+            self.simulation_index -= 1
+
+    def _next_step(self) -> None:
+        """Move to the next simulation state."""
+
+        if self.simulation is None:
+            return
+
+        last_index = len(self.simulation.states) - 1
+
+        if self.simulation_index < last_index:
+            self.simulation_index += 1
+
+    @property
+    def _current_state(self):
+        """Return the current simulation state."""
+
+        if self.simulation is None:
+            return None
+
+        return self.simulation.states[self.simulation_index]
+
+    # ------------------------------------------------------------------
+    # Rendering
+    # ------------------------------------------------------------------
 
     def _render_title(self) -> None:
+        """Render the screen title."""
+
+        heap_name = (
+            "Min Heap"
+            if self.heap.heap_type is HeapType.MIN
+            else "Max Heap"
+        )
+
         title = self.title_font.render(
-            "Heap",
+            heap_name,
             True,
-            self.TEXT,
+            (240, 240, 240),
         )
 
         self.surface.blit(
@@ -176,306 +278,120 @@ class HeapScreen(Screen):
             (30, 25),
         )
 
-        heap_type_text = (
-            "Min Heap"
-            if self.model.heap_type is HeapType.MIN
-            else "Max Heap"
-        )
-
-        subtitle = self.small_font.render(
-            heap_type_text,
-            True,
-            self.MUTED_TEXT,
-        )
-
-        self.surface.blit(
-            subtitle,
-            (105, 34),
-        )
-
     def _render_controls(self) -> None:
-        self._draw_button(self.insert_button)
-        self._draw_button(self.peek_button)
-        self._draw_button(self.extract_button)
-        self._draw_button(self.build_button)
-        self._draw_button(self.clear_button)
+        """Render all interaction controls."""
 
-        self._draw_button(self.min_button)
-        self._draw_button(self.max_button)
+        self.min_heap_button.render(self.surface)
+        self.max_heap_button.render(self.surface)
 
-        input_label = self.small_font.render(
-            "Value",
-            True,
-            self.TEXT,
-        )
+        self.value_input.render(self.surface)
 
-        self.surface.blit(
-            input_label,
-            (30, 72),
-        )
+        self.insert_button.render(self.surface)
+        self.peek_button.render(self.surface)
+        self.extract_button.render(self.surface)
+        self.build_button.render(self.surface)
+        self.clear_button.render(self.surface)
 
-    def _render_heap_panel(self) -> None:
-        panel_rect = pygame.Rect(
-            30,
-            205,
-            940,
-            320,
-        )
+        self.previous_button.render(self.surface)
+        self.next_button.render(self.surface)
+        self.commit_button.render(self.surface)
 
-        pygame.draw.rect(
-            self.surface,
-            self.PANEL,
-            panel_rect,
-        )
+    def _render_heap_tree(self) -> None:
+        """Render the heap as a binary tree."""
 
-        pygame.draw.rect(
-            self.surface,
-            self.BORDER,
-            panel_rect,
-            2,
-        )
-
-        label = self.font.render(
-            "Heap Tree",
-            True,
-            self.TEXT,
-        )
-
-        self.surface.blit(
-            label,
-            (50, 220),
-        )
-
-        state = self._current_state()
-
-        if state is None:
-            values = self.model.values
-            compared_indices = None
-            swapped_indices = None
-            current_index = None
-            created_value = None
-            extracted_value = None
-        else:
-            values = list(state.values)
-            compared_indices = state.compared_indices
-            swapped_indices = state.swapped_indices
-            current_index = state.current_index
-            created_value = state.created_value
-            extracted_value = state.extracted_value
+        values = self._display_values()
 
         if not values:
-            empty_text = self.font.render(
+            text = self.text_font.render(
                 "Heap is empty",
                 True,
-                self.MUTED_TEXT,
+                (160, 160, 160),
             )
 
-            rect = empty_text.get_rect(
-                center=panel_rect.center,
+            rect = text.get_rect(
+                center=(500, 330),
             )
 
-            self.surface.blit(
-                empty_text,
-                rect,
-            )
+            self.surface.blit(text, rect)
 
             return
 
-        positions = self._calculate_node_positions(
-            values,
-            panel_rect,
-        )
+        positions = self._calculate_node_positions(len(values))
 
         self._render_tree_edges(
             values,
             positions,
         )
 
-        self._render_tree_nodes(
-            values=values,
-            positions=positions,
-            compared_indices=compared_indices,
-            swapped_indices=swapped_indices,
-            current_index=current_index,
-            created_value=created_value,
-            extracted_value=extracted_value,
-        )
+        for index, value in enumerate(values):
+            self._render_tree_node(
+                index,
+                value,
+                positions[index],
+            )
 
-    def _render_array_panel(self) -> None:
-        panel_rect = pygame.Rect(
-            30,
-            540,
-            940,
-            55,
-        )
+    def _render_tree_edges(
+        self,
+        values: tuple[object, ...] | list[object],
+        positions: dict[int, tuple[int, int]],
+    ) -> None:
+        """Render edges between heap nodes."""
 
-        pygame.draw.rect(
+        for index in range(len(values)):
+            left_index = 2 * index + 1
+            right_index = 2 * index + 2
+
+            if left_index < len(values):
+                pygame.draw.line(
+                    self.surface,
+                    (100, 100, 100),
+                    positions[index],
+                    positions[left_index],
+                    2,
+                )
+
+            if right_index < len(values):
+                pygame.draw.line(
+                    self.surface,
+                    (100, 100, 100),
+                    positions[index],
+                    positions[right_index],
+                    2,
+                )
+
+    def _render_tree_node(
+        self,
+        index: int,
+        value: object,
+        position: tuple[int, int],
+    ) -> None:
+        """Render one heap node."""
+
+        color = self._node_color(index)
+
+        pygame.draw.circle(
             self.surface,
-            self.PANEL,
-            panel_rect,
+            color,
+            position,
+            28,
         )
 
-        pygame.draw.rect(
+        pygame.draw.circle(
             self.surface,
-            self.BORDER,
-            panel_rect,
+            (180, 180, 180),
+            position,
+            28,
             2,
         )
 
-        label = self.small_font.render(
-            "Array:",
+        text = self.text_font.render(
+            str(value),
             True,
-            self.TEXT,
-        )
-
-        self.surface.blit(
-            label,
-            (45, 557),
-        )
-
-        state = self._current_state()
-
-        if state is None:
-            values = self.model.values
-        else:
-            values = list(state.values)
-
-        x = 125
-
-        for index, value in enumerate(values):
-            cell_rect = pygame.Rect(
-                x,
-                550,
-                48,
-                35,
-            )
-
-            pygame.draw.rect(
-                self.surface,
-                self.NODE,
-                cell_rect,
-            )
-
-            pygame.draw.rect(
-                self.surface,
-                self.NODE_BORDER,
-                cell_rect,
-                1,
-            )
-
-            value_surface = self.small_font.render(
-                str(value),
-                True,
-                self.TEXT,
-            )
-
-            value_rect = value_surface.get_rect(
-                center=cell_rect.center,
-            )
-
-            self.surface.blit(
-                value_surface,
-                value_rect,
-            )
-
-            index_surface = pygame.font.Font(
-                None,
-                16,
-            ).render(
-                str(index),
-                True,
-                self.MUTED_TEXT,
-            )
-
-            index_rect = index_surface.get_rect(
-                center=(cell_rect.centerx, 594),
-            )
-
-            self.surface.blit(
-                index_surface,
-                index_rect,
-            )
-
-            x += 58
-
-            if x > 940:
-                break
-
-    def _render_description(self) -> None:
-        state = self._current_state()
-
-        if state is not None:
-            description = state.description
-        elif self.status_message is not None:
-            description = self.status_message
-        else:
-            description = (
-                "Select an operation to start a simulation."
-            )
-
-        text = self.small_font.render(
-            description,
-            True,
-            self.TEXT,
-        )
-
-        self.surface.blit(
-            text,
-            (30, 600),
-        )
-
-    def _render_simulation_controls(self) -> None:
-        self._draw_button(self.previous_button)
-        self._draw_button(self.next_button)
-        self._draw_button(self.commit_button)
-
-        if self.current_simulation is None:
-            return
-
-        step_text = self.small_font.render(
-            (
-                f"Step {self.current_step + 1} / "
-                f"{len(self.current_simulation.states)}"
-            ),
-            True,
-            self.TEXT,
-        )
-
-        self.surface.blit(
-            step_text,
-            (500, 622),
-        )
-
-    def _draw_button(self, button: Button) -> None:
-        mouse_position = pygame.mouse.get_pos()
-
-        color = (
-            self.BUTTON_HOVER
-            if button.rect.collidepoint(mouse_position)
-            else self.BUTTON
-        )
-
-        pygame.draw.rect(
-            self.surface,
-            color,
-            button.rect,
-        )
-
-        pygame.draw.rect(
-            self.surface,
-            self.BORDER,
-            button.rect,
-            1,
-        )
-
-        text = self.small_font.render(
-            button.text,
-            True,
-            self.TEXT,
+            (240, 240, 240),
         )
 
         text_rect = text.get_rect(
-            center=button.rect.center,
+            center=position,
         )
 
         self.surface.blit(
@@ -483,331 +399,214 @@ class HeapScreen(Screen):
             text_rect,
         )
 
+        index_text = self.small_font.render(
+            str(index),
+            True,
+            (150, 150, 150),
+        )
+
+        index_rect = index_text.get_rect(
+            center=(
+                position[0],
+                position[1] + 40,
+            ),
+        )
+
+        self.surface.blit(
+            index_text,
+            index_rect,
+        )
+
+    def _node_color(self, index: int) -> tuple[int, int, int]:
+        """Return the visualization color for a heap node."""
+
+        state = self._current_state
+
+        if state is None:
+            return (50, 50, 50)
+
+        if state.swapped_indices is not None:
+            if index in state.swapped_indices:
+                return (180, 100, 60)
+
+        if state.compared_indices is not None:
+            if index in state.compared_indices:
+                return (70, 120, 180)
+
+        if state.current_index == index:
+            return (80, 160, 100)
+
+        return (50, 50, 50)
+
     def _calculate_node_positions(
         self,
-        values: list[object],
-        panel_rect: pygame.Rect,
+        size: int,
     ) -> dict[int, tuple[int, int]]:
-        """Calculate positions for nodes in the heap tree."""
+        """Calculate screen positions for heap nodes."""
 
         positions: dict[int, tuple[int, int]] = {}
 
-        node_radius = 24
-        top_y = panel_rect.top + 65
+        start_x = 500
+        start_y = 245
 
-        max_level = 0
+        level_height = 85
 
-        for index in range(len(values)):
-            level = (index + 1).bit_length() - 1
-            max_level = max(max_level, level)
-
-        level_height = 70
-
-        for index in range(len(values)):
-            level = (index + 1).bit_length() - 1
+        for index in range(size):
+            level = index.bit_length() - 1
 
             first_index = (2**level) - 1
             position_in_level = index - first_index
             nodes_in_level = 2**level
 
-            available_width = panel_rect.width - 80
+            available_width = 760
 
             if nodes_in_level == 1:
-                x = panel_rect.centerx
+                x = start_x
             else:
-                spacing = available_width / nodes_in_level
+                spacing = available_width / (nodes_in_level - 1)
 
-                x = int(
-                    panel_rect.left
-                    + 40
-                    + spacing * (position_in_level + 0.5)
+                x = (
+                    120
+                    + position_in_level * spacing
                 )
 
-            y = top_y + level * level_height
+            y = start_y + level * level_height
 
-            positions[index] = (x, y)
+            positions[index] = (
+                int(x),
+                int(y),
+            )
 
         return positions
 
-    def _render_tree_edges(
-        self,
-        values: list[object],
-        positions: dict[int, tuple[int, int]],
-    ) -> None:
-        """Render edges between heap nodes."""
+    def _render_array(self) -> None:
+        """Render the heap's underlying array representation."""
 
-        for index in range(1, len(values)):
-            parent_index = (index - 1) // 2
+        values = self._display_values()
 
-            parent_position = positions[parent_index]
-            child_position = positions[index]
+        label = self.text_font.render(
+            "Array:",
+            True,
+            (220, 220, 220),
+        )
 
-            pygame.draw.line(
+        self.surface.blit(
+            label,
+            (30, 500),
+        )
+
+        x = 120
+        y = 485
+
+        for index, value in enumerate(values):
+            rect = pygame.Rect(
+                x,
+                y,
+                60,
+                42,
+            )
+
+            border_color = self._array_cell_color(index)
+
+            pygame.draw.rect(
                 self.surface,
-                self.BORDER,
-                parent_position,
-                child_position,
+                (35, 35, 35),
+                rect,
+            )
+
+            pygame.draw.rect(
+                self.surface,
+                border_color,
+                rect,
                 2,
             )
 
-    def _render_tree_nodes(
-        self,
-        values: list[object],
-        positions: dict[int, tuple[int, int]],
-        compared_indices: tuple[int, int] | None,
-        swapped_indices: tuple[int, int] | None,
-        current_index: int | None,
-        created_value: object | None,
-        extracted_value: object | None,
-    ) -> None:
-        """Render heap nodes and their visual state."""
-
-        for index, value in enumerate(values):
-            position = positions[index]
-
-            node_color = self.NODE
-
-            if compared_indices is not None and (
-                index in compared_indices
-            ):
-                node_color = self.COMPARE
-
-            if swapped_indices is not None and (
-                index in swapped_indices
-            ):
-                node_color = self.SWAP
-
-            if (
-                created_value is not None
-                and value == created_value
-                and current_index == index
-            ):
-                node_color = self.CREATED
-
-            if (
-                extracted_value is not None
-                and value == extracted_value
-                and current_index == index
-            ):
-                node_color = self.EXTRACTED
-
-            if current_index == index:
-                pygame.draw.circle(
-                    self.surface,
-                    node_color,
-                    position,
-                    27,
-                )
-
-                pygame.draw.circle(
-                    self.surface,
-                    self.NODE_BORDER,
-                    position,
-                    27,
-                    3,
-                )
-            else:
-                pygame.draw.circle(
-                    self.surface,
-                    node_color,
-                    position,
-                    24,
-                )
-
-                pygame.draw.circle(
-                    self.surface,
-                    self.NODE_BORDER,
-                    position,
-                    24,
-                    2,
-                )
-
-            value_surface = self.font.render(
+            value_text = self.small_font.render(
                 str(value),
                 True,
-                self.TEXT,
+                (240, 240, 240),
             )
 
-            value_rect = value_surface.get_rect(
-                center=position,
+            value_rect = value_text.get_rect(
+                center=rect.center,
             )
 
             self.surface.blit(
-                value_surface,
+                value_text,
                 value_rect,
             )
 
-            index_surface = pygame.font.Font(
-                None,
-                16,
-            ).render(
-                f"[{index}]",
+            index_text = self.small_font.render(
+                str(index),
                 True,
-                self.MUTED_TEXT,
+                (130, 130, 130),
             )
 
-            index_rect = index_surface.get_rect(
+            index_rect = index_text.get_rect(
                 center=(
-                    position[0],
-                    position[1] + 37,
+                    rect.centerx,
+                    rect.bottom + 15,
                 ),
             )
 
             self.surface.blit(
-                index_surface,
+                index_text,
                 index_rect,
             )
 
-    def _current_state(
+            x += 70
+
+    def _array_cell_color(
         self,
-    ) -> HeapSimulationState | None:
-        """Return the current heap simulation state."""
+        index: int,
+    ) -> tuple[int, int, int]:
+        """Return the border color for an array cell."""
 
-        if self.current_simulation is None:
-            return None
+        state = self._current_state
 
-        if not self.current_simulation.states:
-            return None
+        if state is None:
+            return (100, 100, 100)
 
-        state = self.current_simulation.states[
-            self.current_step
-        ]
+        if state.swapped_indices is not None:
+            if index in state.swapped_indices:
+                return (180, 100, 60)
 
-        return state.data
+        if state.compared_indices is not None:
+            if index in state.compared_indices:
+                return (70, 120, 180)
 
-    def _start_insert(self) -> None:
-        value = self._get_input_value()
+        if state.current_index == index:
+            return (80, 160, 100)
 
-        if value is None:
-            return
+        return (100, 100, 100)
 
-        self.status_message = None
+    def _render_simulation_info(self) -> None:
+        """Render the current simulation description."""
 
-        self.current_simulation = (
-            self.simulator.insert(value)
+        state = self._current_state
+
+        if state is None:
+            description = "No active simulation."
+        else:
+            description = state.description
+
+        text = self.small_font.render(
+            description,
+            True,
+            (220, 220, 220),
         )
 
-        self.current_step = 0
-        self.operation_committed = False
-
-    def _start_peek(self) -> None:
-        self.status_message = None
-
-        self.current_simulation = (
-            self.simulator.peek()
+        self.surface.blit(
+            text,
+            (380, 665),
         )
 
-        self.current_step = 0
-        self.operation_committed = False
+    def _display_values(self) -> tuple[object, ...] | list[object]:
+        """Return values from the simulation or actual heap."""
 
-    def _start_extract(self) -> None:
-        self.status_message = None
+        state = self._current_state
 
-        self.current_simulation = (
-            self.simulator.extract()
-        )
+        if state is not None:
+            return state.values
 
-        self.current_step = 0
-        self.operation_committed = False
-
-    def _start_build_heap(self) -> None:
-        values = self.model.values
-
-        self.status_message = None
-
-        self.current_simulation = (
-            self.simulator.build_heap(values)
-        )
-
-        self.current_step = 0
-        self.operation_committed = False
-
-    def _start_clear(self) -> None:
-        self.status_message = None
-
-        self.current_simulation = (
-            self.simulator.clear()
-        )
-
-        self.current_step = 0
-        self.operation_committed = False
-
-    def _get_input_value(self) -> int | None:
-        """Return the integer currently entered by the user."""
-
-        try:
-            return int(self.input_box.value)
-        except (TypeError, ValueError):
-            return None
-
-    def _set_heap_type(
-        self,
-        heap_type: HeapType,
-    ) -> None:
-        """Change the heap type and reset the heap."""
-
-        if self.model.heap_type is heap_type:
-            return
-
-        self.model = Heap[int](heap_type)
-        self.simulator = HeapSimulator(self.model)
-
-        self.current_simulation = None
-        self.current_step = 0
-        self.operation_committed = False
-        self.status_message = None
-
-    def _previous_step(self) -> None:
-        """Move to the previous simulation state."""
-
-        if self.current_simulation is None:
-            return
-
-        if self.current_step > 0:
-            self.current_step -= 1
-
-    def _next_step(self) -> None:
-        """Move to the next simulation state."""
-
-        if self.current_simulation is None:
-            return
-
-        last_step = len(
-            self.current_simulation.states
-        ) - 1
-
-        if self.current_step < last_step:
-            self.current_step += 1
-
-    def _commit_simulation(self) -> None:
-        """Commit the current simulation to the heap model."""
-
-        if self.current_simulation is None:
-            return
-
-        last_step = len(
-            self.current_simulation.states
-        ) - 1
-
-        if self.current_step != last_step:
-            return
-
-        final_state = self.current_simulation.states[
-            -1
-        ]
-
-        self.status_message = (
-            final_state.data.description
-        )
-
-        self.current_simulation.commit(
-            self.model
-        )
-
-        self.operation_committed = True
-        self.current_simulation = None
-        self.current_step = 0
-
-        self.simulator = HeapSimulator(
-            self.model
-        )
+        return self.heap.values
