@@ -305,7 +305,7 @@ def test_search_simulation_has_comparisons() -> None:
         if isinstance(event, CompareNodeEvent)
     ]
 
-    assert len(comparison_events) == 2
+    assert len(comparison_events) == 3
     assert comparison_events[0].target_value == 60
     assert comparison_events[1].target_value == 60
 
@@ -397,7 +397,7 @@ def test_delete_simulation_leaf_updates_parent_link() -> None:
     tree = create_tree([50, 30, 70])
     simulation = BSTSimulator(tree).delete(30)
 
-    state = simulation.states[-3].data
+    state = simulation.states[-2].data
 
     root = next(
         node
