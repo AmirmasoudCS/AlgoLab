@@ -353,11 +353,21 @@ class HeapScreen(Screen):
             button.render(self.surface)
 
         self._draw_text(
-            f"Step: {self.simulator.current_index + 1} / "
-            f"{len(self.simulator.states)}",
+            self._get_step_text(),
             self.small_font,
             (25, 570),
         )
+
+    def _get_step_text(self) -> str:
+        """Return the current simulation step text."""
+        current_index = self.simulator.history._current_index
+
+        if self.current_simulation is None:
+            return "Step: -"
+
+        total_steps = len(self.current_simulation.states)
+
+        return f"Step: {current_index + 1} / {total_steps}"
 
     def _render_explanation_panel(self) -> None:
         panel_rect = pygame.Rect(
