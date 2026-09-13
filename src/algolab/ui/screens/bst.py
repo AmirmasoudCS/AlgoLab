@@ -8,7 +8,6 @@ from algolab.topics.bst.simulation import (
     CompareNodeEvent,
     VisitBSTNodeEvent,
     CreateBSTNodeEvent,
-    UpdateChildEvent,
     DeleteBSTNodeEvent,
     ReplaceNodeValueEvent,
 )
@@ -29,6 +28,9 @@ class BSTScreen(Screen):
 
         self.current_simulation: BSTSimulation | None = None
         self.operation_committed = False
+
+        # Message shown after an operation finishes.
+        self.status_message: str | None = None
 
         self.control_font = pygame.font.Font(None, 30)
         self.section_font = pygame.font.Font(None, 24)
@@ -225,6 +227,7 @@ class BSTScreen(Screen):
 
         self.current_simulation = simulation
         self.operation_committed = False
+        self.status_message = None
 
         self.simulator.load_states(
             list(simulation.states)
@@ -266,6 +269,11 @@ class BSTScreen(Screen):
 
         if self.current_simulation is None:
             return
+
+        final_state = self.simulator.state
+
+        if final_state is not None:
+            self.status_message = final_state.data.description
 
         self.current_simulation.commit(self.model)
 
@@ -386,12 +394,14 @@ class BSTScreen(Screen):
 
         state = self.simulator.state
 
-        if state is None:
+        if state is not None:
+            description = state.data.description
+        elif self.status_message is not None:
+            description = self.status_message
+        else:
             description = (
                 "Select an operation to start a simulation."
             )
-        else:
-            description = state.data.description
 
         description_rect = pygame.Rect(
             295,
@@ -599,15 +609,15 @@ class BSTScreen(Screen):
         if not order:
             return positions
 
-        max_depth = max(
-            depth
-            for _, depth in order
+        node_count = len(order)
+
+        max_spacing = (
+            node_width
+            + horizontal_spacing
         )
 
-        max_spacing = node_width + horizontal_spacing
-
         required_width = (
-            len(order) * max_spacing
+            node_count * max_spacing
         )
 
         spacing = horizontal_spacing
@@ -617,14 +627,14 @@ class BSTScreen(Screen):
                 15,
                 (
                     available_width
-                    - len(order) * node_width
+                    - node_count * node_width
                 )
-                / max(1, len(order) - 1),
+                / max(1, node_count - 1),
             )
 
         total_width = (
-            len(order) * node_width
-            + max(0, len(order) - 1) * spacing
+            node_count * node_width
+            + max(0, node_count - 1) * spacing
         )
 
         start_x = (
