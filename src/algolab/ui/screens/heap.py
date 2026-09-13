@@ -562,7 +562,7 @@ class HeapScreen(Screen):
         levels = []
 
         for index in range(size):
-            level = index.bit_length() - 1
+            level = (index + 1).bit_length() - 1
 
             while len(levels) <= level:
                 levels.append([])
