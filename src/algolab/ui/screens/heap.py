@@ -543,6 +543,56 @@ class HeapScreen(Screen):
             current_index,
         )
 
+    def _render_heap_type_button(
+        self,
+        button: Button,
+        selected: bool,
+    ) -> None:
+        """Render a heap type button with an optional selected state."""
+
+        if selected:
+            background = (70, 105, 145)
+            border_color = (150, 190, 235)
+        else:
+            mouse_position = pygame.mouse.get_pos()
+
+            if button.rect.collidepoint(mouse_position):
+                background = (70, 70, 70)
+            else:
+                background = (50, 50, 50)
+
+            border_color = (100, 100, 100)
+
+        pygame.draw.rect(
+            self.surface,
+            background,
+            button.rect,
+            border_radius=8,
+        )
+
+        pygame.draw.rect(
+            self.surface,
+            border_color,
+            button.rect,
+            2,
+            border_radius=8,
+        )
+
+        text = button.font.render(
+            button.label,
+            True,
+            (240, 240, 240),
+        )
+
+        text_rect = text.get_rect(
+            center=button.rect.center,
+        )
+
+        self.surface.blit(
+            text,
+            text_rect,
+        )
+
     def _calculate_positions(
         self,
         size: int,
