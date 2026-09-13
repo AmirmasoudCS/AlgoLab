@@ -48,6 +48,10 @@ class HeapScreen(Screen):
             self._create_navigation_buttons()
         )
 
+        self.heap_type_buttons = (
+            self._create_heap_type_buttons()
+        )
+
         self.value_input = NumericInput(
             pygame.Rect(135, 405, 75, 30),
             50,
@@ -380,8 +384,8 @@ class HeapScreen(Screen):
 
         self._draw_text(
             "What is happening?",
-            (295, 82),
             self.section_font,
+            (295, 82),
         )
 
         state = self.simulator.state
@@ -440,8 +444,8 @@ class HeapScreen(Screen):
         if not values:
             self._draw_text(
                 "Heap is empty.",
-                (600, 350),
                 self.explanation_font,
+                (600, 350),
             )
             return
 
@@ -865,8 +869,8 @@ class HeapScreen(Screen):
     def _draw_text(
         self,
         text: str,
-        position: tuple[int, int],
         font: pygame.font.Font,
+        position: tuple[int, int],
     ) -> None:
         rendered_text = font.render(
             text,
