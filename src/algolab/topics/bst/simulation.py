@@ -130,9 +130,14 @@ class BSTSimulation:
 
     states: tuple[SimulationState, ...]
     operation: BSTOperation
+    should_commit: bool = True
 
     def commit(self, model: BinarySearchTree) -> object | None:
         """Commit the simulated operation to the BST model."""
+
+        if not self.should_commit:
+            return None
+
         return self.operation.commit(model)
 
 
