@@ -265,6 +265,7 @@ class BSTSimulator:
                 return BSTSimulation(
                     states=tuple(states),
                     operation=InsertOperation(value),
+                    should_commit=False,
                 )
 
             if value < current.value:
