@@ -455,7 +455,7 @@ class HeapScreen(Screen):
 
         return self.model.values
 
-    def _render_heap(self) -> None:
+    def _render_heap(self) -> None:                                     # Should refactor this function!
         values = self._get_display_values()
 
         if not values:
