@@ -477,13 +477,15 @@ class BSTSimulator:
             else:
                 current = current.right
 
+        not_found_description = (
+            f"Value {value} is not present in the tree."
+        )
+
         states.append(
             self._create_state(
                 root=root,
                 step=len(states),
-                description=(
-                    f"Value {value} is not present in the tree."
-                ),
+                description=not_found_description,
                 events=[],
             )
         )
@@ -492,7 +494,10 @@ class BSTSimulator:
             self._create_state(
                 root=root,
                 step=len(states),
-                description="Search operation is complete.",
+                description=(
+                    f"Search operation is complete. "
+                    f"Value {value} is not present in the tree."
+                ),
                 events=[
                     CompleteBSTOperationEvent(
                         operation="search_not_found",
