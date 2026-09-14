@@ -10,7 +10,9 @@ from algolab.topics.queue.simulation import (
 )
 from algolab.ui.components.button import Button
 from algolab.ui.components.numeric_input import NumericInput
+from algolab.ui.components.surface import draw_item_card, draw_panel
 from algolab.ui.screens.screen import Screen
+from algolab.ui.theme import Color, Font
 
 
 class QueueScreen(Screen):
@@ -26,13 +28,13 @@ class QueueScreen(Screen):
         self.current_simulation: QueueSimulation | None = None
         self.operation_committed = False
 
-        self.control_font = pygame.font.Font(None, 30)
-        self.section_font = pygame.font.Font(None, 24)
-        self.item_font = pygame.font.Font(None, 30)
-        self.small_font = pygame.font.Font(None, 22)
-        self.explanation_font = pygame.font.Font(None, 25)
-        self.pointer_font = pygame.font.Font(None, 20)
-        self.index_font = pygame.font.Font(None, 18)
+        self.control_font = Font.H1()
+        self.section_font = Font.H2()
+        self.item_font = Font.NODE()
+        self.small_font = Font.SMALL()
+        self.explanation_font = Font.BODY()
+        self.pointer_font = Font.LABEL()
+        self.index_font = Font.LABEL()
 
         self.operation_buttons = self._create_operation_buttons()
         self.navigation_buttons = self._create_navigation_buttons()
@@ -61,11 +63,8 @@ class QueueScreen(Screen):
         self.rear_pointer_y = self.queue_y - 75
 
     def _create_operation_buttons(self) -> list[Button]:
-        labels = [
-            "Enqueue",
-            "Dequeue",
-            "Peek",
-        ]
+        labels = ["Enqueue", "Dequeue", "Peek"]
+        variants = ["primary", "danger", "default"]
 
         buttons = []
 
@@ -75,7 +74,7 @@ class QueueScreen(Screen):
         height = 38
         spacing = 45
 
-        for index, label in enumerate(labels):
+        for index, (label, variant) in enumerate(zip(labels, variants)):
             buttons.append(
                 Button(
                     pygame.Rect(
@@ -85,6 +84,7 @@ class QueueScreen(Screen):
                         height,
                     ),
                     label,
+                    variant=variant,
                 )
             )
 
@@ -121,24 +121,17 @@ class QueueScreen(Screen):
         text: str,
         position: tuple[int, int],
         font: pygame.font.Font,
+        color: tuple[int, int, int] = Color.TEXT_PRIMARY,
     ) -> None:
-        rendered_text = font.render(
-            text,
-            True,
-            (240, 240, 240),
-        )
-
-        self.surface.blit(
-            rendered_text,
-            position,
-        )
+        rendered_text = font.render(text, True, color)
+        self.surface.blit(rendered_text, position)
 
     def _draw_wrapped_text(
         self,
         text: str,
         rect: pygame.Rect,
         font: pygame.font.Font,
-        color: tuple[int, int, int] = (235, 235, 235),
+        color: tuple[int, int, int] = Color.TEXT_SECONDARY,
     ) -> None:
         words = text.split()
 
@@ -170,16 +163,8 @@ class QueueScreen(Screen):
             if y + line_height > rect.bottom:
                 break
 
-            rendered_text = font.render(
-                line,
-                True,
-                color,
-            )
-
-            self.surface.blit(
-                rendered_text,
-                (rect.x, y),
-            )
+            rendered_text = font.render(line, True, color)
+            self.surface.blit(rendered_text, (rect.x, y))
 
             y += line_height
 
@@ -203,25 +188,19 @@ class QueueScreen(Screen):
         try:
             if index == 0:
                 simulation = self.queue_simulator.enqueue(value)
-
             elif index == 1:
                 simulation = self.queue_simulator.dequeue()
-
             elif index == 2:
                 simulation = self.queue_simulator.peek()
-
             else:
                 return
-
         except IndexError:
             return
 
         self.current_simulation = simulation
         self.operation_committed = False
 
-        self.simulator.load_states(
-            list(simulation.states)
-        )
+        self.simulator.load_states(list(simulation.states))
 
         self.step_timer = 0.0
 
@@ -231,17 +210,13 @@ class QueueScreen(Screen):
 
         if index == 0:
             self.simulator.history.previous_to_start()
-
         elif index == 1:
             self.simulator.previous()
-
         elif index == 2:
             self.simulator.next()
-
         elif index == 3:
             while self.simulator.can_go_forward:
                 self.simulator.next()
-
         elif index == 4:
             if self.simulator.running:
                 self.simulator.pause()
@@ -268,6 +243,12 @@ class QueueScreen(Screen):
         self.simulator.reset()
 
     def update(self, dt: float) -> None:
+        for button in self.operation_buttons:
+            button.update(dt)
+
+        for button in self.navigation_buttons:
+            button.update(dt)
+
         if self.current_simulation is None:
             return
 
@@ -289,30 +270,23 @@ class QueueScreen(Screen):
             self._commit_if_finished()
 
     def render(self) -> None:
-        self.surface.fill((30, 30, 30))
+        self.surface.fill(Color.BG)
 
         self._render_control_panel()
         self._render_explanation_panel()
         self._render_queue()
 
     def _render_control_panel(self) -> None:
-        pygame.draw.rect(
-            self.surface,
-            (40, 40, 40),
-            pygame.Rect(10, 70, 250, 500),
-            border_radius=8,
-        )
+        panel_rect = pygame.Rect(10, 70, 250, 500)
+        draw_panel(self.surface, panel_rect, elevated=True)
 
-        self._draw_text(
-            "TA Controls",
-            (25, 80),
-            self.control_font,
-        )
+        self._draw_text("TA Controls", (25, 80), self.control_font)
 
         self._draw_text(
             "Operations",
             (25, 115),
             self.section_font,
+            color=Color.TEXT_SECONDARY,
         )
 
         for button in self.operation_buttons:
@@ -322,6 +296,7 @@ class QueueScreen(Screen):
             "Value:",
             (25, 290),
             self.section_font,
+            color=Color.TEXT_SECONDARY,
         )
 
         self.value_input.render(self.surface)
@@ -330,6 +305,7 @@ class QueueScreen(Screen):
             "Simulation",
             (25, 355),
             self.section_font,
+            color=Color.TEXT_SECONDARY,
         )
 
         for button in self.navigation_buttons:
@@ -346,6 +322,7 @@ class QueueScreen(Screen):
                     ),
                     (25, 425),
                     self.small_font,
+                    color=Color.TEXT_MUTED,
                 )
 
     def _render_explanation_panel(self) -> None:
@@ -356,33 +333,19 @@ class QueueScreen(Screen):
             130,
         )
 
-        pygame.draw.rect(
-            self.surface,
-            (40, 40, 40),
-            panel_rect,
-            border_radius=8,
-        )
-
-        pygame.draw.rect(
-            self.surface,
-            (90, 90, 90),
-            panel_rect,
-            2,
-            border_radius=8,
-        )
+        draw_panel(self.surface, panel_rect, elevated=False)
 
         self._draw_text(
             "What is happening?",
             (295, 82),
             self.section_font,
+            color=Color.TEXT_SECONDARY,
         )
 
         state = self.simulator.state
 
         if state is None:
-            description = (
-                "Select an operation to start a simulation."
-            )
+            description = "Select an operation to start a simulation."
         else:
             simulation_state = state.data
             description = simulation_state.description
@@ -424,18 +387,8 @@ class QueueScreen(Screen):
         peeked_value = None
 
         if state is None:
-            front_index = (
-                0
-                if values
-                else None
-            )
-
-            rear_index = (
-                len(values) - 1
-                if values
-                else None
-            )
-
+            front_index = 0 if values else None
+            rear_index = len(values) - 1 if values else None
         else:
             values = state.values
             front_index = state.front_index
@@ -444,6 +397,9 @@ class QueueScreen(Screen):
             created_value = state.created_value
             removed_value = state.removed_value
             peeked_value = state.peeked_value
+
+        if not values and created_value is None and removed_value is None:
+            self._draw_empty_message()
 
         self._render_queue_items(
             values=values,
@@ -454,15 +410,19 @@ class QueueScreen(Screen):
             peeked_value=peeked_value,
         )
 
-        self._render_front_pointer(
-            front_index=front_index,
-            values=values,
+        self._render_front_pointer(front_index=front_index, values=values)
+        self._render_rear_pointer(rear_index=rear_index, values=values)
+
+    def _draw_empty_message(self) -> None:
+        area = pygame.Rect(280, 220, self.surface.get_width() - 300, 120)
+
+        text = self.explanation_font.render(
+            "Queue is empty. Enqueue a value to begin.",
+            True,
+            Color.TEXT_MUTED,
         )
 
-        self._render_rear_pointer(
-            rear_index=rear_index,
-            values=values,
-        )
+        self.surface.blit(text, text.get_rect(center=area.center))
 
     def _render_front_pointer(
         self,
@@ -473,45 +433,23 @@ class QueueScreen(Screen):
 
         self._draw_text(
             "FRONT",
-            (
-                self.queue_x,
-                self.front_pointer_y,
-            ),
+            (self.queue_x, self.front_pointer_y),
             self.control_font,
+            color=Color.ACCENT,
         )
 
         if front_index is None or not values:
-            start = (
-                self.queue_x + 35,
-                self.front_pointer_y + 30,
-            )
+            start = (self.queue_x + 35, self.front_pointer_y + 30)
+            end = (self.queue_x + 35, self.queue_y - 5)
 
-            end = (
-                self.queue_x + 35,
-                self.queue_y - 5,
-            )
-
-            pygame.draw.line(
-                self.surface,
-                (100, 200, 140),
-                start,
-                end,
-                3,
-            )
-
-            self._draw_arrow_head(
-                end,
-                (100, 200, 140),
-                "down",
-            )
+            pygame.draw.line(self.surface, Color.ACCENT, start, end, 3)
+            self._draw_arrow_head(end, Color.ACCENT, "down")
 
             self._draw_text(
                 "NULL",
-                (
-                    self.queue_x + 50,
-                    self.queue_y - 25,
-                ),
+                (self.queue_x + 50, self.queue_y - 25),
                 self.pointer_font,
+                color=Color.TEXT_SECONDARY,
             )
 
             return
@@ -519,41 +457,19 @@ class QueueScreen(Screen):
         if front_index < 0 or front_index >= len(values):
             return
 
-        item_x = self._get_item_x(
-            front_index,
-        )
+        item_x = self._get_item_x(front_index)
 
-        start = (
-            item_x + self.item_width // 2,
-            self.front_pointer_y + 45,
-        )
+        start = (item_x + self.item_width // 2, self.front_pointer_y + 45)
+        end = (item_x + self.item_width // 2, self.queue_y - 5)
 
-        end = (
-            item_x + self.item_width // 2,
-            self.queue_y - 5,
-        )
-
-        pygame.draw.line(
-            self.surface,
-            (100, 200, 140),
-            start,
-            end,
-            3,
-        )
-
-        self._draw_arrow_head(
-            end,
-            (100, 200, 140),
-            "down",
-        )
+        pygame.draw.line(self.surface, Color.ACCENT, start, end, 3)
+        self._draw_arrow_head(end, Color.ACCENT, "down")
 
         self._draw_text(
             f"index {front_index}",
-            (
-                item_x + self.item_width // 2 - 25,
-                self.front_pointer_y + 48,
-            ),
+            (item_x + self.item_width // 2 - 25, self.front_pointer_y + 48),
             self.pointer_font,
+            color=Color.TEXT_SECONDARY,
         )
 
     def _render_rear_pointer(
@@ -569,49 +485,20 @@ class QueueScreen(Screen):
         if rear_index < 0 or rear_index >= len(values):
             return
 
-        item_x = self._get_item_x(
-            rear_index,
-        )
+        item_x = self._get_item_x(rear_index)
 
-        text = self.control_font.render(
-            "REAR",
-            True,
-            (240, 240, 240),
-        )
-
+        text = self.control_font.render("REAR", True, Color.ACCENT)
         text_rect = text.get_rect(
             centerx=item_x + self.item_width // 2,
             bottom=self.front_pointer_y - 5,
         )
+        self.surface.blit(text, text_rect)
 
-        self.surface.blit(
-            text,
-            text_rect,
-        )
+        start = (item_x + self.item_width // 2, text_rect.bottom + 5)
+        end = (item_x + self.item_width // 2, self.queue_y - 5)
 
-        start = (
-            item_x + self.item_width // 2,
-            text_rect.bottom + 5,
-        )
-
-        end = (
-            item_x + self.item_width // 2,
-            self.queue_y - 5,
-        )
-
-        pygame.draw.line(
-            self.surface,
-            (100, 200, 140),
-            start,
-            end,
-            3,
-        )
-
-        self._draw_arrow_head(
-            end,
-            (100, 200, 140),
-            "down",
-        )
+        pygame.draw.line(self.surface, Color.ACCENT, start, end, 3)
+        self._draw_arrow_head(end, Color.ACCENT, "down")
 
     def _render_queue_items(
         self,
@@ -625,13 +512,13 @@ class QueueScreen(Screen):
         for index, value in enumerate(values):
             x = self._get_item_x(index)
 
-            background = (65, 85, 115)
+            background = Color.STATE_DEFAULT
 
             if index == front_index:
-                background = (70, 110, 180)
+                background = Color.STATE_ACTIVE
 
-            if index == rear_index:
-                background = (75, 105, 145)
+            if index == rear_index and index != front_index:
+                background = Color.STATE_VISITED
 
             if (
                 front_index is not None
@@ -639,16 +526,18 @@ class QueueScreen(Screen):
                 and index == front_index
                 and value == peeked_value
             ):
-                background = (100, 135, 200)
+                background = Color.STATE_COMPARING
 
-            self._draw_queue_item(
-                x=x,
-                y=self.queue_y,
-                width=self.item_width,
-                height=self.item_height,
-                index=index,
-                value=value,
-                background=background,
+            rect = pygame.Rect(x, self.queue_y, self.item_width, self.item_height)
+
+            draw_item_card(
+                self.surface,
+                rect,
+                background,
+                self.item_font,
+                value,
+                caption_font=self.index_font,
+                caption=f"index {index}",
             )
 
             if index < len(values) - 1:
@@ -663,189 +552,55 @@ class QueueScreen(Screen):
         # only the old values, so the new item must not be rendered
         # as part of the queue yet.
         if created_value is not None:
-            self._render_detached_item(
-                x=self.queue_x,
-                y=self.queue_y + 100,
-                width=self.item_width,
-                height=self.item_height,
+            rect = pygame.Rect(
+                self.queue_x,
+                self.queue_y + 100,
+                self.item_width,
+                self.item_height,
+            )
+
+            draw_item_card(
+                self.surface,
+                rect,
+                Color.STATE_SUCCESS,
+                self.item_font,
+                created_value,
+                label_font=self.pointer_font,
                 label="NEW",
-                value=created_value,
-                background=(65, 150, 105),
             )
 
         # A DEQUEUE item is rendered separately while it is being
         # removed from the queue.
         if removed_value is not None:
-            self._render_detached_item(
-                x=self.queue_x,
-                y=self.queue_y + 100,
-                width=self.item_width,
-                height=self.item_height,
-                label="REMOVED",
-                value=removed_value,
-                background=(165, 75, 75),
+            rect = pygame.Rect(
+                self.queue_x,
+                self.queue_y + 100,
+                self.item_width,
+                self.item_height,
             )
 
-    def _draw_queue_item(
-        self,
-        x: int,
-        y: int,
-        width: int,
-        height: int,
-        index: int,
-        value: object,
-        background: tuple[int, int, int],
-    ) -> None:
-        rect = pygame.Rect(
-            x,
-            y,
-            width,
-            height,
-        )
+            draw_item_card(
+                self.surface,
+                rect,
+                Color.STATE_DANGER,
+                self.item_font,
+                removed_value,
+                label_font=self.pointer_font,
+                label="REMOVED",
+            )
 
-        pygame.draw.rect(
-            self.surface,
-            background,
-            rect,
-            border_radius=6,
-        )
-
-        pygame.draw.rect(
-            self.surface,
-            (210, 210, 210),
-            rect,
-            2,
-            border_radius=6,
-        )
-
-        value_text = self.item_font.render(
-            str(value),
-            True,
-            (245, 245, 245),
-        )
-
-        value_rect = value_text.get_rect(
-            center=rect.center,
-        )
-
-        self.surface.blit(
-            value_text,
-            value_rect,
-        )
-
-        index_text = self.index_font.render(
-            f"index {index}",
-            True,
-            (200, 200, 200),
-        )
-
-        index_rect = index_text.get_rect(
-            centerx=rect.centerx,
-            top=rect.bottom + 3,
-        )
-
-        self.surface.blit(
-            index_text,
-            index_rect,
-        )
-
-    def _render_detached_item(
-        self,
-        x: int,
-        y: int,
-        width: int,
-        height: int,
-        label: str,
-        value: object,
-        background: tuple[int, int, int],
-    ) -> None:
-        label_surface = self.pointer_font.render(
-            label,
-            True,
-            background,
-        )
-
-        label_rect = label_surface.get_rect(
-            centerx=x + width // 2,
-            bottom=y - 5,
-        )
-
-        self.surface.blit(
-            label_surface,
-            label_rect,
-        )
-
-        rect = pygame.Rect(
-            x,
-            y,
-            width,
-            height,
-        )
-
-        pygame.draw.rect(
-            self.surface,
-            background,
-            rect,
-            border_radius=6,
-        )
-
-        pygame.draw.rect(
-            self.surface,
-            (230, 230, 230),
-            rect,
-            2,
-            border_radius=6,
-        )
-
-        value_text = self.item_font.render(
-            str(value),
-            True,
-            (245, 245, 245),
-        )
-
-        value_rect = value_text.get_rect(
-            center=rect.center,
-        )
-
-        self.surface.blit(
-            value_text,
-            value_rect,
-        )
-
-    def _get_item_x(
-        self,
-        index: int,
-    ) -> int:
+    def _get_item_x(self, index: int) -> int:
         """Convert a queue index into a screen X coordinate."""
 
-        return (
-            self.queue_x
-            + index
-            * (self.item_width + self.item_spacing)
-        )
+        return self.queue_x + index * (self.item_width + self.item_spacing)
 
-    def _draw_queue_arrow(
-        self,
-        x: int,
-        y: int,
-    ) -> None:
+    def _draw_queue_arrow(self, x: int, y: int) -> None:
         """Draw the arrow connecting two queue items."""
 
         end_x = x + self.item_spacing - 5
 
-        pygame.draw.line(
-            self.surface,
-            (180, 180, 180),
-            (x, y),
-            (end_x, y),
-            3,
-        )
-
-        self._draw_arrow_head(
-            (end_x, y),
-            (180, 180, 180),
-            "right",
-        )
+        pygame.draw.line(self.surface, Color.BORDER, (x, y), (end_x, y), 3)
+        self._draw_arrow_head((end_x, y), Color.BORDER, "right")
 
     def _draw_arrow_head(
         self,
@@ -862,19 +617,13 @@ class QueueScreen(Screen):
                 (x - size, y - size // 2),
                 (x - size, y + size // 2),
             ]
-
         elif direction == "down":
             points = [
                 (x, y),
                 (x - size // 2, y - size),
                 (x + size // 2, y - size),
             ]
-
         else:
             return
 
-        pygame.draw.polygon(
-            self.surface,
-            color,
-            points,
-        )
+        pygame.draw.polygon(self.surface, color, points)
