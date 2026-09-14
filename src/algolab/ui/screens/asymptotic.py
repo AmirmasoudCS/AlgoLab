@@ -5,7 +5,9 @@ from algolab.topics.asymptotic.visualizer import AsymptoticVisualizer
 from algolab.ui.components.checkbox import Checkbox
 from algolab.ui.components.numeric_input import NumericInput
 from algolab.ui.components.radio_button import RadioButton
+from algolab.ui.components.surface import draw_panel
 from algolab.ui.screens.screen import Screen
+from algolab.ui.theme import Color, Font
 from algolab.visualization.graph.layout import GraphLayout
 from algolab.visualization.graph.scaling import (
     LinearScaling,
@@ -38,8 +40,8 @@ class AsymptoticScreen(Screen):
             self.y_scaling,
         )
 
-        self.control_font = pygame.font.Font(None, 30)
-        self.section_font = pygame.font.Font(None, 24)
+        self.control_font = Font.H1()
+        self.section_font = Font.H2()
 
         self.scale_buttons = self._create_scale_buttons()
         self.maximum_input = NumericInput(
@@ -115,13 +117,14 @@ class AsymptoticScreen(Screen):
         text: str,
         position: tuple[int, int],
         font: pygame.font.Font,
+        color: tuple[int, int, int] = Color.TEXT_PRIMARY,
     ) -> None:
         """Draw text in the TA control panel."""
 
         rendered_text = font.render(
             text,
             True,
-            (240, 240, 240),
+            color,
         )
 
         self.surface.blit(
@@ -179,19 +182,10 @@ class AsymptoticScreen(Screen):
         pass
 
     def render(self) -> None:
-        self.surface.fill((30, 30, 30))
+        self.surface.fill(Color.BG)
 
-        pygame.draw.rect(
-            self.surface,
-            (40, 40, 40),
-            pygame.Rect(
-                10,
-                70,
-                250,
-                500,
-            ),
-            border_radius=8,
-        )
+        panel_rect = pygame.Rect(10, 70, 250, 500)
+        draw_panel(self.surface, panel_rect, elevated=True)
 
         self._draw_text(
             "TA Controls",
@@ -203,6 +197,7 @@ class AsymptoticScreen(Screen):
             "Scale",
             (25, 115),
             self.section_font,
+            color=Color.TEXT_SECONDARY,
         )
 
         for radio_button in self.scale_buttons:
@@ -212,12 +207,14 @@ class AsymptoticScreen(Screen):
             "Input Size (N)",
             (25, 220),
             self.section_font,
+            color=Color.TEXT_SECONDARY,
         )
 
         self._draw_text(
             "Maximum:",
             (25, 245),
             self.section_font,
+            color=Color.TEXT_SECONDARY,
         )
 
         self.maximum_input.render(self.surface)
@@ -226,6 +223,7 @@ class AsymptoticScreen(Screen):
             "Complexity Functions",
             (25, 280),
             self.section_font,
+            color=Color.TEXT_SECONDARY,
         )
 
         for checkbox in self.checkboxes:
