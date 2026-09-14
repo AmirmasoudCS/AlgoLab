@@ -15,10 +15,26 @@ from algolab.topics.linked_list.simulation import (
 )
 from algolab.ui.components.button import Button
 from algolab.ui.components.numeric_input import NumericInput
+from algolab.ui.components.surface import draw_arrow, draw_panel
 from algolab.ui.screens.screen import Screen
+from algolab.ui.theme import Color, Font, Radius
 
 
 class LinkedListScreen(Screen):
+    """Screen for visualizing singly linked list operations."""
+
+    POINTER_COLORS = {
+        "previous": Color.STATE_COMPARING,
+        "current": Color.STATE_ACTIVE,
+        "new": Color.STATE_SUCCESS,
+    }
+
+    POINTER_LABELS = {
+        "previous": "PREVIOUS",
+        "current": "CURRENT",
+        "new": "NEW",
+    }
+
     def __init__(self, surface: pygame.Surface) -> None:
         super().__init__(surface)
 
@@ -29,13 +45,13 @@ class LinkedListScreen(Screen):
         self.current_simulation: LinkedListSimulation | None = None
         self.operation_committed = False
 
-        self.control_font = pygame.font.Font(None, 30)
-        self.section_font = pygame.font.Font(None, 24)
-        self.node_font = pygame.font.Font(None, 30)
-        self.small_font = pygame.font.Font(None, 22)
-        self.explanation_font = pygame.font.Font(None, 25)
-        self.pointer_font = pygame.font.Font(None, 20)
-        self.index_font = pygame.font.Font(None, 18)
+        self.control_font = Font.H1()
+        self.section_font = Font.H2()
+        self.node_font = Font.NODE()
+        self.small_font = Font.SMALL()
+        self.explanation_font = Font.BODY()
+        self.pointer_font = Font.LABEL()
+        self.index_font = Font.LABEL()
 
         self.operation_buttons = self._create_operation_buttons()
         self.navigation_buttons = self._create_navigation_buttons()
@@ -74,6 +90,8 @@ class LinkedListScreen(Screen):
             "Search",
         ]
 
+        variants = ["primary", "primary", "primary", "danger", "default"]
+
         buttons = []
         x = 25
         y = 145
@@ -81,7 +99,7 @@ class LinkedListScreen(Screen):
         height = 38
         spacing = 45
 
-        for index, label in enumerate(labels):
+        for index, (label, variant) in enumerate(zip(labels, variants)):
             buttons.append(
                 Button(
                     pygame.Rect(
@@ -91,6 +109,7 @@ class LinkedListScreen(Screen):
                         height,
                     ),
                     label,
+                    variant=variant,
                 )
             )
 
@@ -126,8 +145,9 @@ class LinkedListScreen(Screen):
         text: str,
         position: tuple[int, int],
         font: pygame.font.Font,
+        color: tuple[int, int, int] = Color.TEXT_PRIMARY,
     ) -> None:
-        rendered_text = font.render(text, True, (240, 240, 240))
+        rendered_text = font.render(text, True, color)
         self.surface.blit(rendered_text, position)
 
     def _draw_wrapped_text(
@@ -135,7 +155,7 @@ class LinkedListScreen(Screen):
         text: str,
         rect: pygame.Rect,
         font: pygame.font.Font,
-        color: tuple[int, int, int] = (235, 235, 235),
+        color: tuple[int, int, int] = Color.TEXT_SECONDARY,
     ) -> None:
         words = text.split()
         lines = []
@@ -191,36 +211,24 @@ class LinkedListScreen(Screen):
 
         try:
             if index == 0:
-                simulation = self.linked_list_simulator.insert_at_beginning(
-                    value
-                )
+                simulation = self.linked_list_simulator.insert_at_beginning(value)
             elif index == 1:
-                simulation = self.linked_list_simulator.insert_at_end(
-                    value
-                )
+                simulation = self.linked_list_simulator.insert_at_end(value)
             elif index == 2:
-                simulation = self.linked_list_simulator.insert_at(
-                    list_index,
-                    value,
-                )
+                simulation = self.linked_list_simulator.insert_at(list_index, value)
             elif index == 3:
-                simulation = self.linked_list_simulator.delete_at(
-                    list_index
-                )
+                simulation = self.linked_list_simulator.delete_at(list_index)
             elif index == 4:
                 simulation = self.linked_list_simulator.search(value)
             else:
                 return
-
         except IndexError:
             return
 
         self.current_simulation = simulation
         self.operation_committed = False
 
-        self.simulator.load_states(
-            list(simulation.states)
-        )
+        self.simulator.load_states(list(simulation.states))
 
         self.step_timer = 0.0
 
@@ -232,17 +240,13 @@ class LinkedListScreen(Screen):
 
         if index == 0:
             self.simulator.history.previous_to_start()
-
         elif index == 1:
             self.simulator.previous()
-
         elif index == 2:
             self.simulator.next()
-
         elif index == 3:
             while self.simulator.can_go_forward:
                 self.simulator.next()
-
         elif index == 4:
             if self.simulator.running:
                 self.simulator.pause()
@@ -271,6 +275,12 @@ class LinkedListScreen(Screen):
         self._reset_algorithm_pointers()
 
     def update(self, dt: float) -> None:
+        for button in self.operation_buttons:
+            button.update(dt)
+
+        for button in self.navigation_buttons:
+            button.update(dt)
+
         if self.current_simulation is None:
             return
 
@@ -292,30 +302,23 @@ class LinkedListScreen(Screen):
             self._commit_if_finished()
 
     def render(self) -> None:
-        self.surface.fill((30, 30, 30))
+        self.surface.fill(Color.BG)
 
         self._render_control_panel()
         self._render_explanation_panel()
         self._render_linked_list()
 
     def _render_control_panel(self) -> None:
-        pygame.draw.rect(
-            self.surface,
-            (40, 40, 40),
-            pygame.Rect(10, 70, 250, 500),
-            border_radius=8,
-        )
+        panel_rect = pygame.Rect(10, 70, 250, 500)
+        draw_panel(self.surface, panel_rect, elevated=True)
 
-        self._draw_text(
-            "TA Controls",
-            (25, 80),
-            self.control_font,
-        )
+        self._draw_text("TA Controls", (25, 80), self.control_font)
 
         self._draw_text(
             "Operations",
             (25, 115),
             self.section_font,
+            color=Color.TEXT_SECONDARY,
         )
 
         for button in self.operation_buttons:
@@ -325,6 +328,7 @@ class LinkedListScreen(Screen):
             "Value:",
             (25, 380),
             self.section_font,
+            color=Color.TEXT_SECONDARY,
         )
 
         self.value_input.render(self.surface)
@@ -333,6 +337,7 @@ class LinkedListScreen(Screen):
             "Index:",
             (25, 420),
             self.section_font,
+            color=Color.TEXT_SECONDARY,
         )
 
         self.index_input.render(self.surface)
@@ -341,6 +346,7 @@ class LinkedListScreen(Screen):
             "Simulation",
             (25, 465),
             self.section_font,
+            color=Color.TEXT_SECONDARY,
         )
 
         for button in self.navigation_buttons:
@@ -357,6 +363,7 @@ class LinkedListScreen(Screen):
                     ),
                     (25, 535),
                     self.small_font,
+                    color=Color.TEXT_MUTED,
                 )
 
     def _render_explanation_panel(self) -> None:
@@ -367,25 +374,13 @@ class LinkedListScreen(Screen):
             130,
         )
 
-        pygame.draw.rect(
-            self.surface,
-            (40, 40, 40),
-            panel_rect,
-            border_radius=8,
-        )
-
-        pygame.draw.rect(
-            self.surface,
-            (90, 90, 90),
-            panel_rect,
-            2,
-            border_radius=8,
-        )
+        draw_panel(self.surface, panel_rect, elevated=False)
 
         self._draw_text(
             "What is happening?",
             (295, 82),
             self.section_font,
+            color=Color.TEXT_SECONDARY,
         )
 
         state = self.simulator.state
@@ -497,7 +492,6 @@ class LinkedListScreen(Screen):
             head_index = 0 if values else None
 
             self._reset_algorithm_pointers()
-
         else:
             values = state.values
             current_index = state.current_index
@@ -513,40 +507,22 @@ class LinkedListScreen(Screen):
                     if isinstance(event, UpdateLinkEvent):
                         pointer_source = event.index
                         pointer_target = event.next_index
-
                     elif isinstance(event, UpdateHeadEvent):
                         head_index = event.index
-
                     elif isinstance(event, VisitNodeEvent):
                         current_index = event.index
-
                     elif isinstance(event, CreateNodeEvent):
                         created_index = event.index
-
                     elif isinstance(event, DeleteNodeEvent):
                         deleted_index = event.index
 
             self._rebuild_algorithm_pointers()
 
-        self._render_algorithm_pointers(
-            x,
-            y,
-            values,
-        )
-
-        self._render_head_pointer(
-            x,
-            y,
-            head_index,
-            values,
-        )
+        self._render_algorithm_pointers(x, y, values)
+        self._render_head_pointer(x, y, head_index, values)
 
         if not values:
-            self._draw_text(
-                "NULL",
-                (x, y),
-                self.node_font,
-            )
+            self._draw_empty_message()
             return
 
         self._render_nodes(
@@ -559,6 +535,17 @@ class LinkedListScreen(Screen):
             pointer_source,
             pointer_target,
         )
+
+    def _draw_empty_message(self) -> None:
+        area = pygame.Rect(280, 220, self.surface.get_width() - 300, 130)
+
+        text = self.explanation_font.render(
+            "List is empty. Insert a value to begin.",
+            True,
+            Color.TEXT_MUTED,
+        )
+
+        self.surface.blit(text, text.get_rect(center=area.center))
 
     def _render_algorithm_pointers(
         self,
@@ -577,30 +564,8 @@ class LinkedListScreen(Screen):
         if not values:
             return
 
-        active_pointers = [
-            name
-            for name, index in self.algorithm_pointers.items()
-            if index is not None
-        ]
-
-        if not active_pointers:
-            return
-
         node_width = 120
-        node_height = 70
         spacing = 90
-
-        pointer_colors = {
-            "previous": (235, 165, 75),
-            "current": (95, 165, 235),
-            "new": (100, 200, 140),
-        }
-
-        pointer_labels = {
-            "previous": "PREVIOUS",
-            "current": "CURRENT",
-            "new": "NEW",
-        }
 
         # Separate horizontal lanes keep multiple pointers readable.
         lane_y = {
@@ -618,22 +583,14 @@ class LinkedListScreen(Screen):
             if target_index < 0 or target_index >= len(values):
                 continue
 
-            color = pointer_colors[name]
-            label = pointer_labels[name]
+            color = self.POINTER_COLORS[name]
+            label = self.POINTER_LABELS[name]
 
-            target_x = (
-                x
-                + target_index * (node_width + spacing)
-                + node_width // 2
-            )
+            target_x = x + target_index * (node_width + spacing) + node_width // 2
 
-            start_x = target_x
-            start_y = lane_y[name]
+            start = (target_x, lane_y[name])
+            end = (target_x, y - 5)
 
-            end_x = target_x
-            end_y = y - 5
-
-            # Pointer label.
             label_surface = self.pointer_font.render(
                 f"{label} -> node {target_index}",
                 True,
@@ -641,8 +598,8 @@ class LinkedListScreen(Screen):
             )
 
             label_rect = label_surface.get_rect(
-                centerx=start_x,
-                bottom=start_y - 5,
+                centerx=start[0],
+                bottom=start[1] - 5,
             )
 
             # Keep the label inside the right side of the screen.
@@ -652,39 +609,11 @@ class LinkedListScreen(Screen):
             if label_rect.right > self.surface.get_width() - 10:
                 label_rect.right = self.surface.get_width() - 10
 
-            self.surface.blit(
-                label_surface,
-                label_rect,
-            )
+            self.surface.blit(label_surface, label_rect)
 
-            pygame.draw.line(
-                self.surface,
-                color,
-                (start_x, start_y),
-                (end_x, end_y),
-                3,
-            )
+            draw_arrow(self.surface, start, end, color)
 
-            self._draw_arrow_head(
-                (end_x, end_y),
-                color,
-                "down",
-            )
-
-            # Small marker at the target node.
-            target_marker = pygame.Rect(
-                target_x - 5,
-                y - 5,
-                10,
-                10,
-            )
-
-            pygame.draw.circle(
-                self.surface,
-                color,
-                target_marker.center,
-                5,
-            )
+            pygame.draw.circle(self.surface, color, (target_x, y - 5), 5)
 
     def _render_head_pointer(
         self,
@@ -697,6 +626,7 @@ class LinkedListScreen(Screen):
             "HEAD",
             (x, y - 180),
             self.control_font,
+            color=Color.ACCENT,
         )
 
         head_start = (x + 25, y - 145)
@@ -704,60 +634,30 @@ class LinkedListScreen(Screen):
         if head_index is None or not values:
             head_end = (x + 25, y - 10)
 
-            pygame.draw.line(
-                self.surface,
-                (100, 200, 140),
-                head_start,
-                head_end,
-                3,
-            )
-
-            self._draw_arrow_head(
-                head_end,
-                (100, 200, 140),
-                "down",
-            )
+            draw_arrow(self.surface, head_start, head_end, Color.ACCENT)
 
             self._draw_text(
                 "NULL",
                 (x + 40, y - 25),
                 self.pointer_font,
+                color=Color.TEXT_SECONDARY,
             )
 
             return
 
         node_width = 120
-        node_height = 70
         spacing = 90
 
-        target_x = (
-            x
-            + head_index * (node_width + spacing)
-        )
+        target_x = x + head_index * (node_width + spacing)
+        head_end = (target_x + node_width // 2, y - 5)
 
-        head_end = (
-            target_x + node_width // 2,
-            y - 5,
-        )
-
-        pygame.draw.line(
-            self.surface,
-            (100, 200, 140),
-            head_start,
-            head_end,
-            3,
-        )
-
-        self._draw_arrow_head(
-            head_end,
-            (100, 200, 140),
-            "down",
-        )
+        draw_arrow(self.surface, head_start, head_end, Color.ACCENT)
 
         self._draw_text(
             f"node {head_index}",
             (x + 55, y - 130),
             self.pointer_font,
+            color=Color.TEXT_SECONDARY,
         )
 
     def _render_nodes(
@@ -778,41 +678,32 @@ class LinkedListScreen(Screen):
         for index, value in enumerate(values):
             node_x = x + index * (node_width + spacing)
 
-            rect = pygame.Rect(
-                node_x,
-                y,
-                node_width,
-                node_height,
-            )
+            rect = pygame.Rect(node_x, y, node_width, node_height)
 
-            background = (65, 85, 115)
+            background = Color.STATE_DEFAULT
 
             if index == current_index:
-                background = (70, 110, 180)
+                background = Color.STATE_ACTIVE
 
             if index == created_index:
-                background = (65, 150, 105)
+                background = Color.STATE_SUCCESS
 
             if index == deleted_index:
-                background = (165, 75, 75)
+                background = Color.STATE_DANGER
 
             if index == pointer_source:
-                background = (180, 135, 55)
+                background = Color.STATE_COMPARING
 
-            pygame.draw.rect(
-                self.surface,
-                background,
-                rect,
-                border_radius=8,
-            )
+            # Faint shadow for a hint of depth, matching BST/stack/queue.
+            shadow_rect = rect.move(0, 3)
+            pygame.draw.rect(self.surface, Color.BG, shadow_rect, border_radius=Radius.MD)
 
-            border_color = (210, 210, 210)
+            pygame.draw.rect(self.surface, background, rect, border_radius=Radius.MD)
 
-            if index == pointer_source:
-                border_color = (255, 215, 90)
+            border_color = tuple(min(255, channel + 45) for channel in background)
 
-            # Give nodes targeted by temporary algorithm pointers a subtle
-            # outer outline without replacing their normal node colors.
+            # Give nodes targeted by temporary algorithm pointers a
+            # brighter outline without replacing their normal node color.
             algorithm_pointer_names = [
                 name
                 for name, target in self.algorithm_pointers.items()
@@ -820,21 +711,11 @@ class LinkedListScreen(Screen):
             ]
 
             if algorithm_pointer_names:
-                border_color = (235, 235, 235)
+                border_color = Color.TEXT_PRIMARY
 
-            pygame.draw.rect(
-                self.surface,
-                border_color,
-                rect,
-                2,
-                border_radius=8,
-            )
+            pygame.draw.rect(self.surface, border_color, rect, 2, border_radius=Radius.MD)
 
-            self._draw_node_contents(
-                rect,
-                index,
-                value,
-            )
+            self._draw_node_contents(rect, index, value)
 
             self._render_next_pointer(
                 rect,
@@ -867,59 +748,32 @@ class LinkedListScreen(Screen):
 
         pygame.draw.line(
             self.surface,
-            (180, 180, 180),
+            Color.BORDER,
             (data_rect.right, rect.top),
             (data_rect.right, rect.bottom),
             1,
         )
 
-        index_text = self.index_font.render(
-            f"node {index}",
-            True,
-            (200, 200, 200),
-        )
-
+        index_text = self.index_font.render(f"node {index}", True, Color.TEXT_MUTED)
         index_rect = index_text.get_rect(
             centerx=data_rect.centerx,
             bottom=data_rect.bottom - 5,
         )
+        self.surface.blit(index_text, index_rect)
 
-        self.surface.blit(
-            index_text,
-            index_rect,
-        )
-
-        value_text = self.node_font.render(
-            str(value),
-            True,
-            (245, 245, 245),
-        )
-
+        value_text = self.node_font.render(str(value), True, Color.TEXT_PRIMARY)
         value_rect = value_text.get_rect(
             centerx=data_rect.centerx,
             top=data_rect.top + 8,
         )
+        self.surface.blit(value_text, value_rect)
 
-        self.surface.blit(
-            value_text,
-            value_rect,
-        )
-
-        next_text = self.pointer_font.render(
-            "NEXT",
-            True,
-            (215, 215, 215),
-        )
-
+        next_text = self.pointer_font.render("NEXT", True, Color.TEXT_SECONDARY)
         next_rect_text = next_text.get_rect(
             centerx=next_rect.centerx,
             top=next_rect.top + 10,
         )
-
-        self.surface.blit(
-            next_text,
-            next_rect_text,
-        )
+        self.surface.blit(next_text, next_rect_text)
 
     def _render_next_pointer(
         self,
@@ -930,127 +784,40 @@ class LinkedListScreen(Screen):
         pointer_source: int | None,
         pointer_target: int | None,
     ) -> None:
-        pointer_start = (
-            rect.right,
-            rect.centery,
-        )
+        pointer_start = (rect.right, rect.centery)
 
         is_active_pointer = index == pointer_source
 
         if index < value_count - 1:
-            next_x = (
-                rect.x
-                + rect.width
-                + spacing
-            )
-
+            next_x = rect.x + rect.width + spacing
             target_x = next_x + 10
 
-            pointer_end = (
-                target_x,
-                rect.centery,
-            )
+            pointer_end = (target_x, rect.centery)
 
-            if is_active_pointer:
-                pointer_color = (255, 215, 90)
-                width = 5
-            else:
-                pointer_color = (150, 180, 210)
-                width = 3
+            pointer_color = Color.STATE_COMPARING if is_active_pointer else Color.BORDER
+            width = 5 if is_active_pointer else 3
 
-            pygame.draw.line(
-                self.surface,
-                pointer_color,
-                pointer_start,
-                pointer_end,
-                width,
-            )
+            draw_arrow(self.surface, pointer_start, pointer_end, pointer_color, width=width)
 
-            self._draw_arrow_head(
-                pointer_end,
-                pointer_color,
-                "right",
-            )
-
-            target_label = (
-                pointer_target
-                if is_active_pointer
-                else index + 1
-            )
+            target_label = pointer_target if is_active_pointer else index + 1
 
             self._draw_text(
                 f"node {target_label}",
-                (
-                    rect.right + 12,
-                    rect.y - 22,
-                ),
+                (rect.right + 12, rect.y - 22),
                 self.pointer_font,
+                color=Color.TEXT_SECONDARY,
             )
-
         else:
-            pointer_end = (
-                rect.right + spacing - 10,
-                rect.centery,
-            )
+            pointer_end = (rect.right + spacing - 10, rect.centery)
 
-            if is_active_pointer:
-                pointer_color = (255, 215, 90)
-                width = 5
-            else:
-                pointer_color = (150, 180, 210)
-                width = 3
+            pointer_color = Color.STATE_COMPARING if is_active_pointer else Color.BORDER
+            width = 5 if is_active_pointer else 3
 
-            pygame.draw.line(
-                self.surface,
-                pointer_color,
-                pointer_start,
-                pointer_end,
-                width,
-            )
-
-            self._draw_arrow_head(
-                pointer_end,
-                pointer_color,
-                "right",
-            )
+            draw_arrow(self.surface, pointer_start, pointer_end, pointer_color, width=width)
 
             self._draw_text(
                 "NULL",
-                (
-                    rect.right + 12,
-                    rect.y - 22,
-                ),
+                (rect.right + 12, rect.y - 22),
                 self.pointer_font,
+                color=Color.TEXT_SECONDARY,
             )
-
-    def _draw_arrow_head(
-        self,
-        position: tuple[int, int],
-        color: tuple[int, int, int],
-        direction: str,
-    ) -> None:
-        x, y = position
-        size = 8
-
-        if direction == "right":
-            points = [
-                (x, y),
-                (x - size, y - size // 2),
-                (x - size, y + size // 2),
-            ]
-
-        elif direction == "down":
-            points = [
-                (x, y),
-                (x - size // 2, y - size),
-                (x + size // 2, y - size),
-            ]
-
-        else:
-            return
-
-        pygame.draw.polygon(
-            self.surface,
-            color,
-            points,
-        )
