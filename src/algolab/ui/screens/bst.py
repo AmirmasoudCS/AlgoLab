@@ -13,9 +13,9 @@ from algolab.topics.bst.simulation import (
 )
 from algolab.ui.components.button import Button
 from algolab.ui.components.numeric_input import NumericInput
-from algolab.ui.components.surface import draw_panel
+from algolab.ui.components.surface import draw_arrow, draw_item_card, draw_panel
 from algolab.ui.screens.screen import Screen
-from algolab.ui.theme import Color, Font, Radius, Spacing
+from algolab.ui.theme import Color, Font, Spacing
 
 
 class BSTScreen(Screen):
@@ -694,32 +694,15 @@ class BSTScreen(Screen):
                 replacement_node_id,
             )
 
-            self._draw_node(rect, color, node.value, node.node_id)
-
-    def _draw_node(self, rect: pygame.Rect, color, value, node_id) -> None:
-        # Faint shadow for a hint of depth, sitting just behind the card.
-        shadow_rect = rect.move(0, 3)
-        pygame.draw.rect(
-            self.surface,
-            Color.BG,
-            shadow_rect,
-            border_radius=Radius.MD,
-        )
-
-        pygame.draw.rect(self.surface, color, rect, border_radius=Radius.MD)
-
-        border_color = tuple(min(255, channel + 45) for channel in color)
-        pygame.draw.rect(self.surface, border_color, rect, 2, border_radius=Radius.MD)
-
-        value_text = self.node_font.render(str(value), True, Color.TEXT_PRIMARY)
-        self.surface.blit(value_text, value_text.get_rect(center=rect.center))
-
-        node_id_text = self.edge_font.render(f"id {node_id}", True, Color.TEXT_MUTED)
-        node_id_rect = node_id_text.get_rect(
-            centerx=rect.centerx,
-            top=rect.bottom + 6,
-        )
-        self.surface.blit(node_id_text, node_id_rect)
+            draw_item_card(
+                self.surface,
+                rect,
+                color,
+                self.node_font,
+                node.value,
+                caption_font=self.edge_font,
+                caption=f"id {node.node_id}",
+            )
 
     def _draw_tree_edge(
         self,
@@ -744,23 +727,10 @@ class BSTScreen(Screen):
 
         pygame.draw.lines(self.surface, Color.BORDER, False, points, 2)
 
-        self._draw_arrow_head(end, Color.BORDER)
-
-    def _draw_arrow_head(
-        self,
-        position: tuple[int, int],
-        color: tuple[int, int, int],
-    ) -> None:
-        x, y = position
-        size = 7
-
-        points = [
-            (x, y),
-            (x - size, y - size),
-            (x + size, y - size),
-        ]
-
-        pygame.draw.polygon(self.surface, color, points)
+        # Draw the final short segment with draw_arrow so the arrowhead
+        # angle matches the curve's actual approach direction, then reuse
+        # the same arrow helper used by stack, queue, and linked list.
+        draw_arrow(self.surface, points[-2], points[-1], Color.BORDER, width=2)
 
     def _render_traversal_result(self, values) -> None:
         text = "Result: " + " -> ".join(str(value) for value in values)
