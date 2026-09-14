@@ -7,21 +7,11 @@ from algolab.visualization.graph.curve import CurveGenerator
 from algolab.visualization.graph.layout import GraphLayout
 from algolab.visualization.graph.renderer import GraphRenderer
 from algolab.visualization.graph.scaling import ScalingStrategy, LinearScaling, LogarithmicScaling
+from algolab.ui.theme import Color, Font, CURVE_COLORS
 
 
 class AsymptoticVisualizer:
     """Visualizes asymptotic complexity functions."""
-
-    CURVE_COLORS = {
-        "O(1)": (80, 80, 80),
-        "O(log n)": (52, 152, 219),
-        "O(n)": (46, 204, 113),
-        "O(n log n)": (26, 188, 156),
-        "O(n²)": (241, 196, 15),
-        "O(n³)": (230, 126, 34),
-        "O(2ⁿ)": (231, 76, 60),
-        "O(nⁿ)": (155, 89, 182),
-    }
 
     def __init__(
         self,
@@ -32,7 +22,7 @@ class AsymptoticVisualizer:
     ) -> None:
 
         pygame.font.init()
-        
+
         self.surface = surface
         self.model = model
         self.layout = layout
@@ -40,8 +30,8 @@ class AsymptoticVisualizer:
 
         self._curve_generator = CurveGenerator()
         self._bounds_calculator = BoundsCalculator()
-        self.title_font = pygame.font.Font(None, 32)
-        self.label_font = pygame.font.Font(None, 22)    
+        self.title_font = Font.H1()
+        self.label_font = Font.SMALL()
 
     def set_y_scaling(self, scaling: ScalingStrategy) -> None:
         self.y_scaling = scaling
@@ -58,7 +48,7 @@ class AsymptoticVisualizer:
         title = self.title_font.render(
             "Asymptotic Complexity",
             True,
-            (240, 240, 240),
+            Color.TEXT_PRIMARY,
         )
 
         title_rect = title.get_rect(
@@ -70,7 +60,7 @@ class AsymptoticVisualizer:
         scale = self.label_font.render(
             f"Y-axis: {self._get_scaling_label()} Scale",
             True,
-            (200, 200, 200),
+            Color.TEXT_SECONDARY,
         )
 
         scale_rect = scale.get_rect(
@@ -83,7 +73,7 @@ class AsymptoticVisualizer:
         legend_title = self.label_font.render(
             "Complexity Functions",
             True,
-            (240, 240, 240),
+            Color.TEXT_PRIMARY,
         )
 
         title_rect = legend_title.get_rect(
@@ -108,7 +98,7 @@ class AsymptoticVisualizer:
             x = start_x + column * column_width
             y = start_y + row * row_height
 
-            color = self.CURVE_COLORS[complexity.notation]
+            color = CURVE_COLORS[complexity.notation]
 
             pygame.draw.circle(
                 self.surface,
@@ -120,7 +110,7 @@ class AsymptoticVisualizer:
             label = self.label_font.render(
                 complexity.notation,
                 True,
-                (230, 230, 230),
+                Color.TEXT_SECONDARY,
             )
 
             self.surface.blit(
@@ -132,7 +122,7 @@ class AsymptoticVisualizer:
         x_label = self.label_font.render(
             "Input Size (n)",
             True,
-            (230, 230, 230),
+            Color.TEXT_SECONDARY,
         )
 
         x_rect = x_label.get_rect(
@@ -147,7 +137,7 @@ class AsymptoticVisualizer:
         y_label = self.label_font.render(
             "Operations",
             True,
-            (230, 230, 230),
+            Color.TEXT_SECONDARY,
         )
 
         y_label = pygame.transform.rotate(y_label, 90)
@@ -212,7 +202,7 @@ class AsymptoticVisualizer:
         for complexity, curve in curve_data:
             renderer.draw_curve(
                 curve,
-                color=self.CURVE_COLORS[complexity.notation],
+                color=CURVE_COLORS[complexity.notation],
             )
 
         self._draw_title()
