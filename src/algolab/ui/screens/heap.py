@@ -40,16 +40,16 @@ class HeapScreen(Screen):
         self.explanation_font = pygame.font.Font(None, 25)
         self.edge_font = pygame.font.Font(None, 18)
 
+        self.heap_type_buttons = (
+            self._create_heap_type_buttons()
+        )
+
         self.operation_buttons = (
             self._create_operation_buttons()
         )
 
         self.navigation_buttons = (
             self._create_navigation_buttons()
-        )
-
-        self.heap_type_buttons = (
-            self._create_heap_type_buttons()
         )
 
         self.value_input = NumericInput(
@@ -153,12 +153,11 @@ class HeapScreen(Screen):
             if button.handle_event(event):
                 self._handle_navigation(index)
 
-        if hasattr(self, "min_heap_button"):
-            if self.min_heap_button.handle_event(event):
-                self._set_heap_type(HeapType.MIN)
+        if self.heap_type_buttons[0].handle_event(event):
+            self._set_heap_type(HeapType.MIN)
 
-            if self.max_heap_button.handle_event(event):
-                self._set_heap_type(HeapType.MAX)
+        if self.heap_type_buttons[1].handle_event(event):
+            self._set_heap_type(HeapType.MAX)
 
     def _set_heap_type(self, heap_type: HeapType) -> None:
         """Change heap type and reset the current heap."""
@@ -317,7 +316,7 @@ class HeapScreen(Screen):
         self._draw_text(
             "Heap Type",
             self.section_font,
-            (25, 115),
+            (25, 105),
         )
 
         self._render_heap_type_button(
@@ -359,22 +358,78 @@ class HeapScreen(Screen):
         for button in self.navigation_buttons:
             button.render(self.surface)
 
+        if self.current_simulation is None:
+            step_text = "Step: -"
+        else:
+            current_index = (
+                self.simulator.history._current_index
+            )
+            total_steps = len(
+                self.current_simulation.states
+            )
+
+            step_text = (
+                f"Step: {current_index + 1} / "
+                f"{total_steps}"
+            )
+
         self._draw_text(
-            self._get_step_text(),
+            step_text,
             self.small_font,
             (25, 570),
         )
 
-    def _get_step_text(self) -> str:
-        """Return the current simulation step text."""
-        current_index = self.simulator.history._current_index
+    def _render_heap_type_button(
+        self,
+        button: Button,
+        selected: bool,
+    ) -> None:
+        """Render a heap type button with selected-state highlighting."""
 
-        if self.current_simulation is None:
-            return "Step: -"
+        if selected:
+            background = (70, 105, 145)
+            border_color = (150, 190, 235)
 
-        total_steps = len(self.current_simulation.states)
+        else:
+            mouse_position = pygame.mouse.get_pos()
 
-        return f"Step: {current_index + 1} / {total_steps}"
+            if button.rect.collidepoint(mouse_position):
+                background = (70, 70, 70)
+
+            else:
+                background = (50, 50, 50)
+
+            border_color = (100, 100, 100)
+
+        pygame.draw.rect(
+            self.surface,
+            background,
+            button.rect,
+            border_radius=8,
+        )
+
+        pygame.draw.rect(
+            self.surface,
+            border_color,
+            button.rect,
+            2,
+            border_radius=8,
+        )
+
+        text = button.font.render(
+            button.label,
+            True,
+            (240, 240, 240),
+        )
+
+        text_rect = text.get_rect(
+            center=button.rect.center,
+        )
+
+        self.surface.blit(
+            text,
+            text_rect,
+        )
 
     def _render_explanation_panel(self) -> None:
         panel_rect = pygame.Rect(
@@ -455,7 +510,7 @@ class HeapScreen(Screen):
 
         return self.model.values
 
-    def _render_heap(self) -> None:                                     # Should refactor this function!
+    def _render_heap(self) -> None:
         values = self._get_display_values()
 
         if not values:
@@ -520,16 +575,33 @@ class HeapScreen(Screen):
             ):
                 current_index = event.to_index
 
+        # The create state intentionally contains the old values,
+        # because the simulation separates creation from insertion
+        # into the heap array. Add the created value only for display.
+        display_values = list(values)
+
+        state = self._get_simulation_state()
+
+        if (
+            state is not None
+            and created_index is not None
+            and created_index == len(display_values)
+            and state.created_value is not None
+        ):
+            display_values.append(
+                state.created_value
+            )
+
         positions = self._calculate_positions(
-            len(values)
+            len(display_values)
         )
 
         self._render_heap_edges(
-            len(values),
+            len(display_values),
             positions,
         )
 
-        for index, value in enumerate(values):
+        for index, value in enumerate(display_values):
             self._render_heap_node(
                 index=index,
                 value=value,
@@ -542,62 +614,12 @@ class HeapScreen(Screen):
             )
 
         self._render_array(
-            values,
+            display_values,
             compared_indices,
             swapped_indices,
             created_index,
             extracted_index,
             current_index,
-        )
-
-    def _render_heap_type_button(
-        self,
-        button: Button,
-        selected: bool,
-    ) -> None:
-        """Render a heap type button with an optional selected state."""
-
-        if selected:
-            background = (70, 105, 145)
-            border_color = (150, 190, 235)
-        else:
-            mouse_position = pygame.mouse.get_pos()
-
-            if button.rect.collidepoint(mouse_position):
-                background = (70, 70, 70)
-            else:
-                background = (50, 50, 50)
-
-            border_color = (100, 100, 100)
-
-        pygame.draw.rect(
-            self.surface,
-            background,
-            button.rect,
-            border_radius=8,
-        )
-
-        pygame.draw.rect(
-            self.surface,
-            border_color,
-            button.rect,
-            2,
-            border_radius=8,
-        )
-
-        text = button.font.render(
-            button.label,
-            True,
-            (240, 240, 240),
-        )
-
-        text_rect = text.get_rect(
-            center=button.rect.center,
-        )
-
-        self.surface.blit(
-            text,
-            text_rect,
         )
 
     def _calculate_positions(
