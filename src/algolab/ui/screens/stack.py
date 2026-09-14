@@ -10,9 +10,9 @@ from algolab.topics.stack.simulation import (
 )
 from algolab.ui.components.button import Button
 from algolab.ui.components.numeric_input import NumericInput
-from algolab.ui.components.surface import draw_panel
+from algolab.ui.components.surface import draw_item_card, draw_panel
 from algolab.ui.screens.screen import Screen
-from algolab.ui.theme import Color, Font, Radius
+from algolab.ui.theme import Color, Font
 
 
 class StackScreen(Screen):
@@ -502,14 +502,16 @@ class StackScreen(Screen):
                 ):
                     background = Color.STATE_COMPARING
 
-                self._draw_stack_item(
-                    x=self.stack_x,
-                    y=y,
-                    width=self.stack_width,
-                    height=self.item_height,
-                    index=index,
-                    value=value,
-                    background=background,
+                rect = pygame.Rect(self.stack_x, y, self.stack_width, self.item_height)
+
+                draw_item_card(
+                    self.surface,
+                    rect,
+                    background,
+                    self.item_font,
+                    value,
+                    caption_font=self.index_font,
+                    caption=f"index {index}",
                 )
 
         # A PUSH item is deliberately detached from the stack.
@@ -517,14 +519,21 @@ class StackScreen(Screen):
         # The simulation state still contains the old values here, so
         # the new item must NOT be rendered as part of the stack yet.
         if created_value is not None:
-            self._render_detached_item(
-                x=self.stack_x,
-                y=self.stack_first_y - 90,
-                width=self.stack_width,
-                height=self.item_height,
+            rect = pygame.Rect(
+                self.stack_x,
+                self.stack_first_y - 90,
+                self.stack_width,
+                self.item_height,
+            )
+
+            draw_item_card(
+                self.surface,
+                rect,
+                Color.STATE_SUCCESS,
+                self.item_font,
+                created_value,
+                label_font=self.pointer_font,
                 label="NEW",
-                value=created_value,
-                background=Color.STATE_SUCCESS,
             )
 
         # A POP item is rendered separately while it is being removed.
@@ -535,69 +544,22 @@ class StackScreen(Screen):
                 removed_index = len(values) - 1
                 removed_y = self._get_item_y(removed_index, len(values))
 
-            self._render_detached_item(
-                x=self.stack_x + self.stack_width + 100,
-                y=removed_y,
-                width=self.stack_width,
-                height=self.item_height,
-                label="REMOVED",
-                value=removed_value,
-                background=Color.STATE_DANGER,
+            rect = pygame.Rect(
+                self.stack_x + self.stack_width + 100,
+                removed_y,
+                self.stack_width,
+                self.item_height,
             )
 
-    def _draw_stack_item(
-        self,
-        x: int,
-        y: int,
-        width: int,
-        height: int,
-        index: int,
-        value: object,
-        background: tuple[int, int, int],
-    ) -> None:
-        rect = pygame.Rect(x, y, width, height)
-
-        shadow_rect = rect.move(0, 3)
-        pygame.draw.rect(self.surface, Color.BG, shadow_rect, border_radius=Radius.MD)
-
-        pygame.draw.rect(self.surface, background, rect, border_radius=Radius.MD)
-
-        border_color = tuple(min(255, channel + 45) for channel in background)
-        pygame.draw.rect(self.surface, border_color, rect, 2, border_radius=Radius.MD)
-
-        value_text = self.item_font.render(str(value), True, Color.TEXT_PRIMARY)
-        self.surface.blit(value_text, value_text.get_rect(center=rect.center))
-
-        index_text = self.index_font.render(f"index {index}", True, Color.TEXT_MUTED)
-        index_rect = index_text.get_rect(centerx=rect.centerx, top=rect.bottom + 3)
-        self.surface.blit(index_text, index_rect)
-
-    def _render_detached_item(
-        self,
-        x: int,
-        y: int,
-        width: int,
-        height: int,
-        label: str,
-        value: object,
-        background: tuple[int, int, int],
-    ) -> None:
-        label_surface = self.pointer_font.render(label, True, background)
-        label_rect = label_surface.get_rect(centerx=x + width // 2, bottom=y - 5)
-        self.surface.blit(label_surface, label_rect)
-
-        rect = pygame.Rect(x, y, width, height)
-
-        shadow_rect = rect.move(0, 3)
-        pygame.draw.rect(self.surface, Color.BG, shadow_rect, border_radius=Radius.MD)
-
-        pygame.draw.rect(self.surface, background, rect, border_radius=Radius.MD)
-
-        border_color = tuple(min(255, channel + 45) for channel in background)
-        pygame.draw.rect(self.surface, border_color, rect, 2, border_radius=Radius.MD)
-
-        value_text = self.item_font.render(str(value), True, Color.TEXT_PRIMARY)
-        self.surface.blit(value_text, value_text.get_rect(center=rect.center))
+            draw_item_card(
+                self.surface,
+                rect,
+                Color.STATE_DANGER,
+                self.item_font,
+                removed_value,
+                label_font=self.pointer_font,
+                label="REMOVED",
+            )
 
     def _get_item_y(self, index: int, value_count: int) -> int:
         """
