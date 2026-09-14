@@ -1,3 +1,5 @@
+import math
+
 import pygame
 
 from algolab.ui.theme import Color, Radius
@@ -62,3 +64,39 @@ def draw_item_card(
         caption_text = caption_font.render(caption, True, Color.TEXT_MUTED)
         caption_rect = caption_text.get_rect(centerx=rect.centerx, top=rect.bottom + 3)
         surface.blit(caption_text, caption_rect)
+
+
+def draw_arrow(
+    surface,
+    start: tuple[int, int],
+    end: tuple[int, int],
+    color: tuple[int, int, int],
+    width: int = 3,
+    head_size: int = 8,
+) -> None:
+    """
+    Draw a straight line with an arrowhead pointing at `end`.
+
+    Unlike a fixed "left/right/up/down" arrowhead, the head angle is
+    derived from the line's direction, so this works for the vertical
+    HEAD/TOP/FRONT pointers, the horizontal NEXT pointers, and the
+    diagonal algorithm pointers in the linked list screen, all with one
+    function.
+    """
+
+    pygame.draw.line(surface, color, start, end, width)
+
+    angle = math.atan2(end[1] - start[1], end[0] - start[0])
+    spread = math.radians(28)
+
+    left = (
+        end[0] - head_size * math.cos(angle - spread),
+        end[1] - head_size * math.sin(angle - spread),
+    )
+
+    right = (
+        end[0] - head_size * math.cos(angle + spread),
+        end[1] - head_size * math.sin(angle + spread),
+    )
+
+    pygame.draw.polygon(surface, color, [end, left, right])
