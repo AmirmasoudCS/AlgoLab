@@ -68,3 +68,15 @@ class Radius:
 
 class Spacing:
     XS, SM, MD, LG, XL = 4, 8, 16, 24, 32
+
+# theme.py, at module level (not inside a class)
+CURVE_COLORS = {
+    "O(1)": (140, 140, 148),
+    "O(log n)": (99, 141, 245),
+    "O(n)": (86, 176, 125),
+    "O(n log n)": (74, 200, 190),
+    "O(n\u00b2)": (222, 184, 74),
+    "O(n\u00b3)": (222, 140, 74),
+    "O(2\u207f)": (214, 95, 95),
+    "O(n\u207f)": (168, 122, 201),
+}
