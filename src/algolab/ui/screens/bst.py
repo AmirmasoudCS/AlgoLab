@@ -13,11 +13,23 @@ from algolab.topics.bst.simulation import (
 )
 from algolab.ui.components.button import Button
 from algolab.ui.components.numeric_input import NumericInput
+from algolab.ui.components.surface import draw_panel
 from algolab.ui.screens.screen import Screen
+from algolab.ui.theme import Color, Font, Radius, Spacing
 
 
 class BSTScreen(Screen):
     """Binary search tree visualization screen."""
+
+    LEGEND = [
+        (Color.STATE_COMPARING, "Comparing"),
+        (Color.STATE_ACTIVE, "Active"),
+        (Color.STATE_VISITED, "Visited"),
+        (Color.STATE_SUCCESS, "Inserted"),
+        (Color.STATE_DANGER, "Removed"),
+        (Color.STATE_RESULT, "Result"),
+        (Color.STATE_REPLACE, "Replaced"),
+    ]
 
     def __init__(self, surface: pygame.Surface) -> None:
         super().__init__(surface)
@@ -29,15 +41,14 @@ class BSTScreen(Screen):
         self.current_simulation: BSTSimulation | None = None
         self.operation_committed = False
 
-        # Message shown after an operation finishes.
         self.status_message: str | None = None
 
-        self.control_font = pygame.font.Font(None, 30)
-        self.section_font = pygame.font.Font(None, 24)
-        self.node_font = pygame.font.Font(None, 28)
-        self.small_font = pygame.font.Font(None, 22)
-        self.explanation_font = pygame.font.Font(None, 25)
-        self.edge_font = pygame.font.Font(None, 18)
+        self.control_font = Font.H1()
+        self.section_font = Font.H2()
+        self.node_font = Font.NODE()
+        self.small_font = Font.SMALL()
+        self.explanation_font = Font.BODY()
+        self.edge_font = Font.LABEL()
 
         self.operation_buttons = self._create_operation_buttons()
         self.navigation_buttons = self._create_navigation_buttons()
@@ -71,6 +82,10 @@ class BSTScreen(Screen):
         spacing = 38
 
         for index, label in enumerate(labels):
+            variant = "primary" if label == "Insert" else "default"
+            if label == "Delete":
+                variant = "danger"
+
             buttons.append(
                 Button(
                     pygame.Rect(
@@ -80,6 +95,7 @@ class BSTScreen(Screen):
                         height,
                     ),
                     label,
+                    variant=variant,
                 )
             )
 
@@ -116,24 +132,17 @@ class BSTScreen(Screen):
         text: str,
         position: tuple[int, int],
         font: pygame.font.Font,
+        color: tuple[int, int, int] = Color.TEXT_PRIMARY,
     ) -> None:
-        rendered_text = font.render(
-            text,
-            True,
-            (240, 240, 240),
-        )
-
-        self.surface.blit(
-            rendered_text,
-            position,
-        )
+        rendered_text = font.render(text, True, color)
+        self.surface.blit(rendered_text, position)
 
     def _draw_wrapped_text(
         self,
         text: str,
         rect: pygame.Rect,
         font: pygame.font.Font,
-        color: tuple[int, int, int] = (235, 235, 235),
+        color: tuple[int, int, int] = Color.TEXT_SECONDARY,
     ) -> None:
         words = text.split()
         lines = []
@@ -164,16 +173,8 @@ class BSTScreen(Screen):
             if y + line_height > rect.bottom:
                 break
 
-            rendered_text = font.render(
-                line,
-                True,
-                color,
-            )
-
-            self.surface.blit(
-                rendered_text,
-                (rect.x, y),
-            )
+            rendered_text = font.render(line, True, color)
+            self.surface.blit(rendered_text, (rect.x, y))
 
             y += line_height
 
@@ -197,31 +198,22 @@ class BSTScreen(Screen):
         try:
             if index == 0:
                 simulation = self.bst_simulator.insert(value)
-
             elif index == 1:
                 simulation = self.bst_simulator.search(value)
-
             elif index == 2:
                 simulation = self.bst_simulator.delete(value)
-
             elif index == 3:
                 simulation = self.bst_simulator.find_min()
-
             elif index == 4:
                 simulation = self.bst_simulator.find_max()
-
             elif index == 5:
                 simulation = self.bst_simulator.in_order()
-
             elif index == 6:
                 simulation = self.bst_simulator.pre_order()
-
             elif index == 7:
                 simulation = self.bst_simulator.post_order()
-
             else:
                 return
-
         except (IndexError, ValueError):
             return
 
@@ -229,9 +221,7 @@ class BSTScreen(Screen):
         self.operation_committed = False
         self.status_message = None
 
-        self.simulator.load_states(
-            list(simulation.states)
-        )
+        self.simulator.load_states(list(simulation.states))
 
         self.step_timer = 0.0
 
@@ -241,17 +231,13 @@ class BSTScreen(Screen):
 
         if index == 0:
             self.simulator.history.previous_to_start()
-
         elif index == 1:
             self.simulator.previous()
-
         elif index == 2:
             self.simulator.next()
-
         elif index == 3:
             while self.simulator.can_go_forward:
                 self.simulator.next()
-
         elif index == 4:
             if self.simulator.running:
                 self.simulator.pause()
@@ -283,6 +269,12 @@ class BSTScreen(Screen):
         self.simulator.reset()
 
     def update(self, dt: float) -> None:
+        for button in self.operation_buttons:
+            button.update(dt)
+
+        for button in self.navigation_buttons:
+            button.update(dt)
+
         if self.current_simulation is None:
             return
 
@@ -304,30 +296,24 @@ class BSTScreen(Screen):
             self._commit_if_finished()
 
     def render(self) -> None:
-        self.surface.fill((30, 30, 30))
+        self.surface.fill(Color.BG)
 
         self._render_control_panel()
         self._render_explanation_panel()
         self._render_tree()
+        self._render_legend()
 
     def _render_control_panel(self) -> None:
-        pygame.draw.rect(
-            self.surface,
-            (40, 40, 40),
-            pygame.Rect(10, 70, 250, 620),
-            border_radius=8,
-        )
+        panel_rect = pygame.Rect(10, 70, 250, 620)
+        draw_panel(self.surface, panel_rect, elevated=True)
 
-        self._draw_text(
-            "TA Controls",
-            (25, 80),
-            self.control_font,
-        )
+        self._draw_text("TA Controls", (25, 80), self.control_font)
 
         self._draw_text(
             "Operations",
             (25, 115),
             self.section_font,
+            color=Color.TEXT_SECONDARY,
         )
 
         for button in self.operation_buttons:
@@ -337,6 +323,7 @@ class BSTScreen(Screen):
             "Value:",
             (25, 480),
             self.section_font,
+            color=Color.TEXT_SECONDARY,
         )
 
         self.value_input.render(self.surface)
@@ -345,6 +332,7 @@ class BSTScreen(Screen):
             "Simulation",
             (25, 535),
             self.section_font,
+            color=Color.TEXT_SECONDARY,
         )
 
         for button in self.navigation_buttons:
@@ -361,6 +349,7 @@ class BSTScreen(Screen):
                     ),
                     (25, 610),
                     self.small_font,
+                    color=Color.TEXT_MUTED,
                 )
 
     def _render_explanation_panel(self) -> None:
@@ -371,25 +360,13 @@ class BSTScreen(Screen):
             130,
         )
 
-        pygame.draw.rect(
-            self.surface,
-            (40, 40, 40),
-            panel_rect,
-            border_radius=8,
-        )
-
-        pygame.draw.rect(
-            self.surface,
-            (90, 90, 90),
-            panel_rect,
-            2,
-            border_radius=8,
-        )
+        draw_panel(self.surface, panel_rect, elevated=False)
 
         self._draw_text(
             "What is happening?",
             (295, 82),
             self.section_font,
+            color=Color.TEXT_SECONDARY,
         )
 
         state = self.simulator.state
@@ -399,9 +376,7 @@ class BSTScreen(Screen):
         elif self.status_message is not None:
             description = self.status_message
         else:
-            description = (
-                "Select an operation to start a simulation."
-            )
+            description = "Select an operation to start a simulation."
 
         description_rect = pygame.Rect(
             295,
@@ -415,6 +390,20 @@ class BSTScreen(Screen):
             description_rect,
             self.explanation_font,
         )
+
+    def _render_legend(self) -> None:
+        x = 295
+        y = self.surface.get_height() - 90
+        spacing = Spacing.LG
+
+        for color, label in self.LEGEND:
+            swatch_rect = pygame.Rect(x, y + 4, 14, 14)
+            pygame.draw.rect(self.surface, color, swatch_rect, border_radius=4)
+
+            label_surface = self.small_font.render(label, True, Color.TEXT_SECONDARY)
+            self.surface.blit(label_surface, (x + 20, y))
+
+            x += 20 + label_surface.get_width() + spacing
 
     def _get_simulation_state(self):
         if self.simulator.state is None:
@@ -437,10 +426,7 @@ class BSTScreen(Screen):
         if isinstance(nodes, dict):
             return dict(nodes)
 
-        return {
-            node.node_id: node
-            for node in nodes
-        }
+        return {node.node_id: node for node in nodes}
 
     def _render_tree(self) -> None:
         state = self._get_simulation_state()
@@ -449,35 +435,20 @@ class BSTScreen(Screen):
             root = self.model.root
 
             if root is None:
-                self._draw_text(
-                    "Tree is empty.",
-                    (600, 350),
-                    self.explanation_font,
-                )
+                self._draw_empty_tree_message()
                 return
 
             node_map = self._build_model_node_map(root)
-
             root_id = id(root)
 
-            self._render_tree_structure(
-                node_map,
-                root_id,
-                None,
-                None,
-                None,
-            )
+            self._render_tree_structure(node_map, root_id, None, None, None)
 
             return
 
         node_map = self._build_node_map(state)
 
         if state.root_id is None:
-            self._draw_text(
-                "Tree is empty.",
-                (600, 350),
-                self.explanation_font,
-            )
+            self._draw_empty_tree_message()
             return
 
         events = self._get_events()
@@ -495,16 +466,12 @@ class BSTScreen(Screen):
         for event in events:
             if isinstance(event, CompareNodeEvent):
                 compare_node_ids.add(event.node_id)
-
             elif isinstance(event, VisitBSTNodeEvent):
                 visited_node_ids.add(event.node_id)
-
             elif isinstance(event, CreateBSTNodeEvent):
                 created_node_id = event.node_id
-
             elif isinstance(event, DeleteBSTNodeEvent):
                 removed_node_id = event.node_id
-
             elif isinstance(event, ReplaceNodeValueEvent):
                 replacement_node_id = event.node_id
 
@@ -521,9 +488,23 @@ class BSTScreen(Screen):
         )
 
         if state.traversal_values:
-            self._render_traversal_result(
-                state.traversal_values
-            )
+            self._render_traversal_result(state.traversal_values)
+
+    def _draw_empty_tree_message(self) -> None:
+        area = pygame.Rect(
+            280,
+            220,
+            self.surface.get_width() - 300,
+            120,
+        )
+
+        text = self.explanation_font.render(
+            "Tree is empty. Insert a value to begin.",
+            True,
+            Color.TEXT_MUTED,
+        )
+
+        self.surface.blit(text, text.get_rect(center=area.center))
 
     def _build_model_node_map(self, root):
         node_map = {}
@@ -534,17 +515,8 @@ class BSTScreen(Screen):
 
             node_id = id(node)
 
-            left_id = (
-                id(node.left)
-                if node.left is not None
-                else None
-            )
-
-            right_id = (
-                id(node.right)
-                if node.right is not None
-                else None
-            )
+            left_id = id(node.left) if node.left is not None else None
+            right_id = id(node.right) if node.right is not None else None
 
             node_map[node_id] = type(
                 "ModelNodeState",
@@ -564,11 +536,7 @@ class BSTScreen(Screen):
 
         return node_map
 
-    def _calculate_positions(
-        self,
-        node_map,
-        root_id,
-    ):
+    def _calculate_positions(self, node_map, root_id):
         positions = {}
 
         if root_id is None or root_id not in node_map:
@@ -581,9 +549,7 @@ class BSTScreen(Screen):
         available_left = 315
         available_right = self.surface.get_width() - 25
 
-        available_width = (
-            available_right - available_left
-        )
+        available_width = available_right - available_left
 
         order = []
 
@@ -597,11 +563,7 @@ class BSTScreen(Screen):
                 return
 
             inorder(node.left_id, depth + 1)
-
-            order.append(
-                (node_id, depth)
-            )
-
+            order.append((node_id, depth))
             inorder(node.right_id, depth + 1)
 
         inorder(root_id, 0)
@@ -611,24 +573,15 @@ class BSTScreen(Screen):
 
         node_count = len(order)
 
-        max_spacing = (
-            node_width
-            + horizontal_spacing
-        )
-
-        required_width = (
-            node_count * max_spacing
-        )
+        max_spacing = node_width + horizontal_spacing
+        required_width = node_count * max_spacing
 
         spacing = horizontal_spacing
 
         if required_width > available_width:
             spacing = max(
                 15,
-                (
-                    available_width
-                    - node_count * node_width
-                )
+                (available_width - node_count * node_width)
                 / max(1, node_count - 1),
             )
 
@@ -637,23 +590,13 @@ class BSTScreen(Screen):
             + max(0, node_count - 1) * spacing
         )
 
-        start_x = (
-            available_left
-            + max(
-                0,
-                int(
-                    (available_width - total_width)
-                    / 2
-                ),
-            )
+        start_x = available_left + max(
+            0,
+            int((available_width - total_width) / 2),
         )
 
         for index, (node_id, depth) in enumerate(order):
-            x = (
-                start_x
-                + index * (node_width + spacing)
-            )
-
+            x = start_x + index * (node_width + spacing)
             y = 240 + depth * level_height
 
             positions[node_id] = pygame.Rect(
@@ -664,6 +607,40 @@ class BSTScreen(Screen):
             )
 
         return positions
+
+    def _node_color(
+        self,
+        node_id,
+        active_node_id,
+        created_node_id,
+        removed_node_id,
+        compare_node_ids,
+        visited_node_ids,
+        result_node_id,
+        replacement_node_id,
+    ) -> tuple[int, int, int]:
+        if node_id == removed_node_id:
+            return Color.STATE_DANGER
+
+        if node_id == created_node_id:
+            return Color.STATE_SUCCESS
+
+        if node_id == replacement_node_id:
+            return Color.STATE_REPLACE
+
+        if node_id == result_node_id:
+            return Color.STATE_RESULT
+
+        if node_id in compare_node_ids:
+            return Color.STATE_COMPARING
+
+        if node_id == active_node_id:
+            return Color.STATE_ACTIVE
+
+        if node_id in visited_node_ids:
+            return Color.STATE_VISITED
+
+        return Color.STATE_DEFAULT
 
     def _render_tree_structure(
         self,
@@ -680,27 +657,14 @@ class BSTScreen(Screen):
         if not node_map:
             return
 
-        compare_node_ids = (
-            compare_node_ids
-            if compare_node_ids is not None
-            else set()
-        )
+        compare_node_ids = compare_node_ids if compare_node_ids is not None else set()
+        visited_node_ids = visited_node_ids if visited_node_ids is not None else set()
 
-        visited_node_ids = (
-            visited_node_ids
-            if visited_node_ids is not None
-            else set()
-        )
-
-        positions = self._calculate_positions(
-            node_map,
-            root_id,
-        )
+        positions = self._calculate_positions(node_map, root_id)
 
         if not positions:
             return
 
-        # Draw edges first so they remain behind the nodes.
         for node_id, node in node_map.items():
             if node_id not in positions:
                 continue
@@ -708,18 +672,10 @@ class BSTScreen(Screen):
             source_rect = positions[node_id]
 
             if node.left_id is not None:
-                self._draw_tree_edge(
-                    source_rect,
-                    positions.get(node.left_id),
-                    "left",
-                )
+                self._draw_tree_edge(source_rect, positions.get(node.left_id))
 
             if node.right_id is not None:
-                self._draw_tree_edge(
-                    source_rect,
-                    positions.get(node.right_id),
-                    "right",
-                )
+                self._draw_tree_edge(source_rect, positions.get(node.right_id))
 
         for node_id, node in node_map.items():
             rect = positions.get(node_id)
@@ -727,152 +683,87 @@ class BSTScreen(Screen):
             if rect is None:
                 continue
 
-            background = (65, 85, 115)
-
-            if node_id in visited_node_ids:
-                background = (80, 110, 160)
-
-            if node_id in compare_node_ids:
-                background = (180, 135, 55)
-
-            if node_id == active_node_id:
-                background = (70, 110, 180)
-
-            if node_id == created_node_id:
-                background = (65, 150, 105)
-
-            if node_id == removed_node_id:
-                background = (165, 75, 75)
-
-            if node_id == result_node_id:
-                background = (100, 150, 100)
-
-            if node_id == replacement_node_id:
-                background = (150, 105, 175)
-
-            border_color = (210, 210, 210)
-
-            if node_id in compare_node_ids:
-                border_color = (255, 215, 90)
-
-            if node_id == result_node_id:
-                border_color = (150, 235, 150)
-
-            pygame.draw.rect(
-                self.surface,
-                background,
-                rect,
-                border_radius=8,
+            color = self._node_color(
+                node_id,
+                active_node_id,
+                created_node_id,
+                removed_node_id,
+                compare_node_ids,
+                visited_node_ids,
+                result_node_id,
+                replacement_node_id,
             )
 
-            pygame.draw.rect(
-                self.surface,
-                border_color,
-                rect,
-                2,
-                border_radius=8,
-            )
+            self._draw_node(rect, color, node.value, node.node_id)
 
-            value_text = self.node_font.render(
-                str(node.value),
-                True,
-                (245, 245, 245),
-            )
+    def _draw_node(self, rect: pygame.Rect, color, value, node_id) -> None:
+        # Faint shadow for a hint of depth, sitting just behind the card.
+        shadow_rect = rect.move(0, 3)
+        pygame.draw.rect(
+            self.surface,
+            Color.BG,
+            shadow_rect,
+            border_radius=Radius.MD,
+        )
 
-            value_rect = value_text.get_rect(
-                center=rect.center,
-            )
+        pygame.draw.rect(self.surface, color, rect, border_radius=Radius.MD)
 
-            self.surface.blit(
-                value_text,
-                value_rect,
-            )
+        border_color = tuple(min(255, channel + 45) for channel in color)
+        pygame.draw.rect(self.surface, border_color, rect, 2, border_radius=Radius.MD)
 
-            node_id_text = self.edge_font.render(
-                f"id {node.node_id}",
-                True,
-                (190, 190, 190),
-            )
+        value_text = self.node_font.render(str(value), True, Color.TEXT_PRIMARY)
+        self.surface.blit(value_text, value_text.get_rect(center=rect.center))
 
-            node_id_rect = node_id_text.get_rect(
-                centerx=rect.centerx,
-                top=rect.bottom + 4,
-            )
-
-            self.surface.blit(
-                node_id_text,
-                node_id_rect,
-            )
+        node_id_text = self.edge_font.render(f"id {node_id}", True, Color.TEXT_MUTED)
+        node_id_rect = node_id_text.get_rect(
+            centerx=rect.centerx,
+            top=rect.bottom + 6,
+        )
+        self.surface.blit(node_id_text, node_id_rect)
 
     def _draw_tree_edge(
         self,
         source_rect: pygame.Rect,
         target_rect: pygame.Rect | None,
-        side: str,
     ) -> None:
         if target_rect is None:
             return
 
-        start = (
-            source_rect.centerx,
-            source_rect.bottom,
-        )
+        start = (source_rect.centerx, source_rect.bottom)
+        end = (target_rect.centerx, target_rect.top)
+        mid_y = (start[1] + end[1]) / 2
 
-        end = (
-            target_rect.centerx,
-            target_rect.top,
-        )
+        points = []
+        steps = 16
 
-        pygame.draw.line(
-            self.surface,
-            (150, 180, 210),
-            start,
-            end,
-            3,
-        )
+        for step in range(steps + 1):
+            t = step / steps
+            x = (1 - t) * start[0] + t * end[0]
+            y = (1 - t) ** 2 * start[1] + 2 * (1 - t) * t * mid_y + t ** 2 * end[1]
+            points.append((x, y))
 
-        self._draw_arrow_head(
-            end,
-            (150, 180, 210),
-            "down",
-        )
+        pygame.draw.lines(self.surface, Color.BORDER, False, points, 2)
+
+        self._draw_arrow_head(end, Color.BORDER)
 
     def _draw_arrow_head(
         self,
         position: tuple[int, int],
         color: tuple[int, int, int],
-        direction: str,
     ) -> None:
         x, y = position
         size = 7
 
-        if direction == "down":
-            points = [
-                (x, y),
-                (x - size, y - size),
-                (x + size, y - size),
-            ]
+        points = [
+            (x, y),
+            (x - size, y - size),
+            (x + size, y - size),
+        ]
 
-        else:
-            return
+        pygame.draw.polygon(self.surface, color, points)
 
-        pygame.draw.polygon(
-            self.surface,
-            color,
-            points,
-        )
-
-    def _render_traversal_result(
-        self,
-        values,
-    ) -> None:
-        text = (
-            "Result: "
-            + " -> ".join(
-                str(value)
-                for value in values
-            )
-        )
+    def _render_traversal_result(self, values) -> None:
+        text = "Result: " + " -> ".join(str(value) for value in values)
 
         rect = pygame.Rect(
             300,
@@ -881,12 +772,7 @@ class BSTScreen(Screen):
             35,
         )
 
-        pygame.draw.rect(
-            self.surface,
-            (40, 40, 40),
-            rect,
-            border_radius=6,
-        )
+        draw_panel(self.surface, rect, elevated=True)
 
         self._draw_text(
             text,
