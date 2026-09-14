@@ -10,6 +10,8 @@ from algolab.visualization.graph.scaling import (
     LogarithmicScaling,
 )
 
+from algolab.ui.theme import Color, Font
+
 
 class GraphRenderer:
     """Renders a coordinate system onto a Pygame surface."""
@@ -25,7 +27,7 @@ class GraphRenderer:
         if not pygame.font.get_init():
             pygame.font.init()
 
-        self.font = pygame.font.Font(None, 20)
+        self.font = Font.LABEL()
 
     def render(self) -> None:
         self._draw_background()
@@ -34,16 +36,15 @@ class GraphRenderer:
         self._draw_tick_labels()
 
     def _draw_background(self) -> None:
-        pygame.draw.rect(
-            self.surface,
-            (245, 245, 245),
-            pygame.Rect(
-                self.coordinate_system.x,
-                self.coordinate_system.y,
-                self.coordinate_system.width,
-                self.coordinate_system.height,
-            ),
+        rect = pygame.Rect(
+            self.coordinate_system.x,
+            self.coordinate_system.y,
+            self.coordinate_system.width,
+            self.coordinate_system.height,
         )
+
+        pygame.draw.rect(self.surface, Color.SURFACE, rect, border_radius=10)
+        pygame.draw.rect(self.surface, Color.BORDER_SOFT, rect, 1, border_radius=10)
 
     def _draw_grid(self) -> None:
         graph = self.coordinate_system
@@ -64,7 +65,7 @@ class GraphRenderer:
 
             pygame.draw.line(
                 self.surface,
-                (220, 220, 220),
+                Color.BORDER_SOFT,
                 start,
                 end,
             )
@@ -75,7 +76,7 @@ class GraphRenderer:
 
             pygame.draw.line(
                 self.surface,
-                (220, 220, 220),
+                Color.BORDER_SOFT,
                 start,
                 end,
             )
@@ -89,7 +90,7 @@ class GraphRenderer:
 
             pygame.draw.line(
                 self.surface,
-                (30, 30, 30),
+                Color.TEXT_SECONDARY,
                 x_axis_start,
                 x_axis_end,
                 2,
@@ -101,7 +102,7 @@ class GraphRenderer:
 
             pygame.draw.line(
                 self.surface,
-                (30, 30, 30),
+                Color.TEXT_SECONDARY,
                 y_axis_start,
                 y_axis_end,
                 2,
@@ -110,7 +111,7 @@ class GraphRenderer:
     def draw_curve(
         self,
         points: list[tuple[float, float]],
-        color: tuple[int, int, int] = (50, 50, 50),
+        color: tuple[int, int, int] = Color.TEXT_PRIMARY,
         width: int = 2,
     ) -> None:
         """Draw a curve through mathematical points."""
@@ -177,7 +178,7 @@ class GraphRenderer:
             label = self.font.render(
                 self._format_tick(x_value),
                 True,
-                (30, 30, 30),
+                Color.TEXT_SECONDARY,
             )
 
             label_rect = label.get_rect(
@@ -195,7 +196,7 @@ class GraphRenderer:
             label = self.font.render(
                 self._format_tick(y_value, logarithmic),
                 True,
-                (30, 30, 30),
+                Color.TEXT_SECONDARY,
             )
 
             label_rect = label.get_rect(
