@@ -31,8 +31,8 @@ class BSTScreen(Screen):
         (Color.STATE_REPLACE, "Replaced"),
     ]
 
-    def __init__(self, surface: pygame.Surface) -> None:
-        super().__init__(surface)
+    def __init__(self, surface: pygame.Surface, on_back=None) -> None:
+        super().__init__(surface, on_back)
 
         self.model = BinarySearchTree()
         self.simulator = Simulator()
@@ -179,6 +179,9 @@ class BSTScreen(Screen):
             y += line_height
 
     def handle_event(self, event: pygame.event.Event) -> None:
+        if self.handle_back_event(event):
+            return
+
         self.value_input.handle_event(event)
 
         for index, button in enumerate(self.operation_buttons):
@@ -269,6 +272,8 @@ class BSTScreen(Screen):
         self.simulator.reset()
 
     def update(self, dt: float) -> None:
+        self.update_back_button(dt)
+
         for button in self.operation_buttons:
             button.update(dt)
 
@@ -298,6 +303,7 @@ class BSTScreen(Screen):
     def render(self) -> None:
         self.surface.fill(Color.BG)
 
+        self.render_back_button()
         self._render_control_panel()
         self._render_explanation_panel()
         self._render_tree()
