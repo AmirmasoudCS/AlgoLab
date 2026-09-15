@@ -1,12 +1,9 @@
-from pathlib import Path
-
 from algolab.core.application import Application
-from algolab.core.configuration import Configuration
+from algolab.core.configuration import Configuration, get_resource_path
 
 
 def main() -> None:
-    project_root = Path(__file__).resolve().parents[2]
-    config_path = project_root / "config" / "config.toml"
+    config_path = get_resource_path("config/config.toml")
 
     config = Configuration(config_path)
     app = Application(config)

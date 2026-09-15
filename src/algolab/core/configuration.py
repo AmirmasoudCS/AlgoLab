@@ -1,4 +1,5 @@
 from pathlib import Path
+import sys
 import tomllib
 
 
@@ -20,3 +21,13 @@ class Configuration:
     @property
     def performance(self) -> dict:
         return self._data["performance"]
+
+
+def get_resource_path(relative_path: str) -> Path:
+    """Return the path to an application resource."""
+    if getattr(sys, "frozen", False):
+        base_path = Path(sys.executable).parent
+    else:
+        base_path = Path(__file__).resolve().parents[3]
+
+    return base_path / relative_path
