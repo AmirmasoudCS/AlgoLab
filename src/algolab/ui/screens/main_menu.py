@@ -1,6 +1,7 @@
 import pygame
 
 from algolab.ui.components.button import Button
+from algolab.ui.components.surface import draw_pill
 from algolab.ui.screens.screen import Screen
 from algolab.ui.screens.screen_manager import ScreenManager
 from algolab.ui.screens.asymptotic import AsymptoticScreen
@@ -27,8 +28,6 @@ class MainMenuScreen(Screen):
         ("Hash Tables & Sets", False, "Coming soon"),
     ]
 
-    COLUMNS = 3
-
     def __init__(
         self,
         surface: pygame.Surface,
@@ -50,29 +49,23 @@ class MainMenuScreen(Screen):
         self._create_buttons()
 
     def _create_buttons(self) -> None:
-        """Create one Button per topic, arranged in a card grid."""
+        """Create one Button per topic, stacked in a single column."""
 
         self.buttons.clear()
 
-        card_width = 340
-        card_height = 120
-        gap_x = 30
-        gap_y = 24
+        button_width = 420
+        button_height = 55
+        spacing = 15
 
-        grid_width = self.COLUMNS * card_width + (self.COLUMNS - 1) * gap_x
-        start_x = (self.surface.get_width() - grid_width) // 2
-        start_y = 190
+        start_x = (self.surface.get_width() - button_width) // 2
+        start_y = 165
 
         for index, (label, enabled, _) in enumerate(self.TOPICS):
-            row = index // self.COLUMNS
-            column = index % self.COLUMNS
-
-            x = start_x + column * (card_width + gap_x)
-            y = start_y + row * (card_height + gap_y)
+            y = start_y + index * (button_height + spacing)
 
             self.buttons.append(
                 Button(
-                    pygame.Rect(x, y, card_width, card_height),
+                    pygame.Rect(start_x, y, button_width, button_height),
                     label,
                     enabled=enabled,
                     variant="primary",
@@ -118,11 +111,11 @@ class MainMenuScreen(Screen):
         self.surface.fill(Color.BG)
 
         self._render_header()
-        self._render_cards()
+        self._render_topics()
 
     def _render_header(self) -> None:
         title = self.title_font.render("AlgoLab", True, Color.TEXT_PRIMARY)
-        title_rect = title.get_rect(center=(self.surface.get_width() // 2, 85))
+        title_rect = title.get_rect(center=(self.surface.get_width() // 2, 75))
         self.surface.blit(title, title_rect)
 
         subtitle = self.subtitle_font.render(
@@ -131,22 +124,32 @@ class MainMenuScreen(Screen):
             Color.TEXT_SECONDARY,
         )
         subtitle_rect = subtitle.get_rect(
-            center=(self.surface.get_width() // 2, 130)
+            center=(self.surface.get_width() // 2, 115)
         )
         self.surface.blit(subtitle, subtitle_rect)
 
-    def _render_cards(self) -> None:
+    def _render_topics(self) -> None:
         for index, button in enumerate(self.buttons):
             _, enabled, caption = self.TOPICS[index]
 
             button.render(self.surface)
 
-            caption_color = Color.TEXT_SECONDARY if enabled else Color.TEXT_MUTED
+            if not enabled:
+                pill_width = 96
+                pill_height = 24
 
-            caption_surface = self.caption_font.render(caption, True, caption_color)
-            caption_rect = caption_surface.get_rect(
-                centerx=button.rect.centerx,
-                top=button.rect.centery + 18,
-            )
+                pill_rect = pygame.Rect(
+                    button.rect.right - pill_width - 14,
+                    button.rect.centery - pill_height // 2,
+                    pill_width,
+                    pill_height,
+                )
 
-            self.surface.blit(caption_surface, caption_rect)
+                draw_pill(
+                    self.surface,
+                    pill_rect,
+                    Color.SURFACE_RAISED,
+                    caption,
+                    self.caption_font,
+                    text_color=Color.TEXT_MUTED,
+                )
