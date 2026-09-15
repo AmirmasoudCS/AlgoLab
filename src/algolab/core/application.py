@@ -13,7 +13,7 @@ class Application:
 
         pygame.init()
 
-        icon_path = get_resource_path("assets/algolab.png")
+        icon_path = get_resource_path("assets/icon.png")
         icon = pygame.image.load(icon_path).convert_alpha()
         pygame.display.set_icon(icon)
 
