@@ -26,7 +26,7 @@ class Configuration:
 def get_resource_path(relative_path: str) -> Path:
     """Return the path to an application resource."""
     if getattr(sys, "frozen", False):
-        base_path = Path(sys.executable).parent
+        base_path = Path(sys._MEIPASS)
     else:
         base_path = Path(__file__).resolve().parents[3]
 
