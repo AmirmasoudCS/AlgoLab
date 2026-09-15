@@ -1,4 +1,3 @@
-# src/algolab/ui/theme.py
 import pygame
 
 
@@ -36,7 +35,7 @@ class Color:
 
 
 class Font:
-    _cache: dict[tuple[str, int], pygame.font.Font] = {}
+    _cache: dict[tuple, pygame.font.Font] = {}
 
     SANS = None  # None -> pygame default; swap for a bundled .ttf later
 
@@ -69,14 +68,20 @@ class Radius:
 class Spacing:
     XS, SM, MD, LG, XL = 4, 8, 16, 24, 32
 
-# theme.py, at module level (not inside a class)
+
+# Curve colors for the asymptotic complexity graph. Keys use plain ASCII
+# caret notation ("n^2", "2^n") rather than Unicode superscript
+# characters (n\u00b2, 2\u207f), since the default pygame font doesn't
+# reliably have glyphs for the rarer superscript code points and renders
+# them as a tofu box. Keep these keys in sync with the notation strings
+# in topics/asymptotic/complexity.py.
 CURVE_COLORS = {
     "O(1)": (140, 140, 148),
     "O(log n)": (99, 141, 245),
     "O(n)": (86, 176, 125),
     "O(n log n)": (74, 200, 190),
-    "O(n\u00b2)": (222, 184, 74),
-    "O(n\u00b3)": (222, 140, 74),
-    "O(2\u207f)": (214, 95, 95),
-    "O(n\u207f)": (168, 122, 201),
+    "O(n^2)": (222, 184, 74),
+    "O(n^3)": (222, 140, 74),
+    "O(2^n)": (214, 95, 95),
+    "O(n^n)": (168, 122, 201),
 }
