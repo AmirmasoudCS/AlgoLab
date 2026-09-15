@@ -1,6 +1,6 @@
 import pygame
 
-from algolab.core.configuration import Configuration
+from algolab.core.configuration import Configuration, get_resource_path
 from algolab.ui.screens.main_menu import MainMenuScreen
 from algolab.ui.screens.screen_manager import ScreenManager
 
@@ -12,6 +12,10 @@ class Application:
         self.config = config
 
         pygame.init()
+
+        icon_path = get_resource_path("assets/algolab.png")
+        icon = pygame.image.load(icon_path).convert_alpha()
+        pygame.display.set_icon(icon)
 
         window_config = self.config.window
         performance_config = self.config.performance
