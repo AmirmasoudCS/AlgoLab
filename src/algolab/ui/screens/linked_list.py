@@ -35,8 +35,8 @@ class LinkedListScreen(Screen):
         "new": "NEW",
     }
 
-    def __init__(self, surface: pygame.Surface) -> None:
-        super().__init__(surface)
+    def __init__(self, surface: pygame.Surface, on_back=None) -> None:
+        super().__init__(surface, on_back)
 
         self.model = LinkedListModel()
         self.simulator = Simulator()
@@ -191,6 +191,9 @@ class LinkedListScreen(Screen):
             y += line_height
 
     def handle_event(self, event: pygame.event.Event) -> None:
+        if self.handle_back_event(event):
+            return
+
         self.value_input.handle_event(event)
         self.index_input.handle_event(event)
 
@@ -275,6 +278,8 @@ class LinkedListScreen(Screen):
         self._reset_algorithm_pointers()
 
     def update(self, dt: float) -> None:
+        self.update_back_button(dt)
+
         for button in self.operation_buttons:
             button.update(dt)
 
@@ -304,6 +309,7 @@ class LinkedListScreen(Screen):
     def render(self) -> None:
         self.surface.fill(Color.BG)
 
+        self.render_back_button()
         self._render_control_panel()
         self._render_explanation_panel()
         self._render_linked_list()
