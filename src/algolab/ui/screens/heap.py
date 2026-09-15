@@ -23,8 +23,8 @@ from algolab.ui.theme import Color, Font
 class HeapScreen(Screen):
     """Heap visualization screen."""
 
-    def __init__(self, surface: pygame.Surface) -> None:
-        super().__init__(surface)
+    def __init__(self, surface: pygame.Surface, on_back=None) -> None:
+        super().__init__(surface, on_back)
 
         self.model = Heap[int](HeapType.MIN)
         self.simulator = Simulator()
@@ -123,6 +123,9 @@ class HeapScreen(Screen):
     # ------------------------------------------------------------------
 
     def handle_event(self, event: pygame.event.Event) -> None:
+        if self.handle_back_event(event):
+            return
+
         self.value_input.handle_event(event)
 
         for index, button in enumerate(self.operation_buttons):
@@ -229,6 +232,8 @@ class HeapScreen(Screen):
         self.simulator.reset()
 
     def update(self, dt: float) -> None:
+        self.update_back_button(dt)
+
         for button in self.operation_buttons:
             button.update(dt)
 
@@ -265,6 +270,7 @@ class HeapScreen(Screen):
     def render(self) -> None:
         self.surface.fill(Color.BG)
 
+        self.render_back_button()
         self._render_control_panel()
         self._render_explanation_panel()
         self._render_heap()
