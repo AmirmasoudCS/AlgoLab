@@ -13,10 +13,6 @@ class Application:
 
         pygame.init()
 
-        icon_path = get_resource_path("assets/icon.png")
-        icon = pygame.image.load(icon_path).convert_alpha()
-        pygame.display.set_icon(icon)
-
         window_config = self.config.window
         performance_config = self.config.performance
 
@@ -32,6 +28,10 @@ class Application:
             ),
             flags,
         )
+
+        icon_path = get_resource_path("assets/icon.png")
+        icon = pygame.image.load(icon_path).convert_alpha()
+        pygame.display.set_icon(icon)
 
         pygame.display.set_caption(window_config["title"])
 
