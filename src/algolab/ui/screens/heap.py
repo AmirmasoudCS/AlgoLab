@@ -47,7 +47,7 @@ class HeapScreen(Screen):
         self.navigation_buttons = self._create_navigation_buttons()
 
         self.value_input = NumericInput(
-            pygame.Rect(135, 405, 75, 30),
+            pygame.Rect(135, 415, 75, 30),
             50,
         )
 
@@ -65,7 +65,7 @@ class HeapScreen(Screen):
         buttons = []
 
         x = 25
-        y = 195
+        y = 205
         width = 220
         height = 34
         spacing = 38
@@ -92,7 +92,7 @@ class HeapScreen(Screen):
         buttons = []
 
         x = 25
-        y = 530
+        y = 540
         width = 40
         height = 35
         spacing = 45
@@ -114,8 +114,8 @@ class HeapScreen(Screen):
 
     def _create_heap_type_buttons(self) -> list[Button]:
         return [
-            Button(pygame.Rect(15, 115, 110, 34), "Min Heap"),
-            Button(pygame.Rect(130, 115, 105, 34), "Max Heap"),
+            Button(pygame.Rect(15, 145, 110, 34), "Min Heap"),
+            Button(pygame.Rect(130, 145, 105, 34), "Max Heap"),
         ]
 
     # ------------------------------------------------------------------
@@ -301,21 +301,21 @@ class HeapScreen(Screen):
         self._draw_text(
             "Operations",
             self.section_font,
-            (25, 165),
+            (25, 195),
             color=Color.TEXT_SECONDARY,
         )
 
         for button in self.operation_buttons:
             button.render(self.surface)
 
-        self._draw_text("Value:", self.control_font, (25, 405))
+        self._draw_text("Value:", self.control_font, (25, 415))
 
         self.value_input.render(self.surface)
 
         self._draw_text(
             "Simulation",
             self.section_font,
-            (25, 490),
+            (25, 500),
             color=Color.TEXT_SECONDARY,
         )
 
@@ -333,7 +333,7 @@ class HeapScreen(Screen):
         self._draw_text(
             step_text,
             self.small_font,
-            (25, 570),
+            (25, 580),
             color=Color.TEXT_MUTED,
         )
 
