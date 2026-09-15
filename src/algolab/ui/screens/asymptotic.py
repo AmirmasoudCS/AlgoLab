@@ -19,8 +19,8 @@ from algolab.visualization.graph.scaling import (
 class AsymptoticScreen(Screen):
     """Screen for visualizing asymptotic complexity."""
 
-    def __init__(self, surface: pygame.Surface) -> None:
-        super().__init__(surface)
+    def __init__(self, surface: pygame.Surface, on_back=None) -> None:
+        super().__init__(surface, on_back)
 
         self.model = AsymptoticModel()
 
@@ -133,6 +133,9 @@ class AsymptoticScreen(Screen):
         )
 
     def handle_event(self, event: pygame.event.Event) -> None:
+        if self.handle_back_event(event):
+            return
+
         for index, radio_button in enumerate(self.scale_buttons):
             previous_state = radio_button.selected
 
@@ -179,10 +182,12 @@ class AsymptoticScreen(Screen):
                 )
 
     def update(self, dt: float) -> None:
-        pass
+        self.update_back_button(dt)
 
     def render(self) -> None:
         self.surface.fill(Color.BG)
+
+        self.render_back_button()
 
         panel_rect = pygame.Rect(10, 70, 250, 500)
         draw_panel(self.surface, panel_rect, elevated=True)
