@@ -506,11 +506,25 @@ class HeapScreen(Screen):
         self.surface.blit(text, text.get_rect(center=area.center))
 
     def _calculate_positions(self, size: int) -> dict[int, pygame.Rect]:
+        """
+        Compute a screen rect for every heap index.
+
+        Each index is given a horizontal "slot" based on where it would
+        sit in a completely full binary tree of the same depth, not
+        based on how many siblings currently exist at that depth. This
+        is what keeps a lone node correctly centered under its actual
+        parent (e.g. a single left child stays under the left half of
+        its parent) instead of drifting to the middle of the whole
+        canvas whenever it happens to be the only node at its depth.
+        """
+
         positions = {}
+
+        if size == 0:
+            return positions
 
         node_width = 80
         node_height = 55
-        horizontal_spacing = 25
         level_height = 85
 
         left = 330
@@ -518,38 +532,22 @@ class HeapScreen(Screen):
 
         available_width = right - left
 
-        levels = []
-
         for index in range(size):
-            level = (index + 1).bit_length() - 1
+            depth = (index + 1).bit_length() - 1
+            slots_at_depth = 1 << depth
+            position_in_level = index - (slots_at_depth - 1)
 
-            while len(levels) <= level:
-                levels.append([])
+            slot_width = available_width / slots_at_depth
+            center_x = left + (position_in_level + 0.5) * slot_width
 
-            levels[level].append(index)
+            y = 245 + depth * level_height
 
-        for level, indices in enumerate(levels):
-            count = len(indices)
-
-            if count == 1:
-                x_positions = [left + available_width // 2 - node_width // 2]
-            else:
-                spacing = min(
-                    node_width + horizontal_spacing,
-                    available_width / (count - 1),
-                )
-
-                total_width = (count - 1) * spacing + node_width
-                start_x = left + (available_width - total_width) / 2
-
-                x_positions = [
-                    start_x + position * spacing for position in range(count)
-                ]
-
-            y = 245 + level * level_height
-
-            for index, x in zip(indices, x_positions):
-                positions[index] = pygame.Rect(int(x), int(y), node_width, node_height)
+            positions[index] = pygame.Rect(
+                int(center_x - node_width / 2),
+                int(y),
+                node_width,
+                node_height,
+            )
 
         return positions
 
