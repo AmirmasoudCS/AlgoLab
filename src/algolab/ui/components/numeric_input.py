@@ -1,5 +1,7 @@
 import pygame
 
+from algolab.ui.theme import Color, Font, Radius
+
 
 class NumericInput:
     """A simple input field for integer values."""
@@ -12,7 +14,7 @@ class NumericInput:
         self.rect = rect
         self.value = value
 
-        self.font = pygame.font.Font(None, 26)
+        self.font = Font.BODY()
 
         self._text = str(value)
         self._active = False
@@ -49,16 +51,14 @@ class NumericInput:
     def render(self, surface: pygame.Surface) -> None:
         """Render the input field."""
 
-        border_color = (
-            (80, 200, 120)
-            if self._active
-            else (180, 180, 180)
-        )
+        background = Color.ACCENT_SOFT if self._active else Color.SURFACE
+        border_color = Color.ACCENT if self._active else Color.BORDER
 
         pygame.draw.rect(
             surface,
-            (30, 30, 30),
+            background,
             self.rect,
+            border_radius=Radius.SM,
         )
 
         pygame.draw.rect(
@@ -66,18 +66,35 @@ class NumericInput:
             border_color,
             self.rect,
             2,
+            border_radius=Radius.SM,
         )
 
         text = self.font.render(
             self._text,
             True,
-            (240, 240, 240),
+            Color.TEXT_PRIMARY,
         )
 
-        surface.blit(
-            text,
-            (
-                self.rect.x + 8,
-                self.rect.centery - text.get_height() // 2,
-            ),
+        text_position = (
+            self.rect.x + 8,
+            self.rect.centery - text.get_height() // 2,
         )
+
+        surface.blit(text, text_position)
+
+        # A thin blinking-style cursor (always on, kept simple) gives a
+        # visual cue that the field is focused and editable, matching
+        # the hover/active feedback every other input in the app gives.
+        if self._active:
+            cursor_x = text_position[0] + text.get_width() + 3
+            cursor_top = self.rect.centery - text.get_height() // 2
+            cursor_bottom = cursor_top + text.get_height()
+
+            if cursor_x < self.rect.right - 6:
+                pygame.draw.line(
+                    surface,
+                    Color.ACCENT,
+                    (cursor_x, cursor_top),
+                    (cursor_x, cursor_bottom),
+                    2,
+                )
