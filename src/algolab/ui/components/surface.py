@@ -66,6 +66,30 @@ def draw_item_card(
         surface.blit(caption_text, caption_rect)
 
 
+def draw_arrow_head(
+    surface,
+    tip: tuple[float, float],
+    angle: float,
+    color: tuple[int, int, int],
+    size: int = 8,
+) -> None:
+    """Draw an arrowhead at `tip`, pointing in the direction of `angle` (radians)."""
+
+    spread = math.radians(28)
+
+    left = (
+        tip[0] - size * math.cos(angle - spread),
+        tip[1] - size * math.sin(angle - spread),
+    )
+
+    right = (
+        tip[0] - size * math.cos(angle + spread),
+        tip[1] - size * math.sin(angle + spread),
+    )
+
+    pygame.draw.polygon(surface, color, [tip, left, right])
+
+
 def draw_arrow(
     surface,
     start: tuple[int, int],
@@ -87,16 +111,69 @@ def draw_arrow(
     pygame.draw.line(surface, color, start, end, width)
 
     angle = math.atan2(end[1] - start[1], end[0] - start[0])
-    spread = math.radians(28)
+    draw_arrow_head(surface, end, angle, color, head_size)
 
-    left = (
-        end[0] - head_size * math.cos(angle - spread),
-        end[1] - head_size * math.sin(angle - spread),
+
+def draw_curved_edge(
+    surface,
+    start: tuple[int, int],
+    end: tuple[int, int],
+    color: tuple[int, int, int],
+    width: int = 2,
+    head_size: int = 7,
+    steps: int = 16,
+) -> None:
+    """
+    Draw a smooth vertical-biased curve between two points with an
+    arrowhead at the end, used for BST parent-child edges (and any
+    future tree-shaped topic, like heap or AVL).
+    """
+
+    mid_y = (start[1] + end[1]) / 2
+
+    points = []
+
+    for step in range(steps + 1):
+        t = step / steps
+        x = (1 - t) * start[0] + t * end[0]
+        y = (1 - t) ** 2 * start[1] + 2 * (1 - t) * t * mid_y + t ** 2 * end[1]
+        points.append((x, y))
+
+    pygame.draw.lines(surface, color, False, points, width)
+
+    tail = points[-2]
+    angle = math.atan2(end[1] - tail[1], end[0] - tail[0])
+    draw_arrow_head(surface, end, angle, color, head_size)
+
+
+def draw_glow(
+    surface,
+    rect: pygame.Rect,
+    color: tuple[int, int, int],
+    expand: int = 8,
+    alpha: int = 90,
+) -> None:
+    """
+    Draw a soft translucent halo behind a rect to indicate it's
+    actively "on" right now, such as a pause button while playback is
+    running.
+
+    This is deliberately different from Button's own `selected` state:
+    `selected` is a flat, permanent fill for "this is the chosen
+    option among several." A glow reads as "this is live right now,"
+    so it's a soft expanding halo instead of a solid color swap. The
+    caller still renders the control itself on top afterward.
+    """
+
+    glow_rect = rect.inflate(expand * 2, expand * 2)
+
+    glow_surface = pygame.Surface(glow_rect.size, pygame.SRCALPHA)
+
+    pygame.draw.rect(
+        glow_surface,
+        (*color, alpha),
+        glow_surface.get_rect(),
+        border_radius=Radius.LG,
     )
 
-    right = (
-        end[0] - head_size * math.cos(angle + spread),
-        end[1] - head_size * math.sin(angle + spread),
-    )
-
-    pygame.draw.polygon(surface, color, [end, left, right])
+    surface.blit(glow_surface, glow_rect.topleft)
