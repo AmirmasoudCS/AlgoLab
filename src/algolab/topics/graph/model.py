@@ -182,6 +182,15 @@ class GraphModel:
         if source == target:
             raise ValueError("Self-loops are not supported.")
 
+        # For an undirected graph, (source, target) and (target, source)
+        # represent the same connection. If the reverse direction was
+        # added first, update that entry in place rather than storing a
+        # second edge for the same pair, which would otherwise show up
+        # twice in `edges` and double-count the pair in `adjacency()`.
+        if not self._directed and (target, source) in self._edges:
+            self._edges[(target, source)] = GraphEdge(target, source, weight)
+            return
+
         self._edges[(source, target)] = GraphEdge(source, target, weight)
 
     def remove_edge(self, source: int, target: int) -> None:
