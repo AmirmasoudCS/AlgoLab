@@ -14,9 +14,9 @@ from algolab.topics.graph.simulation import (
 )
 from algolab.ui.components.button import Button
 from algolab.ui.components.numeric_input import NumericInput
-from algolab.ui.components.surface import draw_arrow, draw_glow, draw_panel
+from algolab.ui.components.surface import draw_arrow, draw_panel, draw_toggle_button
 from algolab.ui.screens.screen import Screen
-from algolab.ui.theme import Color, Font, Radius
+from algolab.ui.theme import Color, Font
 
 NODE_RADIUS = 24
 
@@ -575,10 +575,10 @@ class GraphScreen(Screen):
         )
 
         for index, button in enumerate(self.navigation_buttons):
-            if index == 4 and self.simulator.running:
-                draw_glow(self.surface, button.rect, Color.ACCENT)
-
-            button.render(self.surface)
+            if index == 4:
+                draw_toggle_button(self.surface, button, self.simulator.running)
+            else:
+                button.render(self.surface)
 
         if self.current_simulation is not None:
             state = self.simulator.state
@@ -597,42 +597,13 @@ class GraphScreen(Screen):
     def _render_toggle_row(self, buttons: list[Button], active: bool) -> None:
         """
         Render a two-option on/off toggle (Directed/Undirected,
-        Weighted/Unweighted) with the active option lit up green.
-
-        This bypasses Button's own `selected` styling on purpose:
-        `selected` elsewhere in the app means "this is the chosen
-        option among several," rendered in the same accent blue as
-        everything else interactive. Here the intent is closer to a
-        physical on/off switch, so it gets its own distinct color
-        (green) that isn't used for anything else on this screen.
+        Weighted/Unweighted) with the active option lit up green,
+        using the same shared toggle style as the pause button.
         """
-
-        mouse_position = pygame.mouse.get_pos()
 
         for index, button in enumerate(buttons):
             is_on = (index == 1) == active
-            hovered = button.rect.collidepoint(mouse_position)
-
-            if is_on:
-                background = Color.STATE_SUCCESS_SOFT
-                border_color = Color.STATE_SUCCESS
-            elif hovered:
-                background = Color.SURFACE_RAISED
-                border_color = Color.BORDER
-            else:
-                background = Color.SURFACE
-                border_color = Color.BORDER
-
-            pygame.draw.rect(
-                self.surface, background, button.rect, border_radius=Radius.MD
-            )
-            pygame.draw.rect(
-                self.surface, border_color, button.rect, 2, border_radius=Radius.MD
-            )
-
-            text_color = Color.TEXT_PRIMARY if is_on else Color.TEXT_SECONDARY
-            text = button.font.render(button.label, True, text_color)
-            self.surface.blit(text, text.get_rect(center=button.rect.center))
+            draw_toggle_button(self.surface, button, is_on)
 
     def _render_selection_status(self) -> None:
         if self.error_message is not None:
