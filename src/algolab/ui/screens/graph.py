@@ -16,7 +16,7 @@ from algolab.ui.components.button import Button
 from algolab.ui.components.numeric_input import NumericInput
 from algolab.ui.components.surface import draw_arrow, draw_panel
 from algolab.ui.screens.screen import Screen
-from algolab.ui.theme import Color, Font
+from algolab.ui.theme import Color, Font, Radius, Radius, Radius
 
 NODE_RADIUS = 24
 
@@ -519,12 +519,6 @@ class GraphScreen(Screen):
         self.surface.blit(rendered, position)
 
     def _sync_toggle_and_algorithm_buttons(self) -> None:
-        self.directed_buttons[0].selected = not self.model.directed
-        self.directed_buttons[1].selected = self.model.directed
-
-        self.weighted_buttons[0].selected = not self.model.weighted
-        self.weighted_buttons[1].selected = self.model.weighted
-
         algorithm_enabled = (
             len(self.selected_nodes) == 1 and self.current_simulation is None
         )
@@ -545,11 +539,8 @@ class GraphScreen(Screen):
             color=Color.TEXT_SECONDARY,
         )
 
-        for button in self.directed_buttons:
-            button.render(self.surface)
-
-        for button in self.weighted_buttons:
-            button.render(self.surface)
+        self._render_toggle_row(self.directed_buttons, self.model.directed)
+        self._render_toggle_row(self.weighted_buttons, self.model.weighted)
 
         for button in self.edit_buttons.values():
             button.render(self.surface)
@@ -599,6 +590,46 @@ class GraphScreen(Screen):
                     self.small_font,
                     color=Color.TEXT_MUTED,
                 )
+
+    def _render_toggle_row(self, buttons: list[Button], active: bool) -> None:
+        """
+        Render a two-option on/off toggle (Directed/Undirected,
+        Weighted/Unweighted) with the active option lit up green.
+
+        This bypasses Button's own `selected` styling on purpose:
+        `selected` elsewhere in the app means "this is the chosen
+        option among several," rendered in the same accent blue as
+        everything else interactive. Here the intent is closer to a
+        physical on/off switch, so it gets its own distinct color
+        (green) that isn't used for anything else on this screen.
+        """
+
+        mouse_position = pygame.mouse.get_pos()
+
+        for index, button in enumerate(buttons):
+            is_on = (index == 1) == active
+            hovered = button.rect.collidepoint(mouse_position)
+
+            if is_on:
+                background = Color.STATE_SUCCESS_SOFT
+                border_color = Color.STATE_SUCCESS
+            elif hovered:
+                background = Color.SURFACE_RAISED
+                border_color = Color.BORDER
+            else:
+                background = Color.SURFACE
+                border_color = Color.BORDER
+
+            pygame.draw.rect(
+                self.surface, background, button.rect, border_radius=Radius.MD
+            )
+            pygame.draw.rect(
+                self.surface, border_color, button.rect, 2, border_radius=Radius.MD
+            )
+
+            text_color = Color.TEXT_PRIMARY if is_on else Color.TEXT_SECONDARY
+            text = button.font.render(button.label, True, text_color)
+            self.surface.blit(text, text.get_rect(center=button.rect.center))
 
     def _render_selection_status(self) -> None:
         if self.error_message is not None:
