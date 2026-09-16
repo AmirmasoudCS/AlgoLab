@@ -29,6 +29,13 @@ class Color:
     STATE_RESULT = (110, 200, 140)
     STATE_REPLACE = (168, 122, 201)
 
+    # Soft background tint for an explicit on/off toggle in its "on"
+    # state (e.g. Directed/Weighted), paired with STATE_SUCCESS as the
+    # border. Distinct from ACCENT_SOFT, which means "selected" in a
+    # general sense elsewhere in the app; this specifically reads as
+    # "this switch is on."
+    STATE_SUCCESS_SOFT = (38, 66, 52)
+
     @staticmethod
     def with_alpha(color, alpha):
         return (*color, alpha)
