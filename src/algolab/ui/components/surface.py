@@ -146,34 +146,35 @@ def draw_curved_edge(
     draw_arrow_head(surface, end, angle, color, head_size)
 
 
-def draw_glow(
+def draw_toggle_button(
     surface,
-    rect: pygame.Rect,
-    color: tuple[int, int, int],
-    expand: int = 8,
-    alpha: int = 90,
+    button,
+    is_on: bool,
+    on_background: tuple[int, int, int] = Color.STATE_SUCCESS_SOFT,
+    on_border: tuple[int, int, int] = Color.STATE_SUCCESS,
 ) -> None:
     """
-    Draw a soft translucent halo behind a rect to indicate it's
-    actively "on" right now, such as a pause button while playback is
-    running.
+    Draw a button that lights up green when "on" instead of Button's
+    own flat accent-blue `selected` style.
 
-    This is deliberately different from Button's own `selected` state:
-    `selected` is a flat, permanent fill for "this is the chosen
-    option among several." A glow reads as "this is live right now,"
-    so it's a soft expanding halo instead of a solid color swap. The
-    caller still renders the control itself on top afterward.
+    Used for anything that reads as a physical on/off switch rather
+    than "the chosen option among several" (which stays accent blue
+    everywhere else): the Directed/Weighted toggles, and the pause
+    button while a simulation is actively playing. When `is_on` is
+    False this just delegates to the button's normal render, so
+    callers don't need an if/else at the call site.
     """
 
-    glow_rect = rect.inflate(expand * 2, expand * 2)
-
-    glow_surface = pygame.Surface(glow_rect.size, pygame.SRCALPHA)
+    if not is_on:
+        button.render(surface)
+        return
 
     pygame.draw.rect(
-        glow_surface,
-        (*color, alpha),
-        glow_surface.get_rect(),
-        border_radius=Radius.LG,
+        surface, on_background, button.rect, border_radius=Radius.MD
+    )
+    pygame.draw.rect(
+        surface, on_border, button.rect, 2, border_radius=Radius.MD
     )
 
-    surface.blit(glow_surface, glow_rect.topleft)
+    text = button.font.render(button.label, True, Color.TEXT_PRIMARY)
+    surface.blit(text, text.get_rect(center=button.rect.center))
