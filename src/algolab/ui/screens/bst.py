@@ -13,7 +13,7 @@ from algolab.topics.bst.simulation import (
 )
 from algolab.ui.components.button import Button
 from algolab.ui.components.numeric_input import NumericInput
-from algolab.ui.components.surface import draw_arrow, draw_glow, draw_item_card, draw_panel
+from algolab.ui.components.surface import draw_arrow, draw_item_card, draw_panel, draw_toggle_button
 from algolab.ui.screens.screen import Screen
 from algolab.ui.theme import Color, Font, Spacing
 
@@ -342,10 +342,10 @@ class BSTScreen(Screen):
         )
 
         for index, button in enumerate(self.navigation_buttons):
-            if index == 4 and self.simulator.running:
-                draw_glow(self.surface, button.rect, Color.ACCENT)
-
-            button.render(self.surface)
+            if index == 4:
+                draw_toggle_button(self.surface, button, self.simulator.running)
+            else:
+                button.render(self.surface)
 
         if self.current_simulation is not None:
             state = self.simulator.state
