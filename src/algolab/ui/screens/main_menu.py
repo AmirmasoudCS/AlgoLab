@@ -10,6 +10,7 @@ from algolab.ui.screens.queue import QueueScreen
 from algolab.ui.screens.stack import StackScreen
 from algolab.ui.screens.bst import BSTScreen
 from algolab.ui.screens.heap import HeapScreen
+from algolab.ui.screens.graph import GraphScreen
 from algolab.ui.theme import Color, Font
 
 
@@ -23,7 +24,7 @@ class MainMenuScreen(Screen):
         ("Queues", True, "FIFO enqueue and dequeue"),
         ("Binary Search Trees", True, "Insert, search, delete"),
         ("Heaps", True, "Min and max heaps"),
-        ("Graphs", False, "Coming soon"),
+        ("Graphs", True, "BFS, DFS, Dijkstra, Bellman-Ford"),
         ("Sorting", False, "Coming soon"),
         ("Hash Tables & Sets", False, "Coming soon"),
     ]
@@ -92,6 +93,7 @@ class MainMenuScreen(Screen):
             3: QueueScreen,
             4: BSTScreen,
             5: HeapScreen,
+            6: GraphScreen,
         }
 
         screen_class = screen_classes.get(index)
