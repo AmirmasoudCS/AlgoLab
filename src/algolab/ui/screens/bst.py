@@ -343,7 +343,12 @@ class BSTScreen(Screen):
 
         for index, button in enumerate(self.navigation_buttons):
             if index == 4:
-                draw_toggle_button(self.surface, button, self.simulator.running)
+                draw_toggle_button(
+                    self.surface,
+                    button,
+                    self.current_simulation is not None
+                    and not self.simulator.running,
+                )
             else:
                 button.render(self.surface)
 
