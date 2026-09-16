@@ -10,7 +10,7 @@ from algolab.topics.stack.simulation import (
 )
 from algolab.ui.components.button import Button
 from algolab.ui.components.numeric_input import NumericInput
-from algolab.ui.components.surface import draw_item_card, draw_panel
+from algolab.ui.components.surface import draw_glow, draw_item_card, draw_panel
 from algolab.ui.screens.screen import Screen
 from algolab.ui.theme import Color, Font
 
@@ -312,7 +312,10 @@ class StackScreen(Screen):
             color=Color.TEXT_SECONDARY,
         )
 
-        for button in self.navigation_buttons:
+        for index, button in enumerate(self.navigation_buttons):
+            if index == 4 and self.simulator.running:
+                draw_glow(self.surface, button.rect, Color.ACCENT)
+
             button.render(self.surface)
 
         if self.current_simulation is not None:
