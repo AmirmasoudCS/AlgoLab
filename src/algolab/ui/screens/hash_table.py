@@ -44,12 +44,12 @@ class HashTableScreen(Screen):
         self.label_font = Font.LABEL()
 
         self.strategy_buttons = [
-            Button(pygame.Rect(15, 148, 110, 34), "Chaining", selected=True),
+            Button(pygame.Rect(15, 148, 110, 34), "Chaining"),
             Button(pygame.Rect(130, 148, 105, 34), "Linear Probing"),
         ]
 
         self.mode_buttons = [
-            Button(pygame.Rect(15, 246, 110, 34), "Set", selected=True),
+            Button(pygame.Rect(15, 246, 110, 34), "Set"),
             Button(pygame.Rect(130, 246, 105, 34), "Map"),
         ]
 
@@ -145,9 +145,6 @@ class HashTableScreen(Screen):
 
         self.model.set_collision_strategy(strategy)
 
-        self.strategy_buttons[0].selected = not use_probing
-        self.strategy_buttons[1].selected = use_probing
-
         self.status_message = None
         self.error_message = None
 
@@ -157,9 +154,6 @@ class HashTableScreen(Screen):
 
         mode = HashTableMode.MAP if use_map else HashTableMode.SET
         self.model.set_mode(mode)
-
-        self.mode_buttons[0].selected = not use_map
-        self.mode_buttons[1].selected = use_map
 
         self.status_message = None
         self.error_message = None
@@ -368,8 +362,11 @@ class HashTableScreen(Screen):
             color=Color.TEXT_SECONDARY,
         )
 
-        for button in self.strategy_buttons:
-            button.render(self.surface)
+        for index, button in enumerate(self.strategy_buttons):
+            is_on = (index == 1) == (
+                self.model.collision_strategy is CollisionStrategy.LINEAR_PROBING
+            )
+            draw_toggle_button(self.surface, button, is_on)
 
         self._draw_text(
             "Mode",
@@ -378,8 +375,9 @@ class HashTableScreen(Screen):
             color=Color.TEXT_SECONDARY,
         )
 
-        for button in self.mode_buttons:
-            button.render(self.surface)
+        for index, button in enumerate(self.mode_buttons):
+            is_on = (index == 1) == (self.model.mode is HashTableMode.MAP)
+            draw_toggle_button(self.surface, button, is_on)
 
         self._draw_text(
             "Capacity:",
