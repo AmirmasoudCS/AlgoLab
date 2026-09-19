@@ -283,7 +283,15 @@ class HashTableScreen(Screen):
         if final_state is not None:
             self.status_message = final_state.data.description
 
-        self.current_simulation.commit(self.model)
+        # Defensive: commit() should never actually raise given how the
+        # simulator constructs its operation objects, but a screen
+        # crashing an entire teaching demo over one bad commit is a
+        # much worse outcome than swallowing an error and telling the
+        # student what happened, so this is guarded regardless.
+        try:
+            self.current_simulation.commit(self.model)
+        except (IndexError, ValueError) as error:
+            self.error_message = str(error)
 
         self.operation_committed = True
         self.current_simulation = None
