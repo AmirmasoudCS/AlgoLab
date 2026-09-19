@@ -94,6 +94,7 @@ class HashTableSimulationState:
     highlighted_index: int | None = None
     probe_trail: tuple[int, ...] = ()
     result: object = None
+    collisions: int = 0
 
 
 @dataclass(frozen=True)
@@ -122,10 +123,10 @@ class HashTableSimulator:
         clone = self.model.clone()
         states: list[SimulationState] = []
 
-        def add_state(events, description, highlighted=None, probe_trail=(), result=None):
+        def add_state(events, description, highlighted=None, probe_trail=(), result=None, collisions=0):
             states.append(
                 SimulationState(
-                    data=self._snapshot(clone, description, highlighted, probe_trail, result),
+                    data=self._snapshot(clone, description, highlighted, probe_trail, result, collisions),
                     events=events,
                     step=len(states),
                 )
@@ -141,12 +142,14 @@ class HashTableSimulator:
 
         if clone.collision_strategy is CollisionStrategy.CHAINING:
             found_existing = False
+            bucket_before = list(clone.bucket_at(index))
 
-            for entry in clone.bucket_at(index):
+            for position, entry in enumerate(bucket_before):
                 add_state(
                     [VisitBucketEntryEvent(bucket_index=index, key=entry.key)],
                     f"Check bucket {index}: does it already contain {key!r}? Found {entry.key!r}.",
                     highlighted=index,
+                    collisions=position,
                 )
 
                 if entry.key == key:
@@ -160,6 +163,7 @@ class HashTableSimulator:
                     [UpdateEntryEvent(index=index, key=key)],
                     f"{key!r} already exists in bucket {index}. Update its value.",
                     highlighted=index,
+                    collisions=position,
                 )
             elif found_existing:
                 add_state(
@@ -167,6 +171,7 @@ class HashTableSimulator:
                     f"{key!r} already exists in bucket {index}. No change needed.",
                     highlighted=index,
                     result=False,
+                    collisions=position,
                 )
 
                 return HashTableSimulation(tuple(states), InsertOperation(key, value))
@@ -175,6 +180,7 @@ class HashTableSimulator:
                     [PlaceEntryEvent(index=index, key=key)],
                     f"{key!r} was not found in bucket {index}. Add it there.",
                     highlighted=index,
+                    collisions=len(bucket_before),
                 )
 
         else:
@@ -194,6 +200,7 @@ class HashTableSimulator:
                         f"Slot {probe} already holds {key!r}.",
                         highlighted=probe,
                         probe_trail=tuple(probe_trail),
+                        collisions=i,
                     )
                     found_existing = True
                     break
@@ -210,6 +217,7 @@ class HashTableSimulator:
                         ),
                         highlighted=probe,
                         probe_trail=tuple(probe_trail),
+                        collisions=i,
                     )
 
                     if not tombstoned:
@@ -222,6 +230,7 @@ class HashTableSimulator:
                     f"Slot {probe} holds a different key ({slot.key!r}). Keep probing.",
                     highlighted=probe,
                     probe_trail=tuple(probe_trail),
+                    collisions=i,
                 )
 
             try:
@@ -235,6 +244,7 @@ class HashTableSimulator:
                     [UpdateEntryEvent(index=probe_trail[-1], key=key)],
                     f"{key!r} already exists. Update its value.",
                     highlighted=probe_trail[-1],
+                    collisions=len(probe_trail) - 1,
                 )
             elif found_existing:
                 add_state(
@@ -242,6 +252,7 @@ class HashTableSimulator:
                     f"{key!r} already exists. No change needed.",
                     highlighted=probe_trail[-1],
                     result=False,
+                    collisions=len(probe_trail) - 1,
                 )
 
                 return HashTableSimulation(tuple(states), InsertOperation(key, value))
@@ -252,12 +263,18 @@ class HashTableSimulator:
                     [PlaceEntryEvent(index=placed_index, key=key)],
                     f"Place {key!r} at slot {placed_index}.",
                     highlighted=placed_index,
+                    collisions=len(probe_trail) - 1,
                 )
 
         add_state(
             [CompleteHashOperationEvent("insert", found=found_existing)],
             "Insert is complete.",
             result=True,
+            collisions=(
+                len(probe_trail) - 1
+                if clone.collision_strategy is not CollisionStrategy.CHAINING
+                else states[-1].data.collisions
+            ),
         )
 
         return HashTableSimulation(tuple(states), InsertOperation(key, value))
@@ -270,10 +287,10 @@ class HashTableSimulator:
         clone = self.model.clone()
         states: list[SimulationState] = []
 
-        def add_state(events, description, highlighted=None, probe_trail=(), result=None):
+        def add_state(events, description, highlighted=None, probe_trail=(), result=None, collisions=0):
             states.append(
                 SimulationState(
-                    data=self._snapshot(clone, description, highlighted, probe_trail, result),
+                    data=self._snapshot(clone, description, highlighted, probe_trail, result, collisions),
                     events=events,
                     step=len(states),
                 )
@@ -288,11 +305,14 @@ class HashTableSimulator:
         )
 
         if clone.collision_strategy is CollisionStrategy.CHAINING:
-            for entry in clone.bucket_at(index):
+            bucket = list(clone.bucket_at(index))
+
+            for position, entry in enumerate(bucket):
                 add_state(
                     [VisitBucketEntryEvent(bucket_index=index, key=entry.key)],
                     f"Check bucket {index}: is this {key!r}? Found {entry.key!r}.",
                     highlighted=index,
+                    collisions=position,
                 )
 
                 if entry.key == key:
@@ -301,6 +321,7 @@ class HashTableSimulator:
                         f"Found {key!r} in bucket {index}.",
                         highlighted=index,
                         result=entry,
+                        collisions=position,
                     )
                     return HashTableSimulation(tuple(states), SearchOperation(key))
 
@@ -309,6 +330,7 @@ class HashTableSimulator:
                 f"{key!r} was not found in bucket {index}.",
                 highlighted=index,
                 result=None,
+                collisions=len(bucket),
             )
             return HashTableSimulation(tuple(states), SearchOperation(key))
 
@@ -327,12 +349,14 @@ class HashTableSimulator:
                     f"Found {key!r} at slot {probe}.",
                     highlighted=probe,
                     probe_trail=tuple(probe_trail),
+                    collisions=i,
                 )
                 add_state(
                     [CompleteHashOperationEvent("search", found=True)],
                     "Search is complete.",
                     highlighted=probe,
                     result=slot,
+                    collisions=i,
                 )
                 return HashTableSimulation(tuple(states), SearchOperation(key))
 
@@ -348,6 +372,7 @@ class HashTableSimulator:
                     ),
                     highlighted=probe,
                     probe_trail=tuple(probe_trail),
+                    collisions=i,
                 )
 
                 if not tombstoned:
@@ -360,12 +385,14 @@ class HashTableSimulator:
                 f"Slot {probe} holds a different key ({slot.key!r}). Keep probing.",
                 highlighted=probe,
                 probe_trail=tuple(probe_trail),
+                collisions=i,
             )
 
         add_state(
             [CompleteHashOperationEvent("search", found=False)],
             f"{key!r} was not found.",
             result=None,
+            collisions=len(probe_trail) - 1 if probe_trail else 0,
         )
         return HashTableSimulation(tuple(states), SearchOperation(key))
 
@@ -377,10 +404,10 @@ class HashTableSimulator:
         clone = self.model.clone()
         states: list[SimulationState] = []
 
-        def add_state(events, description, highlighted=None, probe_trail=(), result=None):
+        def add_state(events, description, highlighted=None, probe_trail=(), result=None, collisions=0):
             states.append(
                 SimulationState(
-                    data=self._snapshot(clone, description, highlighted, probe_trail, result),
+                    data=self._snapshot(clone, description, highlighted, probe_trail, result, collisions),
                     events=events,
                     step=len(states),
                 )
@@ -396,12 +423,14 @@ class HashTableSimulator:
 
         if clone.collision_strategy is CollisionStrategy.CHAINING:
             found = False
+            bucket_before = list(clone.bucket_at(index))
 
-            for entry in clone.bucket_at(index):
+            for position, entry in enumerate(bucket_before):
                 add_state(
                     [VisitBucketEntryEvent(bucket_index=index, key=entry.key)],
                     f"Check bucket {index}: is this {key!r}? Found {entry.key!r}.",
                     highlighted=index,
+                    collisions=position,
                 )
 
                 if entry.key == key:
@@ -416,6 +445,7 @@ class HashTableSimulator:
                     f"Remove {key!r} from bucket {index}.",
                     highlighted=index,
                     result=True,
+                    collisions=position,
                 )
             else:
                 add_state(
@@ -423,6 +453,7 @@ class HashTableSimulator:
                     f"{key!r} was not found in bucket {index}. Nothing to delete.",
                     highlighted=index,
                     result=False,
+                    collisions=len(bucket_before),
                 )
                 return HashTableSimulation(tuple(states), DeleteOperation(key))
 
@@ -443,6 +474,7 @@ class HashTableSimulator:
                         f"Found {key!r} at slot {probe}.",
                         highlighted=probe,
                         probe_trail=tuple(probe_trail),
+                        collisions=i,
                     )
                     found_index = probe
                     break
@@ -459,6 +491,7 @@ class HashTableSimulator:
                         ),
                         highlighted=probe,
                         probe_trail=tuple(probe_trail),
+                        collisions=i,
                     )
 
                     if not tombstoned:
@@ -471,6 +504,7 @@ class HashTableSimulator:
                     f"Slot {probe} holds a different key ({slot.key!r}). Keep probing.",
                     highlighted=probe,
                     probe_trail=tuple(probe_trail),
+                    collisions=i,
                 )
 
             clone.delete(key)
@@ -484,12 +518,14 @@ class HashTableSimulator:
                     ),
                     highlighted=found_index,
                     result=True,
+                    collisions=len(probe_trail) - 1,
                 )
             else:
                 add_state(
                     [CompleteHashOperationEvent("delete", found=False)],
                     f"{key!r} was not found. Nothing to delete.",
                     result=False,
+                    collisions=len(probe_trail) - 1 if probe_trail else 0,
                 )
                 return HashTableSimulation(tuple(states), DeleteOperation(key))
 
@@ -497,6 +533,7 @@ class HashTableSimulator:
             [CompleteHashOperationEvent("delete", found=True)],
             "Delete is complete.",
             result=True,
+            collisions=states[-1].data.collisions,
         )
         return HashTableSimulation(tuple(states), DeleteOperation(key))
 
@@ -518,7 +555,7 @@ class HashTableSimulator:
 
         raise KeyError(f"{key!r} not found after insertion; this is a bug.")
 
-    def _snapshot(self, table, description, highlighted, probe_trail, result):
+    def _snapshot(self, table, description, highlighted, probe_trail, result, collisions=0):
         return HashTableSimulationState(
             description=description,
             buckets=tuple(tuple(bucket) for bucket in table.snapshot()),
@@ -526,4 +563,5 @@ class HashTableSimulator:
             highlighted_index=highlighted,
             probe_trail=probe_trail,
             result=result,
+            collisions=collisions,
         )
