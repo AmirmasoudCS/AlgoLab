@@ -13,6 +13,7 @@ from algolab.topics.hash_table.operations import (
     DeleteOperation,
     HashTableOperation,
     InsertOperation,
+    NoOpOperation,
     SearchOperation,
 )
 
@@ -227,7 +228,7 @@ class HashTableSimulator:
                 clone.insert(key, value)
             except IndexError as error:
                 add_state([], str(error), result=None)
-                return HashTableSimulation(tuple(states), InsertOperation(key, value))
+                return HashTableSimulation(tuple(states), NoOpOperation())
 
             if found_existing and clone.mode is HashTableMode.MAP:
                 add_state(
