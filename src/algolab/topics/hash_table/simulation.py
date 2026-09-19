@@ -6,7 +6,6 @@ from algolab.simulation.events import SimulationEvent
 from algolab.simulation.state import SimulationState
 from algolab.topics.hash_table.model import (
     CollisionStrategy,
-    Entry,
     HashTable,
     HashTableMode,
 )
@@ -28,7 +27,7 @@ class ComputeHashEvent(SimulationEvent):
 
 @dataclass(frozen=True)
 class ProbeSlotEvent(SimulationEvent):
-    """Indicates a slot is being examined during linear probing."""
+    """Indicates a slot is being examined during open addressing."""
 
     index: int
     status: str  # "empty" | "tombstone" | "match" | "occupied_other"
@@ -82,13 +81,13 @@ class HashTableSimulationState:
     Shared across insert, search, and delete for the same reason
     GraphAlgorithmState is shared across graph algorithms: the screen
     only needs "what does the table look like, what index is active,
-    what path did probing take" regardless of which operation produced
-    it.
+    what path did probing take" regardless of which operation
+    produced it.
     """
 
     description: str
 
-    buckets: tuple[tuple[Entry, ...], ...]
+    buckets: tuple[tuple, ...]
     tombstones: tuple[bool, ...]
 
     highlighted_index: int | None = None
@@ -122,18 +121,10 @@ class HashTableSimulator:
         clone = self.model.clone()
         states: list[SimulationState] = []
 
-        def add_state(
-            events: list[SimulationEvent],
-            description: str,
-            highlighted: int | None = None,
-            probe_trail: tuple[int, ...] = (),
-            result: object = None,
-        ) -> None:
+        def add_state(events, description, highlighted=None, probe_trail=(), result=None):
             states.append(
                 SimulationState(
-                    data=self._snapshot(
-                        clone, description, highlighted, probe_trail, result
-                    ),
+                    data=self._snapshot(clone, description, highlighted, probe_trail, result),
                     events=events,
                     step=len(states),
                 )
@@ -143,7 +134,7 @@ class HashTableSimulator:
 
         add_state(
             [ComputeHashEvent(key=key, index=index)],
-            f"Compute the hash of {key!r}: {self._describe_hash(clone, key, index)}.",
+            f"Compute the hash of {key!r}: {clone.describe_hash_for(key)}.",
             highlighted=index,
         )
 
@@ -153,10 +144,7 @@ class HashTableSimulator:
             for entry in clone.bucket_at(index):
                 add_state(
                     [VisitBucketEntryEvent(bucket_index=index, key=entry.key)],
-                    (
-                        f"Check bucket {index}: does it already contain "
-                        f"{key!r}? Found {entry.key!r}."
-                    ),
+                    f"Check bucket {index}: does it already contain {key!r}? Found {entry.key!r}.",
                     highlighted=index,
                 )
 
@@ -180,10 +168,7 @@ class HashTableSimulator:
                     result=False,
                 )
 
-                return HashTableSimulation(
-                    states=tuple(states),
-                    operation=InsertOperation(key, value),
-                )
+                return HashTableSimulation(tuple(states), InsertOperation(key, value))
             else:
                 add_state(
                     [PlaceEntryEvent(index=index, key=key)],
@@ -195,8 +180,8 @@ class HashTableSimulator:
             probe_trail: list[int] = []
             found_existing = False
 
-            for offset in range(clone.capacity):
-                probe = (index + offset) % clone.capacity
+            for i in range(clone.capacity):
+                probe = (index + clone.probe_offset(key, i)) % clone.capacity
                 probe_trail.append(probe)
 
                 slot = clone.slot_at(probe)
@@ -218,8 +203,7 @@ class HashTableSimulator:
                     add_state(
                         [ProbeSlotEvent(index=probe, status=status)],
                         (
-                            f"Slot {probe} is a tombstone from a previous "
-                            "deletion, keep probing."
+                            f"Slot {probe} is a tombstone from a previous deletion, keep probing."
                             if tombstoned
                             else f"Slot {probe} is empty. {key!r} isn't here."
                         ),
@@ -234,27 +218,16 @@ class HashTableSimulator:
 
                 add_state(
                     [ProbeSlotEvent(index=probe, status="occupied_other")],
-                    (
-                        f"Slot {probe} holds a different key "
-                        f"({slot.key!r}). Keep probing."
-                    ),
+                    f"Slot {probe} holds a different key ({slot.key!r}). Keep probing.",
                     highlighted=probe,
                     probe_trail=tuple(probe_trail),
                 )
 
             try:
                 clone.insert(key, value)
-            except IndexError:
-                add_state(
-                    [],
-                    "The table is full. Cannot insert.",
-                    result=None,
-                )
-
-                return HashTableSimulation(
-                    states=tuple(states),
-                    operation=InsertOperation(key, value),
-                )
+            except IndexError as error:
+                add_state([], str(error), result=None)
+                return HashTableSimulation(tuple(states), InsertOperation(key, value))
 
             if found_existing and clone.mode is HashTableMode.MAP:
                 add_state(
@@ -270,10 +243,7 @@ class HashTableSimulator:
                     result=False,
                 )
 
-                return HashTableSimulation(
-                    states=tuple(states),
-                    operation=InsertOperation(key, value),
-                )
+                return HashTableSimulation(tuple(states), InsertOperation(key, value))
             else:
                 placed_index = self._find_index_of(clone, key)
 
@@ -289,10 +259,7 @@ class HashTableSimulator:
             result=True,
         )
 
-        return HashTableSimulation(
-            states=tuple(states),
-            operation=InsertOperation(key, value),
-        )
+        return HashTableSimulation(tuple(states), InsertOperation(key, value))
 
     # ------------------------------------------------------------------
     # Search
@@ -302,18 +269,10 @@ class HashTableSimulator:
         clone = self.model.clone()
         states: list[SimulationState] = []
 
-        def add_state(
-            events: list[SimulationEvent],
-            description: str,
-            highlighted: int | None = None,
-            probe_trail: tuple[int, ...] = (),
-            result: object = None,
-        ) -> None:
+        def add_state(events, description, highlighted=None, probe_trail=(), result=None):
             states.append(
                 SimulationState(
-                    data=self._snapshot(
-                        clone, description, highlighted, probe_trail, result
-                    ),
+                    data=self._snapshot(clone, description, highlighted, probe_trail, result),
                     events=events,
                     step=len(states),
                 )
@@ -323,7 +282,7 @@ class HashTableSimulator:
 
         add_state(
             [ComputeHashEvent(key=key, index=index)],
-            f"Compute the hash of {key!r}: {self._describe_hash(clone, key, index)}.",
+            f"Compute the hash of {key!r}: {clone.describe_hash_for(key)}.",
             highlighted=index,
         )
 
@@ -342,10 +301,7 @@ class HashTableSimulator:
                         highlighted=index,
                         result=entry,
                     )
-
-                    return HashTableSimulation(
-                        states=tuple(states), operation=SearchOperation(key)
-                    )
+                    return HashTableSimulation(tuple(states), SearchOperation(key))
 
             add_state(
                 [CompleteHashOperationEvent("search", found=False)],
@@ -353,15 +309,12 @@ class HashTableSimulator:
                 highlighted=index,
                 result=None,
             )
-
-            return HashTableSimulation(
-                states=tuple(states), operation=SearchOperation(key)
-            )
+            return HashTableSimulation(tuple(states), SearchOperation(key))
 
         probe_trail: list[int] = []
 
-        for offset in range(clone.capacity):
-            probe = (index + offset) % clone.capacity
+        for i in range(clone.capacity):
+            probe = (index + clone.probe_offset(key, i)) % clone.capacity
             probe_trail.append(probe)
 
             slot = clone.slot_at(probe)
@@ -374,17 +327,13 @@ class HashTableSimulator:
                     highlighted=probe,
                     probe_trail=tuple(probe_trail),
                 )
-
                 add_state(
                     [CompleteHashOperationEvent("search", found=True)],
                     "Search is complete.",
                     highlighted=probe,
                     result=slot,
                 )
-
-                return HashTableSimulation(
-                    states=tuple(states), operation=SearchOperation(key)
-                )
+                return HashTableSimulation(tuple(states), SearchOperation(key))
 
             if slot is None:
                 status = "tombstone" if tombstoned else "empty"
@@ -417,8 +366,7 @@ class HashTableSimulator:
             f"{key!r} was not found.",
             result=None,
         )
-
-        return HashTableSimulation(states=tuple(states), operation=SearchOperation(key))
+        return HashTableSimulation(tuple(states), SearchOperation(key))
 
     # ------------------------------------------------------------------
     # Delete
@@ -428,18 +376,10 @@ class HashTableSimulator:
         clone = self.model.clone()
         states: list[SimulationState] = []
 
-        def add_state(
-            events: list[SimulationEvent],
-            description: str,
-            highlighted: int | None = None,
-            probe_trail: tuple[int, ...] = (),
-            result: object = None,
-        ) -> None:
+        def add_state(events, description, highlighted=None, probe_trail=(), result=None):
             states.append(
                 SimulationState(
-                    data=self._snapshot(
-                        clone, description, highlighted, probe_trail, result
-                    ),
+                    data=self._snapshot(clone, description, highlighted, probe_trail, result),
                     events=events,
                     step=len(states),
                 )
@@ -449,7 +389,7 @@ class HashTableSimulator:
 
         add_state(
             [ComputeHashEvent(key=key, index=index)],
-            f"Compute the hash of {key!r}: {self._describe_hash(clone, key, index)}.",
+            f"Compute the hash of {key!r}: {clone.describe_hash_for(key)}.",
             highlighted=index,
         )
 
@@ -483,17 +423,14 @@ class HashTableSimulator:
                     highlighted=index,
                     result=False,
                 )
-
-                return HashTableSimulation(
-                    states=tuple(states), operation=DeleteOperation(key)
-                )
+                return HashTableSimulation(tuple(states), DeleteOperation(key))
 
         else:
             probe_trail: list[int] = []
             found_index: int | None = None
 
-            for offset in range(clone.capacity):
-                probe = (index + offset) % clone.capacity
+            for i in range(clone.capacity):
+                probe = (index + clone.probe_offset(key, i)) % clone.capacity
                 probe_trail.append(probe)
 
                 slot = clone.slot_at(probe)
@@ -541,9 +478,8 @@ class HashTableSimulator:
                 add_state(
                     [RemoveEntryEvent(index=found_index, key=key)],
                     (
-                        f"Remove {key!r} from slot {found_index} and mark it "
-                        "as a tombstone, so later searches can keep probing "
-                        "past this point."
+                        f"Remove {key!r} from slot {found_index} and mark it as a "
+                        "tombstone, so later searches can keep probing past this point."
                     ),
                     highlighted=found_index,
                     result=True,
@@ -554,18 +490,14 @@ class HashTableSimulator:
                     f"{key!r} was not found. Nothing to delete.",
                     result=False,
                 )
-
-                return HashTableSimulation(
-                    states=tuple(states), operation=DeleteOperation(key)
-                )
+                return HashTableSimulation(tuple(states), DeleteOperation(key))
 
         add_state(
             [CompleteHashOperationEvent("delete", found=True)],
             "Delete is complete.",
             result=True,
         )
-
-        return HashTableSimulation(states=tuple(states), operation=DeleteOperation(key))
+        return HashTableSimulation(tuple(states), DeleteOperation(key))
 
     # ------------------------------------------------------------------
     # Shared helpers
@@ -576,8 +508,8 @@ class HashTableSimulator:
 
         index = table.hash_key(key)
 
-        for offset in range(table.capacity):
-            probe = (index + offset) % table.capacity
+        for i in range(table.capacity):
+            probe = (index + table.probe_offset(key, i)) % table.capacity
             slot = table.slot_at(probe)
 
             if slot is not None and slot.key == key:
@@ -585,21 +517,7 @@ class HashTableSimulator:
 
         raise KeyError(f"{key!r} not found after insertion; this is a bug.")
 
-    def _describe_hash(self, table: HashTable, key: object, index: int) -> str:
-        codes = [ord(character) for character in str(key)]
-        breakdown = " + ".join(str(code) for code in codes)
-        total = sum(codes)
-
-        return f"({breakdown}) % {table.capacity} = {total} % {table.capacity} = {index}"
-
-    def _snapshot(
-        self,
-        table: HashTable,
-        description: str,
-        highlighted: int | None,
-        probe_trail: tuple[int, ...],
-        result: object,
-    ) -> HashTableSimulationState:
+    def _snapshot(self, table, description, highlighted, probe_trail, result):
         return HashTableSimulationState(
             description=description,
             buckets=tuple(tuple(bucket) for bucket in table.snapshot()),
