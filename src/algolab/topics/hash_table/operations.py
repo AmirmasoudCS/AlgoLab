@@ -50,3 +50,19 @@ class ClearOperation(HashTableOperation):
 
     def commit(self, table: HashTable) -> None:
         table.clear()
+
+
+class NoOpOperation(HashTableOperation):
+    """
+    Commit nothing.
+
+    Used when the simulation already determined nothing should happen
+    to the real table, such as an insert that failed because the
+    table was full. Returning a normal InsertOperation in that case
+    would just raise the same error again when committed against the
+    live table; NoOpOperation guarantees commit() is always safe to
+    call once a simulation has finished, regardless of how it ended.
+    """
+
+    def commit(self, table: HashTable) -> None:
+        return None
