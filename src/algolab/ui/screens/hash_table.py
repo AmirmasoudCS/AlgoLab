@@ -350,6 +350,7 @@ class HashTableScreen(Screen):
         self.render_back_button()
         self._render_control_panel()
         self._render_explanation_panel()
+        self._render_legend()
         self._render_table()
 
     def _draw_text(self, text, position, font, color=Color.TEXT_PRIMARY):
@@ -438,19 +439,50 @@ class HashTableScreen(Screen):
             else:
                 button.render(self.surface)
 
+        self._render_load_bar()
+
         if self.current_simulation is not None:
             state = self.simulator.state
 
             if state is not None:
                 self._draw_text(
-                    f"Step: {state.step + 1}/{len(self.current_simulation.states)}",
-                    (15, 673),
+                    (
+                        f"Step: {state.step + 1}/{len(self.current_simulation.states)}"
+                        f"   Collisions: {state.data.collisions}"
+                    ),
+                    (15, 670),
                     self.small_font,
                     color=Color.TEXT_MUTED,
                 )
         else:
-            info = f"Size: {self.model.size}/{self.model.capacity}  Load: {self.model.load_factor:.2f}"
-            self._draw_text(info, (15, 673), self.small_font, color=Color.TEXT_MUTED)
+            info = (
+                f"Size: {self.model.size}/{self.model.capacity}  "
+                f"Load: {self.model.load_factor:.0%}"
+            )
+            self._draw_text(info, (15, 670), self.small_font, color=Color.TEXT_MUTED)
+
+    def _render_load_bar(self) -> None:
+        track_rect = pygame.Rect(15, 655, 220, 10)
+
+        pygame.draw.rect(self.surface, Color.SURFACE_RAISED, track_rect, border_radius=5)
+        pygame.draw.rect(self.surface, Color.BORDER, track_rect, 1, border_radius=5)
+
+        load = min(1.0, self.model.load_factor)
+
+        if load <= 0:
+            return
+
+        if load < 0.5:
+            fill_color = Color.STATE_SUCCESS
+        elif load < 0.85:
+            fill_color = Color.STATE_COMPARING
+        else:
+            fill_color = Color.STATE_DANGER
+
+        fill_width = max(6, int(track_rect.width * load))
+        fill_rect = pygame.Rect(track_rect.x, track_rect.y, fill_width, track_rect.height)
+
+        pygame.draw.rect(self.surface, fill_color, fill_rect, border_radius=5)
 
     def _render_explanation_panel(self) -> None:
         panel_rect = pygame.Rect(280, 70, self.surface.get_width() - 300, 130)
@@ -502,10 +534,30 @@ class HashTableScreen(Screen):
     # Table visualization
     # ------------------------------------------------------------------
 
+    LEGEND = [
+        (Color.STATE_ACTIVE, "Current"),
+        (Color.STATE_COMPARING, "Probed"),
+        (Color.STATE_DEFAULT, "Occupied"),
+        (Color.STATE_DANGER, "Deleted"),
+    ]
+
     def _canvas_rect(self) -> pygame.Rect:
         return pygame.Rect(
-            280, 210, self.surface.get_width() - 300, self.surface.get_height() - 230
+            280, 238, self.surface.get_width() - 300, self.surface.get_height() - 258
         )
+
+    def _render_legend(self) -> None:
+        x = 280
+        y = 212
+
+        for color, label in self.LEGEND:
+            swatch = pygame.Rect(x, y + 3, 12, 12)
+            pygame.draw.rect(self.surface, color, swatch, border_radius=3)
+
+            text = self.label_font.render(label, True, Color.TEXT_SECONDARY)
+            self.surface.blit(text, (x + 18, y))
+
+            x += 18 + text.get_width() + 22
 
     def _slot_color(self, index, occupied, tombstoned, state):
         if state is not None:
