@@ -12,6 +12,7 @@ from algolab.ui.screens.bst import BSTScreen
 from algolab.ui.screens.heap import HeapScreen
 from algolab.ui.screens.graph import GraphScreen
 from algolab.ui.screens.hash_table import HashTableScreen
+from algolab.ui.screens.sorting import SortingScreen
 from algolab.ui.theme import Color, Font
 
 
@@ -26,8 +27,8 @@ class MainMenuScreen(Screen):
         ("Binary Search Trees", True, "Insert, search, delete"),
         ("Heaps", True, "Min and max heaps"),
         ("Graphs", True, "BFS, DFS, Dijkstra, Bellman-Ford"),
-        ("Sorting", False, "Coming soon"),
-        ("Hash Tables & Sets", True, "Chaining, linear probing"),
+        ("Sorting", True, "Bubble, Merge, Quick, Heap, and more"),
+        ("Hash Tables & Sets", True, "Chaining, probing, double hashing"),
     ]
 
     def __init__(
@@ -95,6 +96,7 @@ class MainMenuScreen(Screen):
             4: BSTScreen,
             5: HeapScreen,
             6: GraphScreen,
+            7: SortingScreen,
             8: HashTableScreen,
         }
 
