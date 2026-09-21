@@ -4,6 +4,12 @@ from typing import Callable, Optional
 import pygame
 
 from algolab.ui.components.button import Button
+from algolab.ui.components.surface import draw_toggle_button
+
+# (label, multiplier applied to a screen's base step interval).
+# A larger multiplier means a LONGER pause between steps, i.e. slower
+# playback, so "Slow" has the biggest number here.
+SPEED_OPTIONS = (("Slow", 1.8), ("Normal", 1.0), ("Fast", 0.45))
 
 
 class Screen(ABC):
@@ -30,6 +36,18 @@ class Screen(ABC):
                 "< Menu",
             )
 
+        # Playback speed for step-by-step simulations. Screens with no
+        # animation to speed up (the main menu, asymptotic notation)
+        # simply never call the methods below, so this costs them
+        # nothing. Screens that do animate simulations position these
+        # three buttons themselves (rects default to zero-size here,
+        # since layout is screen-specific) and call scaled_interval()
+        # wherever they currently use a hardcoded step_interval.
+        self.speed_multiplier: float = 1.0
+        self.speed_buttons: list[Button] = [
+            Button(pygame.Rect(0, 0, 0, 0), label) for label, _ in SPEED_OPTIONS
+        ]
+
     def handle_back_event(self, event: pygame.event.Event) -> bool:
         """
         Handle a click on the back button, if one exists.
@@ -54,6 +72,41 @@ class Screen(ABC):
     def render_back_button(self) -> None:
         if self.back_button is not None:
             self.back_button.render(self.surface)
+
+    def handle_speed_event(self, event: pygame.event.Event) -> bool:
+        """
+        Handle a click on one of the three speed buttons.
+
+        Returns True when a speed button was clicked, so callers can
+        treat it the same way as handle_back_event: check it, and skip
+        the rest of event handling for that event if it returns True.
+        """
+
+        for index, button in enumerate(self.speed_buttons):
+            if button.handle_event(event):
+                self.speed_multiplier = SPEED_OPTIONS[index][1]
+                return True
+
+        return False
+
+    def update_speed_buttons(self, dt: float) -> None:
+        for button in self.speed_buttons:
+            button.update(dt)
+
+    def render_speed_buttons(self) -> None:
+        for index, button in enumerate(self.speed_buttons):
+            is_on = SPEED_OPTIONS[index][1] == self.speed_multiplier
+            draw_toggle_button(self.surface, button, is_on)
+
+    def scaled_interval(self, base_interval: float) -> float:
+        """
+        Apply the current speed setting to a screen's base step
+        interval. Screens keep their own per-topic base pace (sorting
+        is naturally faster than, say, BST since a 30-element sort has
+        far more steps) and this just scales that baseline up or down.
+        """
+
+        return base_interval * self.speed_multiplier
 
     @abstractmethod
     def handle_event(self, event: pygame.event.Event) -> None:
