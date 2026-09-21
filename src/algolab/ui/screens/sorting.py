@@ -69,6 +69,9 @@ class SortingScreen(Screen):
         self.algorithm_buttons = self._create_algorithm_buttons()
         self.navigation_buttons = self._create_navigation_buttons()
 
+        for index, button in enumerate(self.speed_buttons):
+            button.rect = pygame.Rect(15 + index * 62, 562, 58, 28)
+
         self.step_timer = 0.0
         self.step_interval = 0.5
 
@@ -97,7 +100,7 @@ class SortingScreen(Screen):
 
         buttons = []
         x = 15
-        y = 576
+        y = 600
         width = 40
         height = 35
         spacing = 45
@@ -115,6 +118,9 @@ class SortingScreen(Screen):
 
     def handle_event(self, event: pygame.event.Event) -> None:
         if self.handle_back_event(event):
+            return
+
+        if self.handle_speed_event(event):
             return
 
         self.size_input.handle_event(event)
@@ -259,6 +265,7 @@ class SortingScreen(Screen):
 
     def update(self, dt: float) -> None:
         self.update_back_button(dt)
+        self.update_speed_buttons(dt)
 
         self.randomize_button.update(dt)
         self.add_button.update(dt)
@@ -286,7 +293,7 @@ class SortingScreen(Screen):
 
         self.step_timer += dt
 
-        if self.step_timer >= self.step_interval:
+        if self.step_timer >= self.scaled_interval(self.step_interval):
             self.step_timer = 0.0
 
             self.simulator.next()
@@ -371,6 +378,8 @@ class SortingScreen(Screen):
             "Simulation", (25, 536), self.section_font, color=Color.TEXT_SECONDARY
         )
 
+        self.render_speed_buttons()
+
         for index, button in enumerate(self.navigation_buttons):
             if index == 4:
                 draw_toggle_button(
@@ -387,14 +396,14 @@ class SortingScreen(Screen):
             if state is not None:
                 self._draw_text(
                     f"Step: {state.step + 1}/{len(self.current_simulation.states)}",
-                    (15, 627),
+                    (15, 651),
                     self.small_font,
                     color=Color.TEXT_MUTED,
                 )
         else:
             status = "Sorted" if self.model.is_sorted else "Not sorted"
             info = f"Size: {self.model.size}   {status}"
-            self._draw_text(info, (15, 627), self.small_font, color=Color.TEXT_MUTED)
+            self._draw_text(info, (15, 651), self.small_font, color=Color.TEXT_MUTED)
 
     def _render_explanation_panel(self) -> None:
         panel_rect = pygame.Rect(280, 70, self.surface.get_width() - 300, 130)
