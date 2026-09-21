@@ -79,6 +79,9 @@ class HashTableScreen(Screen):
         self.operation_buttons = self._create_operation_buttons()
         self.navigation_buttons = self._create_navigation_buttons()
 
+        for index, button in enumerate(self.speed_buttons):
+            button.rect = pygame.Rect(15 + index * 62, 614, 58, 28)
+
         self.step_timer = 0.0
         self.step_interval = 1.6
 
@@ -107,7 +110,7 @@ class HashTableScreen(Screen):
 
         buttons = []
         x = 15
-        y = 624
+        y = 652
         width = 40
         height = 35
         spacing = 45
@@ -125,6 +128,9 @@ class HashTableScreen(Screen):
 
     def handle_event(self, event: pygame.event.Event) -> None:
         if self.handle_back_event(event):
+            return
+
+        if self.handle_speed_event(event):
             return
 
         self.key_input.handle_event(event)
@@ -304,6 +310,7 @@ class HashTableScreen(Screen):
 
     def update(self, dt: float) -> None:
         self.update_back_button(dt)
+        self.update_speed_buttons(dt)
 
         for button in self.strategy_buttons.values():
             button.update(dt)
@@ -333,7 +340,7 @@ class HashTableScreen(Screen):
 
         self.step_timer += dt
 
-        if self.step_timer >= self.step_interval:
+        if self.step_timer >= self.scaled_interval(self.step_interval):
             self.step_timer = 0.0
 
             self.simulator.next()
@@ -387,7 +394,7 @@ class HashTableScreen(Screen):
             y += line_height
 
     def _render_control_panel(self) -> None:
-        panel_rect = pygame.Rect(10, 70, 250, 630)
+        panel_rect = pygame.Rect(10, 70, 250, 670)
         draw_panel(self.surface, panel_rect, elevated=True)
 
         self._draw_text("TA Controls", (25, 80), self.control_font)
@@ -429,6 +436,8 @@ class HashTableScreen(Screen):
             "Simulation", (25, 588), self.section_font, color=Color.TEXT_SECONDARY
         )
 
+        self.render_speed_buttons()
+
         for index, button in enumerate(self.navigation_buttons):
             if index == 4:
                 draw_toggle_button(
@@ -450,7 +459,7 @@ class HashTableScreen(Screen):
                         f"Step: {state.step + 1}/{len(self.current_simulation.states)}"
                         f"   Collisions: {state.data.collisions}"
                     ),
-                    (15, 670),
+                    (15, 698),
                     self.small_font,
                     color=Color.TEXT_MUTED,
                 )
@@ -459,10 +468,10 @@ class HashTableScreen(Screen):
                 f"Size: {self.model.size}/{self.model.capacity}  "
                 f"Load: {self.model.load_factor:.0%}"
             )
-            self._draw_text(info, (15, 670), self.small_font, color=Color.TEXT_MUTED)
+            self._draw_text(info, (15, 698), self.small_font, color=Color.TEXT_MUTED)
 
     def _render_load_bar(self) -> None:
-        track_rect = pygame.Rect(15, 655, 220, 10)
+        track_rect = pygame.Rect(15, 683, 220, 10)
 
         pygame.draw.rect(self.surface, Color.SURFACE_RAISED, track_rect, border_radius=5)
         pygame.draw.rect(self.surface, Color.BORDER, track_rect, 1, border_radius=5)
