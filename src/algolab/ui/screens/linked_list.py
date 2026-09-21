@@ -56,6 +56,9 @@ class LinkedListScreen(Screen):
         self.operation_buttons = self._create_operation_buttons()
         self.navigation_buttons = self._create_navigation_buttons()
 
+        for index, button in enumerate(self.speed_buttons):
+            button.rect = pygame.Rect(15 + index * 62, 491, 58, 28)
+
         self.value_input = NumericInput(pygame.Rect(135, 375, 75, 30), 10)
         self.index_input = NumericInput(pygame.Rect(135, 415, 75, 30), 0)
 
@@ -120,7 +123,7 @@ class LinkedListScreen(Screen):
 
         buttons = []
         x = 25
-        y = 485
+        y = 529
         width = 40
         height = 35
         spacing = 45
@@ -192,6 +195,9 @@ class LinkedListScreen(Screen):
 
     def handle_event(self, event: pygame.event.Event) -> None:
         if self.handle_back_event(event):
+            return
+
+        if self.handle_speed_event(event):
             return
 
         self.value_input.handle_event(event)
@@ -279,6 +285,7 @@ class LinkedListScreen(Screen):
 
     def update(self, dt: float) -> None:
         self.update_back_button(dt)
+        self.update_speed_buttons(dt)
 
         for button in self.operation_buttons:
             button.update(dt)
@@ -299,7 +306,7 @@ class LinkedListScreen(Screen):
 
         self.step_timer += dt
 
-        if self.step_timer >= self.step_interval:
+        if self.step_timer >= self.scaled_interval(self.step_interval):
             self.step_timer = 0.0
             self.simulator.next()
 
@@ -315,7 +322,7 @@ class LinkedListScreen(Screen):
         self._render_linked_list()
 
     def _render_control_panel(self) -> None:
-        panel_rect = pygame.Rect(10, 70, 250, 500)
+        panel_rect = pygame.Rect(10, 70, 250, 600)
         draw_panel(self.surface, panel_rect, elevated=True)
 
         self._draw_text("TA Controls", (25, 80), self.control_font)
@@ -355,6 +362,8 @@ class LinkedListScreen(Screen):
             color=Color.TEXT_SECONDARY,
         )
 
+        self.render_speed_buttons()
+
         for index, button in enumerate(self.navigation_buttons):
             if index == 4:
                 draw_toggle_button(
@@ -375,7 +384,7 @@ class LinkedListScreen(Screen):
                         f"Step: {state.step + 1}/"
                         f"{len(self.current_simulation.states)}"
                     ),
-                    (25, 535),
+                    (25, 579),
                     self.small_font,
                     color=Color.TEXT_MUTED,
                 )
