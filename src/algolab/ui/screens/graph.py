@@ -78,6 +78,9 @@ class GraphScreen(Screen):
         self.algorithm_buttons = self._create_algorithm_buttons()
         self.navigation_buttons = self._create_navigation_buttons()
 
+        for index, button in enumerate(self.speed_buttons):
+            button.rect = pygame.Rect(15 + index * 62, 588, 58, 28)
+
         self.weight_input = NumericInput(pygame.Rect(160, 391, 75, 30), 1)
 
         self.step_timer = 0.0
@@ -131,7 +134,7 @@ class GraphScreen(Screen):
         buttons = []
 
         x = 15
-        y = 602
+        y = 626
         width = 40
         height = 35
         spacing = 45
@@ -195,6 +198,9 @@ class GraphScreen(Screen):
 
     def handle_event(self, event: pygame.event.Event) -> None:
         if self.handle_back_event(event):
+            return
+
+        if self.handle_speed_event(event):
             return
 
         self.weight_input.handle_event(event)
@@ -458,6 +464,7 @@ class GraphScreen(Screen):
 
     def update(self, dt: float) -> None:
         self.update_back_button(dt)
+        self.update_speed_buttons(dt)
 
         for button in self.directed_buttons:
             button.update(dt)
@@ -489,7 +496,7 @@ class GraphScreen(Screen):
 
         self.step_timer += dt
 
-        if self.step_timer >= self.step_interval:
+        if self.step_timer >= self.scaled_interval(self.step_interval):
             self.step_timer = 0.0
 
             self.simulator.next()
@@ -574,6 +581,8 @@ class GraphScreen(Screen):
             color=Color.TEXT_SECONDARY,
         )
 
+        self.render_speed_buttons()
+
         for index, button in enumerate(self.navigation_buttons):
             if index == 4:
                 draw_toggle_button(
@@ -594,7 +603,7 @@ class GraphScreen(Screen):
                         f"Step: {state.step + 1}/"
                         f"{len(self.current_simulation.states)}"
                     ),
-                    (15, 645),
+                    (15, 669),
                     self.small_font,
                     color=Color.TEXT_MUTED,
                 )
