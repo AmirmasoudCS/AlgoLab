@@ -53,6 +53,9 @@ class BSTScreen(Screen):
         self.operation_buttons = self._create_operation_buttons()
         self.navigation_buttons = self._create_navigation_buttons()
 
+        for index, button in enumerate(self.speed_buttons):
+            button.rect = pygame.Rect(15 + index * 62, 561, 58, 28)
+
         self.value_input = NumericInput(
             pygame.Rect(135, 475, 75, 30),
             50,
@@ -107,7 +110,7 @@ class BSTScreen(Screen):
         buttons = []
 
         x = 25
-        y = 565
+        y = 599
         width = 40
         height = 35
         spacing = 45
@@ -180,6 +183,9 @@ class BSTScreen(Screen):
 
     def handle_event(self, event: pygame.event.Event) -> None:
         if self.handle_back_event(event):
+            return
+
+        if self.handle_speed_event(event):
             return
 
         self.value_input.handle_event(event)
@@ -273,6 +279,7 @@ class BSTScreen(Screen):
 
     def update(self, dt: float) -> None:
         self.update_back_button(dt)
+        self.update_speed_buttons(dt)
 
         for button in self.operation_buttons:
             button.update(dt)
@@ -293,7 +300,7 @@ class BSTScreen(Screen):
 
         self.step_timer += dt
 
-        if self.step_timer >= self.step_interval:
+        if self.step_timer >= self.scaled_interval(self.step_interval):
             self.step_timer = 0.0
 
             self.simulator.next()
@@ -341,6 +348,8 @@ class BSTScreen(Screen):
             color=Color.TEXT_SECONDARY,
         )
 
+        self.render_speed_buttons()
+
         for index, button in enumerate(self.navigation_buttons):
             if index == 4:
                 draw_toggle_button(
@@ -361,7 +370,7 @@ class BSTScreen(Screen):
                         f"Step: {state.step + 1}/"
                         f"{len(self.current_simulation.states)}"
                     ),
-                    (25, 610),
+                    (25, 644),
                     self.small_font,
                     color=Color.TEXT_MUTED,
                 )
