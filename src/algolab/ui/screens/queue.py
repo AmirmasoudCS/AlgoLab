@@ -18,6 +18,14 @@ from algolab.ui.theme import Color, Font
 class QueueScreen(Screen):
     """Screen for visualizing queue operations."""
 
+    LEGEND = [
+        (Color.STATE_ACTIVE, "Front"),
+        (Color.STATE_VISITED, "Rear"),
+        (Color.STATE_COMPARING, "Peeked"),
+        (Color.STATE_SUCCESS, "New"),
+        (Color.STATE_DANGER, "Removed"),
+    ]
+
     def __init__(self, surface: pygame.Surface, on_back=None) -> None:
         super().__init__(surface, on_back)
 
@@ -287,7 +295,21 @@ class QueueScreen(Screen):
         self.render_back_button()
         self._render_control_panel()
         self._render_explanation_panel()
+        self._render_legend()
         self._render_queue()
+
+    def _render_legend(self) -> None:
+        x = 280
+        y = 210
+
+        for color, label in self.LEGEND:
+            swatch = pygame.Rect(x, y + 3, 12, 12)
+            pygame.draw.rect(self.surface, color, swatch, border_radius=3)
+
+            text = self.small_font.render(label, True, Color.TEXT_SECONDARY)
+            self.surface.blit(text, (x + 18, y))
+
+            x += 18 + text.get_width() + 22
 
     def _render_control_panel(self) -> None:
         panel_rect = pygame.Rect(10, 70, 250, 500)
