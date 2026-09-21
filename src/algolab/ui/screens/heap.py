@@ -46,6 +46,9 @@ class HeapScreen(Screen):
         self.operation_buttons = self._create_operation_buttons()
         self.navigation_buttons = self._create_navigation_buttons()
 
+        for index, button in enumerate(self.speed_buttons):
+            button.rect = pygame.Rect(15 + index * 62, 556, 58, 28)
+
         self.value_input = NumericInput(
             pygame.Rect(135, 445, 75, 30),
             50,
@@ -92,7 +95,7 @@ class HeapScreen(Screen):
         buttons = []
 
         x = 25
-        y = 570
+        y = 594
         width = 40
         height = 35
         spacing = 45
@@ -124,6 +127,9 @@ class HeapScreen(Screen):
 
     def handle_event(self, event: pygame.event.Event) -> None:
         if self.handle_back_event(event):
+            return
+
+        if self.handle_speed_event(event):
             return
 
         self.value_input.handle_event(event)
@@ -233,6 +239,7 @@ class HeapScreen(Screen):
 
     def update(self, dt: float) -> None:
         self.update_back_button(dt)
+        self.update_speed_buttons(dt)
 
         for button in self.operation_buttons:
             button.update(dt)
@@ -256,7 +263,7 @@ class HeapScreen(Screen):
 
         self.step_timer += dt
 
-        if self.step_timer >= self.step_interval:
+        if self.step_timer >= self.scaled_interval(self.step_interval):
             self.step_timer = 0.0
 
             self.simulator.next()
@@ -319,6 +326,8 @@ class HeapScreen(Screen):
             color=Color.TEXT_SECONDARY,
         )
 
+        self.render_speed_buttons()
+
         for index, button in enumerate(self.navigation_buttons):
             if index == 4:
                 draw_toggle_button(
@@ -341,7 +350,7 @@ class HeapScreen(Screen):
         self._draw_text(
             step_text,
             self.small_font,
-            (25, 610),
+            (25, 634),
             color=Color.TEXT_MUTED,
         )
 
