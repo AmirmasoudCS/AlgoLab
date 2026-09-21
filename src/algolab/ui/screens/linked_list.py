@@ -23,6 +23,13 @@ from algolab.ui.theme import Color, Font, Radius
 class LinkedListScreen(Screen):
     """Screen for visualizing singly linked list operations."""
 
+    LEGEND = [
+        (Color.STATE_ACTIVE, "Current"),
+        (Color.STATE_COMPARING, "Comparing"),
+        (Color.STATE_SUCCESS, "New"),
+        (Color.STATE_DANGER, "Deleted"),
+    ]
+
     POINTER_COLORS = {
         "previous": Color.STATE_COMPARING,
         "current": Color.STATE_ACTIVE,
@@ -319,7 +326,21 @@ class LinkedListScreen(Screen):
         self.render_back_button()
         self._render_control_panel()
         self._render_explanation_panel()
+        self._render_legend()
         self._render_linked_list()
+
+    def _render_legend(self) -> None:
+        x = 280
+        y = 210
+
+        for color, label in self.LEGEND:
+            swatch = pygame.Rect(x, y + 3, 12, 12)
+            pygame.draw.rect(self.surface, color, swatch, border_radius=3)
+
+            text = self.small_font.render(label, True, Color.TEXT_SECONDARY)
+            self.surface.blit(text, (x + 18, y))
+
+            x += 18 + text.get_width() + 22
 
     def _render_control_panel(self) -> None:
         panel_rect = pygame.Rect(10, 70, 250, 600)
@@ -500,7 +521,7 @@ class LinkedListScreen(Screen):
         # explanation panel so HEAD and the algorithmic pointers do not
         # overlap with it.
         x = 320
-        y = 390
+        y = 420
 
         state = self._get_simulation_state()
         events = self._get_event_info()
@@ -560,7 +581,7 @@ class LinkedListScreen(Screen):
         )
 
     def _draw_empty_message(self) -> None:
-        area = pygame.Rect(280, 220, self.surface.get_width() - 300, 130)
+        area = pygame.Rect(280, 430, self.surface.get_width() - 300, 130)
 
         text = self.explanation_font.render(
             "List is empty. Insert a value to begin.",
