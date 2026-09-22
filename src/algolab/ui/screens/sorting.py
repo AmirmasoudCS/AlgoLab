@@ -126,6 +126,17 @@ class SortingScreen(Screen):
         self.size_input.handle_event(event)
         self.value_input.handle_event(event)
 
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_p:
+                self._handle_navigation(4)
+                return
+            if event.key == pygame.K_LEFT:
+                self._handle_navigation(1)
+                return
+            if event.key == pygame.K_RIGHT:
+                self._handle_navigation(2)
+                return
+
         if self.randomize_button.handle_event(event):
             self._randomize()
 
