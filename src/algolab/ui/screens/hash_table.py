@@ -138,6 +138,20 @@ class HashTableScreen(Screen):
         if self.model.mode is HashTableMode.MAP:
             self.value_input.handle_event(event)
 
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_p:
+                self._handle_navigation(4)
+                return
+            if event.key == pygame.K_LEFT:
+                self._handle_navigation(1)
+                return
+            if event.key == pygame.K_RIGHT:
+                self._handle_navigation(2)
+                return
+            if event.key == pygame.K_RETURN:
+                self._select_operation(0)
+                return
+
         for strategy, button in self.strategy_buttons.items():
             if button.handle_event(event):
                 self._set_strategy(strategy)
