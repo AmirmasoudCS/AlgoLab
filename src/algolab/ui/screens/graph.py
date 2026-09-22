@@ -205,6 +205,17 @@ class GraphScreen(Screen):
 
         self.weight_input.handle_event(event)
 
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_p:
+                self._handle_navigation(4)
+                return
+            if event.key == pygame.K_LEFT:
+                self._handle_navigation(1)
+                return
+            if event.key == pygame.K_RIGHT:
+                self._handle_navigation(2)
+                return
+
         self._handle_canvas_event(event)
 
         for index, button in enumerate(self.directed_buttons):
