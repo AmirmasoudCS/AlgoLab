@@ -1,3 +1,5 @@
+import random
+
 import pygame
 
 from algolab.simulation.simulator import Simulator
@@ -62,6 +64,11 @@ class LinkedListScreen(Screen):
 
         self.operation_buttons = self._create_operation_buttons()
         self.navigation_buttons = self._create_navigation_buttons()
+
+        self.randomize_button = Button(
+            pygame.Rect(140, 112, 95, 24),
+            "Randomize",
+        )
 
         for index, button in enumerate(self.speed_buttons):
             button.rect = pygame.Rect(15 + index * 62, 491, 58, 28)
@@ -225,6 +232,9 @@ class LinkedListScreen(Screen):
             if button.handle_event(event):
                 self._select_operation(index)
 
+        if self.randomize_button.handle_event(event):
+            self._randomize()
+
         for index, button in enumerate(self.navigation_buttons):
             if button.handle_event(event):
                 self._handle_navigation(index)
@@ -256,6 +266,27 @@ class LinkedListScreen(Screen):
         self.operation_committed = False
 
         self.simulator.load_states(list(simulation.states))
+
+        self.step_timer = 0.0
+
+        self._reset_algorithm_pointers()
+
+    def _randomize(self) -> None:
+        """
+        Replace the list contents with random values, instantly and
+        without animation (same behavior as the sorting screen's
+        Randomize).
+        """
+
+        self.cancel_current_simulation()
+
+        self.model.clear()
+
+        # Capped at 4 so the whole list plus its NULL arrow stays on
+        # screen in the default 1280px window: nodes start at x=320 and
+        # take 210px each, so a 5th node would end exactly at x=1280.
+        for _ in range(random.randint(3, 4)):
+            self.model.insert_at_end(random.randint(1, 99))
 
         self.step_timer = 0.0
 
@@ -307,6 +338,8 @@ class LinkedListScreen(Screen):
 
         for button in self.operation_buttons:
             button.update(dt)
+
+        self.randomize_button.update(dt)
 
         for button in self.navigation_buttons:
             button.update(dt)
@@ -365,6 +398,8 @@ class LinkedListScreen(Screen):
             self.section_font,
             color=Color.TEXT_SECONDARY,
         )
+
+        self.randomize_button.render(self.surface)
 
         for button in self.operation_buttons:
             button.render(self.surface)
