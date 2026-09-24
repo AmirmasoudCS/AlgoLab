@@ -108,6 +108,20 @@ class Screen(ABC):
 
         return base_interval * self.speed_multiplier
 
+    def cancel_current_simulation(self) -> None:
+        """
+        Discard any in-progress simulation so an editing action can
+        apply immediately instead of being silently refused.
+
+        Requires the subclass to define current_simulation, simulator
+        and operation_committed.
+        """
+
+        if getattr(self, "current_simulation", None) is not None:
+            self.simulator.reset()
+            self.current_simulation = None
+            self.operation_committed = False
+
     @abstractmethod
     def handle_event(self, event: pygame.event.Event) -> None:
         """Handle an incoming Pygame event."""
