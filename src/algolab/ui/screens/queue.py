@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import random
+
 import pygame
 
 from algolab.simulation.simulator import Simulator
@@ -46,6 +48,11 @@ class QueueScreen(Screen):
 
         self.operation_buttons = self._create_operation_buttons()
         self.navigation_buttons = self._create_navigation_buttons()
+
+        self.randomize_button = Button(
+            pygame.Rect(140, 112, 95, 24),
+            "Randomize",
+        )
 
         for index, button in enumerate(self.speed_buttons):
             button.rect = pygame.Rect(15 + index * 62, 381, 58, 28)
@@ -206,6 +213,9 @@ class QueueScreen(Screen):
             if button.handle_event(event):
                 self._select_operation(index)
 
+        if self.randomize_button.handle_event(event):
+            self._randomize()
+
         for index, button in enumerate(self.navigation_buttons):
             if button.handle_event(event):
                 self._handle_navigation(index)
@@ -232,6 +242,25 @@ class QueueScreen(Screen):
         self.operation_committed = False
 
         self.simulator.load_states(list(simulation.states))
+
+        self.step_timer = 0.0
+
+    def _randomize(self) -> None:
+        """
+        Replace the queue contents with random values, instantly and
+        without animation (same behavior as the sorting screen's
+        Randomize).
+        """
+
+        self.cancel_current_simulation()
+
+        self.model.clear()
+
+        # Capped at 5 so the rear item stays on screen in the default
+        # 1280px window: items start at x=430 and take 150px each, so a
+        # 6th item would end at x=1300.
+        for _ in range(random.randint(3, 5)):
+            self.model.enqueue(random.randint(1, 99))
 
         self.step_timer = 0.0
 
@@ -279,6 +308,8 @@ class QueueScreen(Screen):
 
         for button in self.operation_buttons:
             button.update(dt)
+
+        self.randomize_button.update(dt)
 
         for button in self.navigation_buttons:
             button.update(dt)
@@ -337,6 +368,8 @@ class QueueScreen(Screen):
             self.section_font,
             color=Color.TEXT_SECONDARY,
         )
+
+        self.randomize_button.render(self.surface)
 
         for button in self.operation_buttons:
             button.render(self.surface)
