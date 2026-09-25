@@ -1,3 +1,5 @@
+import random
+
 import pygame
 
 from algolab.simulation.simulator import Simulator
@@ -52,6 +54,11 @@ class BSTScreen(Screen):
 
         self.operation_buttons = self._create_operation_buttons()
         self.navigation_buttons = self._create_navigation_buttons()
+
+        self.randomize_button = Button(
+            pygame.Rect(140, 112, 95, 24),
+            "Randomize",
+        )
 
         for index, button in enumerate(self.speed_buttons):
             button.rect = pygame.Rect(15 + index * 62, 561, 58, 28)
@@ -208,6 +215,9 @@ class BSTScreen(Screen):
             if button.handle_event(event):
                 self._select_operation(index)
 
+        if self.randomize_button.handle_event(event):
+            self._randomize()
+
         for index, button in enumerate(self.navigation_buttons):
             if button.handle_event(event):
                 self._handle_navigation(index)
@@ -246,6 +256,40 @@ class BSTScreen(Screen):
 
         self.simulator.load_states(list(simulation.states))
 
+        self.step_timer = 0.0
+
+    def _randomize(self) -> None:
+        """
+        Replace the tree contents with random values, instantly and
+        without animation (same behavior as the sorting screen's
+        Randomize).
+
+        Values are drawn without replacement (random.sample) so every
+        insert succeeds -- BinarySearchTree.insert() raises ValueError
+        on a duplicate, which would otherwise silently shrink the tree
+        below the intended size.
+        """
+
+        self.cancel_current_simulation()
+
+        self.model.clear()
+
+        # 7 unique values keeps the tree readable even in a worst-case
+        # skewed shape (a straight chain 7 nodes deep still fits the
+        # canvas at 85px per level); insert() builds whatever shape the
+        # random order produces.
+        count = random.randint(5, 7)
+        values = random.sample(range(1, 100), count)
+
+        for value in values:
+            try:
+                self.model.insert(value)
+            except ValueError:
+                # Defensive only: random.sample already guarantees
+                # uniqueness, so this should never trigger.
+                continue
+
+        self.status_message = None
         self.step_timer = 0.0
 
     def _handle_navigation(self, index: int) -> None:
@@ -298,6 +342,8 @@ class BSTScreen(Screen):
         for button in self.operation_buttons:
             button.update(dt)
 
+        self.randomize_button.update(dt)
+
         for button in self.navigation_buttons:
             button.update(dt)
 
@@ -342,6 +388,8 @@ class BSTScreen(Screen):
             self.section_font,
             color=Color.TEXT_SECONDARY,
         )
+
+        self.randomize_button.render(self.surface)
 
         for button in self.operation_buttons:
             button.render(self.surface)
