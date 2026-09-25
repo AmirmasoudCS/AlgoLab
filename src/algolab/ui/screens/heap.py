@@ -708,10 +708,13 @@ class HeapScreen(Screen):
             Color.TEXT_SECONDARY,
         )
 
-        self.surface.blit(label, (300, 500))
+        # Pushed down from the original y=500/530 so it clears a
+        # 3-level-deep tree (up to 12 nodes, depth 3 bottoms out at
+        # y=555: 245 + 3*85 level offset + 55 node height).
+        self.surface.blit(label, (300, 595))
 
         x = 300
-        y = 530
+        y = 630
 
         cell_width = 60
         cell_height = 42
