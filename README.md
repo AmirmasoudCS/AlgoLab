@@ -1,232 +1,138 @@
 # AlgoLab
 
-A desktop application developed with Pygame for visualizing data structures and algorithms built for Data Structure course. Every topic shows a step-by-step, pausable, rewindable animation of each operation, alongside a live explanation of what is happening and why.
+A desktop application built with Python and Pygame for visualizing data structures and algorithms.
 
-## Topics
+Each operation is presented as a **step-by-step**, **pausable**, **rewindable** animation, with a live explanation of what is happening. AlgoLab was developed as an educational companion for a Data Structures and Algorithms course.
 
-- **Asymptotic Notation:** complexity graphs with adjustable inputs
-- **Linked Lists:** insert, delete, search
-- **Stacks:** push, pop, peek
-- **Queues:** enqueue, dequeue, peek
-- **Binary Search Trees:** insert, search, delete, min/max, different traversal ordering of the tree
-- **Heaps:** insert, peek, extract, min/max, heapify
-- **Graphs:** directed/undirected, weighted/unweighted toggles, BFS, DFS, Dijkstra, B-F
-- **Sorting:** BubbleSort, InsertionSort, MergeSort, QuickSort, HeapSort
-- **Hash Tables & Sets:** Chaining, Probings, DH, Set/Map modes, adjustable hash functions, collisions counter
+## 📚 Topics
 
-## Features
+* **Asymptotic Notation**: Complexity graphs with adjustable inputs
+* **Linked Lists**: Insert, delete, search
+* **Stacks**: Push, pop, peek
+* **Queues**: Enqueue, dequeue, peek
+* **Binary Search Trees**: Insert, search, delete, min/max, traversals
+* **Heaps**: Min/Max heaps, insert, peek, extract, heapify
+* **Graphs**: Directed/undirected, weighted/unweighted, BFS, DFS, Dijkstra, Bellman-Ford
+* **Sorting**: Bubble Sort, Insertion Sort, Merge Sort, Quick Sort, Heap Sort
+* **Hash Tables & Sets**: Chaining, probing, double hashing, Set/Map modes, configurable hash functions, collision counting
 
-- Step-by-step animation with settings/control over the DS attributes
-- Adjustable speed over animation
-- Live "what is happening" explanation
-- Color-coded operation + legends
-- A **Randomize** button for every topic to initialize the DS randomly
-- Some keyboard shorcuts: `P` to pause/play, `<-`/`->` to step backward/forward in animation, `Enter` to run the primary action of each topic
+## ✨ Features
 
-## Requirements
+* Step-by-step, pausable, and rewindable simulations
+* Adjustable animation speed
+* Live explanations of operations
+* Color-coded operations and legends
+* Configurable data structure attributes
+* Randomize button for every topic
+* Keyboard shortcuts:
 
-- Python 3.10+
-- [Pygame](https://www.pygame.org/)
+  * `P` Pause/Resume
+  * `<-` / `->` Step backward/forward
+  * `Enter` Run the primary action
 
-## Getting Started
-1. Clone and enter the repository:
+## ⚙️ Getting Started
+
+### Requirements
+
+* Python 3.10+
+* Pygame
+
+### Installation
+
 ```bash
 git clone https://github.com/AmirmasoudCS/AlgoLab.git
 cd AlgoLab
-```
-2. Create and activate a virtual environment:
-```bash
+
 python -m venv .venv
 .venv\Scripts\activate
-```
-3. Install the dependencies:
-```bash
+
 pip install -r requirements.txt
 ```
-4. Run the application:
+
+Run the application:
+
 ```bash
 python -m algolab.main
 ```
 
+## 🏗️ Architecture
 
-## Project structure
+Each topic follows the same structure:
 
 ```text
-📁 
+model.py       # Data structure and state
+operations.py  # Operations performed on the structure
+simulation.py  # Step-by-step simulation
+```
+
+Simulations operate on a copy of the model's state and record each intermediate state as an immutable snapshot. The real model is only updated when the simulation completes.
+
+This allows operations to be **paused**, **replayed**, **rewound**, and **committed** without modifying the actual data structure during the animation.
+
+Randomize actions bypass the simulation layer and use the data structure's normal operations to produce an immediate state.
+
+## 📁 Project Structure
+
+```text
+📁 AlgoLab
 ├── 📁 assets
 │   ├── 📄 icon.ico
 │   └── 🖼️ icon.png
 ├── 📁 config
 │   └── ⚙️ config.toml
 ├── 📁 log
+│
 ├── 📁 src
 │   └── 📁 algolab
 │       ├── 📁 core
-│       │   ├── 🐍 __init__.py
-│       │   ├── 🐍 application.py
-│       │   └── 🐍 configuration.py
 │       ├── 📁 simulation
-│       │   ├── 🐍 __init__.py
-│       │   ├── 🐍 events.py
-│       │   ├── 🐍 history.py
-│       │   ├── 🐍 simulator.py
-│       │   └── 🐍 state.py
 │       ├── 📁 topics
 │       │   ├── 📁 asymptotic
-│       │   │   ├── 🐍 __init__.py
-│       │   │   ├── 🐍 complexity.py
-│       │   │   ├── 🐍 model.py
-│       │   │   └── 🐍 visualizer.py
 │       │   ├── 📁 bst
-│       │   │   ├── 🐍 __init__.py
-│       │   │   ├── 🐍 model.py
-│       │   │   ├── 🐍 operations.py
-│       │   │   └── 🐍 simulation.py
 │       │   ├── 📁 graph
-│       │   │   ├── 🐍 __init__.py
-│       │   │   ├── 🐍 model.py
-│       │   │   └── 🐍 simulation.py
 │       │   ├── 📁 hash_table
-│       │   │   ├── 🐍 __init__.py
-│       │   │   ├── 🐍 model.py
-│       │   │   ├── 🐍 operations.py
-│       │   │   └── 🐍 simulation.py
 │       │   ├── 📁 heap
-│       │   │   ├── 🐍 __init__.py
-│       │   │   ├── 🐍 model.py
-│       │   │   ├── 🐍 operations.py
-│       │   │   └── 🐍 simulation.py
 │       │   ├── 📁 linked_list
-│       │   │   ├── 🐍 __init__.py
-│       │   │   ├── 🐍 model.py
-│       │   │   ├── 🐍 operations.py
-│       │   │   └── 🐍 simulation.py
 │       │   ├── 📁 queue
-│       │   │   ├── 🐍 __init__.py
-│       │   │   ├── 🐍 model.py
-│       │   │   ├── 🐍 operations.py
-│       │   │   └── 🐍 simulation.py
 │       │   ├── 📁 sorting
-│       │   │   ├── 🐍 __init__.py
-│       │   │   ├── 🐍 model.py
-│       │   │   ├── 🐍 operations.py
-│       │   │   └── 🐍 simulation.py
-│       │   ├── 📁 stack
-│       │   │   ├── 🐍 __init__.py
-│       │   │   ├── 🐍 model.py
-│       │   │   ├── 🐍 operations.py
-│       │   │   └── 🐍 simulation.py
-│       │   └── 🐍 __init__.py
+│       │   └── 📁 stack
 │       ├── 📁 ui
 │       │   ├── 📁 components
-│       │   │   ├── 🐍 __init__.py
-│       │   │   ├── 🐍 button.py
-│       │   │   ├── 🐍 checkbox.py
-│       │   │   ├── 🐍 numeric_input.py
-│       │   │   ├── 🐍 radio_button.py
-│       │   │   └── 🐍 surface.py
-│       │   ├── 📁 screens
-│       │   │   ├── 🐍 __init__.py
-│       │   │   ├── 🐍 asymptotic.py
-│       │   │   ├── 🐍 bst.py
-│       │   │   ├── 🐍 graph.py
-│       │   │   ├── 🐍 hash_table.py
-│       │   │   ├── 🐍 heap.py
-│       │   │   ├── 🐍 linked_list.py
-│       │   │   ├── 🐍 main_menu.py
-│       │   │   ├── 🐍 queue.py
-│       │   │   ├── 🐍 screen.py
-│       │   │   ├── 🐍 screen_manager.py
-│       │   │   ├── 🐍 sorting.py
-│       │   │   └── 🐍 stack.py
-│       │   ├── 🐍 __init__.py
-│       │   └── 🐍 theme.py
+│       │   └── 📁 screens
 │       ├── 📁 visualization
-│       │   ├── 📁 graph
-│       │   │   ├── 🐍 __init__.py
-│       │   │   ├── 🐍 bounds.py
-│       │   │   ├── 🐍 coordinate_system.py
-│       │   │   ├── 🐍 curve.py
-│       │   │   ├── 🐍 layout.py
-│       │   │   ├── 🐍 renderer.py
-│       │   │   └── 🐍 scaling.py
-│       │   └── 🐍 __init__.py
-│       ├── 🐍 __init__.py
+│       │   └── 📁 graph
 │       └── 🐍 main.py
+│
 ├── 📁 tests
 │   ├── 📁 core
-│   │   ├── 🐍 __init__.py
-│   │   └── 🐍 test_configuration.py
 │   ├── 📁 simulation
-│   │   ├── 🐍 __init__.py
-│   │   ├── 🐍 test_events.py
-│   │   ├── 🐍 test_history.py
-│   │   ├── 🐍 test_simulator.py
-│   │   └── 🐍 test_state.py
 │   ├── 📁 topics
-│   │   ├── 📁 asymptotic
-│   │   │   ├── 🐍 __init__.py
-│   │   │   ├── 🐍 test_complexity.py
-│   │   │   ├── 🐍 test_model.py
-│   │   │   └── 🐍 test_visualizer.py
-│   │   ├── 📁 bst
-│   │   │   ├── 🐍 test_bst_model.py
-│   │   │   ├── 🐍 test_bst_operations.py
-│   │   │   └── 🐍 test_bst_simulation.py
-│   │   ├── 📁 heap
-│   │   │   ├── 🐍 test_heap_model.py
-│   │   │   ├── 🐍 test_heap_operations.py
-│   │   │   └── 🐍 test_heap_simulation.py
-│   │   ├── 📁 linked_list
-│   │   │   ├── 🐍 test_linked_list_model.py
-│   │   │   ├── 🐍 test_operations.py
-│   │   │   └── 🐍 test_simulation.py
-│   │   ├── 📁 queue
-│   │   │   ├── 🐍 test_queue_model.py
-│   │   │   ├── 🐍 test_queue_operations.py
-│   │   │   └── 🐍 test_queue_simulation.py
-│   │   ├── 📁 stack
-│   │   │   ├── 🐍 test_stack_model.py
-│   │   │   ├── 🐍 test_stack_operations.py
-│   │   │   └── 🐍 test_stack_simulation.py
-│   │   └── 🐍 __init__.py
 │   ├── 📁 ui
-│   │   ├── 📁 compontets
-│   │   │   ├── 🐍 checkbox.py
-│   │   │   └── 🐍 radio_button.py
-│   │   ├── 📁 screens
-│   │   │   ├── 🐍 __init__.py
-│   │   │   ├── 🐍 test_asymptotic.py
-│   │   │   ├── 🐍 test_main_menu.py
-│   │   │   ├── 🐍 test_screen.py
-│   │   │   └── 🐍 test_screen_manager.py
-│   │   └── 🐍 __init__.py
-│   ├── 📁 visualization
-│   │   ├── 📁 graph
-│   │   │   ├── 🐍 __init__.py
-│   │   │   ├── 🐍 test_bounds.py
-│   │   │   ├── 🐍 test_coordinate_system.py
-│   │   │   ├── 🐍 test_curve.py
-│   │   │   ├── 🐍 test_layout.py
-│   │   │   ├── 🐍 test_renderer.py
-│   │   │   └── 🐍 test_scaling.py
-│   │   └── 🐍 __init__.py
-│   └── 🐍 __init__.py
+│   └── 📁 visualization
+│
 ├── ⚖️ LICENSE
 ├── ⚙️ pyproject.toml
 ├── 📘 README.md
 ├── 📝 requirements.txt
 └── 🐍 smoke_test.py
 ```
-each topic follows the same pattern of `model.py` companied by `operations.py` and `simulation.py`.
-## Architecture notes
 
-- **`Screen`** is the shared base class every topic screen extends. It provides the back button, the Slow/Normal/Fast speed control, and `cancel_current_simulation()` for editing actions that should override an in-progress animation rather than being silently refused.
-- Simulations are built by copying the model's current state, stepping through the operation, and recording each intermediate state as an immutable snapshot. Nothing is applied to the real model until the simulation reaches its end and calls `commit()`.
-- Randomize buttons bypass the animation layer entirely: they mutate the model directly through its real methods (`push`, `enqueue`, `insert`, `build_heap`, etc.) for an instant result, the same way the Sorting screen's Randomize always has.
+## 🧪 Testing
 
-## Known limitations
+AlgoLab uses `pytest` for automated testing.
 
-- BST's Randomize draws values in random order, so a worst-case shuffle can produce a skewed (deep) tree rather than a balanced one.
-- Switching a Heap between Min and Max rebuilds the heap from scratch, so a randomized heap does not survive a heap-type toggle.
-- Hash Table capacity does not auto-resize; filling an open-addressing table raises a clear error instead of silently growing.
+```bash
+pytest
+```
+
+Tests cover the core logic, simulation system, data structure operations, UI components, and visualization utilities.
+
+## ⚠️ Known Limitations
+
+* **BST Randomization** can produce highly skewed trees depending on insertion order.
+* **Heap Type Switching** rebuilds the heap when switching between Min and Max modes.
+* **Hash Tables** do not automatically resize when an open-addressing table becomes full.
+
+## ⚖️ License
+
+This project is licensed under the MIT License.
