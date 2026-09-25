@@ -15,6 +15,8 @@ from algolab.ui.screens.hash_table import HashTableScreen
 from algolab.ui.screens.sorting import SortingScreen
 from algolab.ui.theme import Color, Font
 
+CREDIT_TEXT = "Created by Amirmasoud Mohammadian"
+
 
 class MainMenuScreen(Screen):
     """Main menu screen."""
@@ -46,6 +48,7 @@ class MainMenuScreen(Screen):
         self.subtitle_font = Font.BODY()
         self.card_font = Font.get(24, bold=True)
         self.caption_font = Font.SMALL()
+        self.credit_font = Font.SMALL()
 
         self.buttons: list[Button] = []
 
@@ -118,6 +121,7 @@ class MainMenuScreen(Screen):
 
         self._render_header()
         self._render_topics()
+        self._render_credit()
 
     def _render_header(self) -> None:
         title = self.title_font.render("AlgoLab", True, Color.TEXT_PRIMARY)
@@ -159,3 +163,20 @@ class MainMenuScreen(Screen):
                     self.caption_font,
                     text_color=Color.TEXT_MUTED,
                 )
+
+    def _render_credit(self) -> None:
+        """
+        Small, unobtrusive credit line anchored to the bottom of the
+        window. Kept muted (TEXT_MUTED) and small (SMALL font) so it
+        reads as a footer rather than competing with the title or the
+        topic buttons for attention.
+        """
+
+        credit = self.credit_font.render(CREDIT_TEXT, True, Color.TEXT_MUTED)
+
+        credit_rect = credit.get_rect(
+            centerx=self.surface.get_width() // 2,
+            bottom=self.surface.get_height() - 12,
+        )
+
+        self.surface.blit(credit, credit_rect)
