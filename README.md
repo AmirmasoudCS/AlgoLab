@@ -37,23 +37,53 @@ Each operation is presented as a **step-by-step**, **pausable**, **rewindable** 
 * Python 3.10+
 * Pygame
 
-### Installation
+### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/AmirmasoudCS/AlgoLab.git
 cd AlgoLab
+```
 
+### 2. Create a Virtual Environment
+
+```bash
 python -m venv .venv
-.venv\Scripts\activate
+```
 
+### 3. Activate the Virtual Environment
+
+* **Windows:**
+
+```bash
+.venv\Scripts\activate
+```
+
+* **Linux / MacOS:**
+
+```bash
+source .venv/bin/activate
+```
+
+### 4. Install Dependencies
+
+```bash
 pip install -r requirements.txt
 ```
 
-Run the application:
+### Run the Application
+
+* **Run from the source:**
 
 ```bash
 python -m algolab.main
 ```
+
+* **Build a standalone application:**
+AlgoLab can also be packaged as a standalone executable using Pyinstaller.
+```bash
+pyinstaller AlgoLab.spec
+```
+The packages application will be available in the `dist/` directory.
 
 ## 🏗️ Architecture
 
