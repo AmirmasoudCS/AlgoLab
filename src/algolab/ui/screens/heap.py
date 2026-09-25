@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import random
+
 import pygame
 
 from algolab.simulation.simulator import Simulator
@@ -45,6 +47,11 @@ class HeapScreen(Screen):
         self.heap_type_buttons = self._create_heap_type_buttons()
         self.operation_buttons = self._create_operation_buttons()
         self.navigation_buttons = self._create_navigation_buttons()
+
+        self.randomize_button = Button(
+            pygame.Rect(140, 192, 95, 24),
+            "Randomize",
+        )
 
         for index, button in enumerate(self.speed_buttons):
             button.rect = pygame.Rect(15 + index * 62, 556, 58, 28)
@@ -152,6 +159,9 @@ class HeapScreen(Screen):
             if button.handle_event(event):
                 self._select_operation(index)
 
+        if self.randomize_button.handle_event(event):
+            self._randomize()
+
         for index, button in enumerate(self.navigation_buttons):
             if button.handle_event(event):
                 self._handle_navigation(index)
@@ -202,6 +212,29 @@ class HeapScreen(Screen):
 
         self.simulator.load_states(list(simulation.states))
 
+        self.step_timer = 0.0
+
+    def _randomize(self) -> None:
+        """
+        Replace the heap contents with random values, instantly and
+        without animation (same behavior as the sorting screen's
+        Randomize).
+
+        build_heap() replaces the model's internal array outright, so
+        there is no need to clear() first.
+        """
+
+        self.cancel_current_simulation()
+
+        # Capped at 12 so the tree stays at most 3 levels deep (indices
+        # 0-14 fit in 3 levels; 12 leaves headroom before the array
+        # representation drawn below the tree).
+        count = random.randint(7, 12)
+        values = [random.randint(1, 99) for _ in range(count)]
+
+        self.model.build_heap(values)
+
+        self.status_message = None
         self.step_timer = 0.0
 
     # ------------------------------------------------------------------
@@ -257,6 +290,8 @@ class HeapScreen(Screen):
 
         for button in self.operation_buttons:
             button.update(dt)
+
+        self.randomize_button.update(dt)
 
         for button in self.navigation_buttons:
             button.update(dt)
@@ -325,6 +360,8 @@ class HeapScreen(Screen):
             (25, 195),
             color=Color.TEXT_SECONDARY,
         )
+
+        self.randomize_button.render(self.surface)
 
         for button in self.operation_buttons:
             button.render(self.surface)
