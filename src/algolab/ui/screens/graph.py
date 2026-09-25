@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+import random
 
 import pygame
 
@@ -72,6 +73,11 @@ class GraphScreen(Screen):
         )
         self.weighted_buttons = self._create_toggle_buttons(
             204, "Unweighted", "Weighted"
+        )
+
+        self.randomize_button = Button(
+            pygame.Rect(140, 117, 95, 24),
+            "Randomize",
         )
 
         self.edit_buttons = self._create_edit_buttons()
@@ -225,6 +231,9 @@ class GraphScreen(Screen):
         for index, button in enumerate(self.weighted_buttons):
             if button.handle_event(event):
                 self._set_weighted(index == 1)
+
+        if self.randomize_button.handle_event(event):
+            self._randomize()
 
         if self.edit_buttons["add_node"].handle_event(event):
             self._add_node()
@@ -389,6 +398,61 @@ class GraphScreen(Screen):
         self.status_message = None
         self.error_message = None
 
+    def _randomize(self) -> None:
+        """
+        Replace the graph with random nodes and edges, instantly and
+        without animation (same behavior as the sorting screen's
+        Randomize). Overrides any in-progress algorithm run rather
+        than refusing, consistent with the other editing actions on
+        this screen once a simulation is in flight.
+
+        Edges are picked with has_edge() guarding against duplicates,
+        and always between two distinct freshly created nodes, so
+        add_edge() never sees a self-loop or a missing node.
+        """
+
+        self.cancel_current_simulation()
+
+        self.model.clear()
+        self.selected_nodes = []
+        self._label_counter = 0
+        self.status_message = None
+        self.error_message = None
+
+        node_count = random.randint(5, 7)
+
+        node_ids = [
+            self.model.add_node(label=self._next_label())
+            for _ in range(node_count)
+        ]
+
+        # A few more edges than nodes gives a reasonably connected
+        # graph without guaranteeing full connectivity, which is fine
+        # for a random practice graph.
+        target_edge_count = random.randint(node_count, node_count + 2)
+        max_attempts = target_edge_count * 10
+        attempts = 0
+
+        while (
+            len(self.model.edges) < target_edge_count
+            and attempts < max_attempts
+        ):
+            attempts += 1
+
+            source, target = random.sample(node_ids, 2)
+
+            if self.model.has_edge(source, target):
+                continue
+
+            weight = random.randint(1, 9) if self.model.weighted else 1.0
+
+            try:
+                self.model.add_edge(source, target, weight)
+            except (KeyError, ValueError):
+                continue
+
+        self._relayout()
+
     # ------------------------------------------------------------------
     # Algorithm running
     # ------------------------------------------------------------------
@@ -483,6 +547,8 @@ class GraphScreen(Screen):
         for button in self.weighted_buttons:
             button.update(dt)
 
+        self.randomize_button.update(dt)
+
         for button in self.edit_buttons.values():
             button.update(dt)
 
@@ -556,6 +622,8 @@ class GraphScreen(Screen):
             self.section_font,
             color=Color.TEXT_SECONDARY,
         )
+
+        self.randomize_button.render(self.surface)
 
         self._render_toggle_row(self.directed_buttons, self.model.directed)
         self._render_toggle_row(self.weighted_buttons, self.model.weighted)
