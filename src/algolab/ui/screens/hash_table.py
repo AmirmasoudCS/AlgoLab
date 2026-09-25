@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import random
+
 import pygame
 
 from algolab.simulation.simulator import Simulator
@@ -55,32 +57,50 @@ class HashTableScreen(Screen):
         self.explanation_font = Font.BODY()
         self.label_font = Font.LABEL()
 
+        # A Randomize button occupies its own full-width row directly
+        # below the "Collision Strategy" label. Unlike every other
+        # topic screen, there was no spare horizontal space next to an
+        # existing label here (the strategy grid starts immediately
+        # below it), so this row was inserted instead, and every rect
+        # and text position from here down is shifted by ROW_SHIFT
+        # (38px, matching the existing spacing between the two
+        # strategy button rows) to make room.
+        ROW_SHIFT = 38
+
+        self.randomize_button = Button(
+            pygame.Rect(15, 148, 220, 34),
+            "Randomize",
+            variant="primary",
+        )
+
         self.strategy_buttons = {
-            CollisionStrategy.CHAINING: Button(pygame.Rect(15, 148, 110, 34), "Chaining"),
-            CollisionStrategy.LINEAR_PROBING: Button(pygame.Rect(130, 148, 105, 34), "Linear Probing"),
-            CollisionStrategy.QUADRATIC_PROBING: Button(pygame.Rect(15, 186, 110, 34), "Quadratic"),
-            CollisionStrategy.DOUBLE_HASHING: Button(pygame.Rect(130, 186, 105, 34), "Double Hash"),
+            CollisionStrategy.CHAINING: Button(pygame.Rect(15, 148 + ROW_SHIFT, 110, 34), "Chaining"),
+            CollisionStrategy.LINEAR_PROBING: Button(pygame.Rect(130, 148 + ROW_SHIFT, 105, 34), "Linear Probing"),
+            CollisionStrategy.QUADRATIC_PROBING: Button(pygame.Rect(15, 186 + ROW_SHIFT, 110, 34), "Quadratic"),
+            CollisionStrategy.DOUBLE_HASHING: Button(pygame.Rect(130, 186 + ROW_SHIFT, 105, 34), "Double Hash"),
         }
 
         self.hash_function_buttons = {
-            HashFunction.SUM_OF_CODES: Button(pygame.Rect(15, 250, 110, 34), "Sum of Codes"),
-            HashFunction.POLYNOMIAL: Button(pygame.Rect(130, 250, 105, 34), "Polynomial"),
+            HashFunction.SUM_OF_CODES: Button(pygame.Rect(15, 250 + ROW_SHIFT, 110, 34), "Sum of Codes"),
+            HashFunction.POLYNOMIAL: Button(pygame.Rect(130, 250 + ROW_SHIFT, 105, 34), "Polynomial"),
         }
 
         self.mode_buttons = {
-            HashTableMode.SET: Button(pygame.Rect(15, 314, 110, 34), "Set"),
-            HashTableMode.MAP: Button(pygame.Rect(130, 314, 105, 34), "Map"),
+            HashTableMode.SET: Button(pygame.Rect(15, 314 + ROW_SHIFT, 110, 34), "Set"),
+            HashTableMode.MAP: Button(pygame.Rect(130, 314 + ROW_SHIFT, 105, 34), "Map"),
         }
 
-        self.capacity_input = NumericInput(pygame.Rect(160, 348, 75, 30), 11)
-        self.key_input = NumericInput(pygame.Rect(160, 382, 75, 30), 1)
-        self.value_input = NumericInput(pygame.Rect(160, 416, 75, 30), 1)
+        self.capacity_input = NumericInput(pygame.Rect(160, 348 + ROW_SHIFT, 75, 30), 11)
+        self.key_input = NumericInput(pygame.Rect(160, 382 + ROW_SHIFT, 75, 30), 1)
+        self.value_input = NumericInput(pygame.Rect(160, 416 + ROW_SHIFT, 75, 30), 1)
 
-        self.operation_buttons = self._create_operation_buttons()
-        self.navigation_buttons = self._create_navigation_buttons()
+        self.operation_buttons = self._create_operation_buttons(ROW_SHIFT)
+        self.navigation_buttons = self._create_navigation_buttons(ROW_SHIFT)
 
         for index, button in enumerate(self.speed_buttons):
-            button.rect = pygame.Rect(15 + index * 62, 614, 58, 28)
+            button.rect = pygame.Rect(15 + index * 62, 614 + ROW_SHIFT, 58, 28)
+
+        self._row_shift = ROW_SHIFT
 
         self.step_timer = 0.0
         self.step_interval = 1.6
@@ -89,12 +109,12 @@ class HashTableScreen(Screen):
     # UI creation
     # ------------------------------------------------------------------
 
-    def _create_operation_buttons(self) -> list[Button]:
+    def _create_operation_buttons(self, row_shift: int) -> list[Button]:
         specs = [
-            ("Insert", "primary", 15, 490),
-            ("Search", "default", 130, 490),
-            ("Delete", "danger", 15, 528),
-            ("Clear", "danger", 130, 528),
+            ("Insert", "primary", 15, 490 + row_shift),
+            ("Search", "default", 130, 490 + row_shift),
+            ("Delete", "danger", 15, 528 + row_shift),
+            ("Clear", "danger", 130, 528 + row_shift),
         ]
 
         buttons = []
@@ -105,12 +125,12 @@ class HashTableScreen(Screen):
 
         return buttons
 
-    def _create_navigation_buttons(self) -> list[Button]:
+    def _create_navigation_buttons(self, row_shift: int) -> list[Button]:
         labels = ["|<", "<", ">", ">|", "P"]
 
         buttons = []
         x = 15
-        y = 652
+        y = 652 + row_shift
         width = 40
         height = 35
         spacing = 45
@@ -151,6 +171,9 @@ class HashTableScreen(Screen):
             if event.key == pygame.K_RETURN:
                 self._select_operation(0)
                 return
+
+        if self.randomize_button.handle_event(event):
+            self._randomize()
 
         for strategy, button in self.strategy_buttons.items():
             if button.handle_event(event):
@@ -267,6 +290,44 @@ class HashTableScreen(Screen):
         self.status_message = None
         self.error_message = None
 
+    def _randomize(self) -> None:
+        """
+        Replace the table contents with random key/value pairs,
+        instantly and without animation (same behavior as the sorting
+        screen's Randomize).
+
+        Keys are drawn without replacement (random.sample) so a
+        repeated key -- which insert() treats as an update rather than
+        a new entry -- doesn't silently shrink the table below the
+        intended count. Open addressing can still fill up before every
+        key is placed, so each insert is guarded with IndexError, the
+        same exception _select_operation already handles for a manual
+        Insert into a full table.
+        """
+
+        self._cancel_current_simulation()
+
+        self.model.clear()
+
+        capacity = self.model.capacity
+        count = random.randint(max(3, capacity // 2), max(3, capacity))
+        keys = random.sample(range(1, 100), min(count, 99))
+
+        for key in keys:
+            value = (
+                random.randint(1, 99)
+                if self.model.mode is HashTableMode.MAP
+                else None
+            )
+
+            try:
+                self.model.insert(key, value)
+            except IndexError:
+                break
+
+        self.status_message = None
+        self.error_message = None
+
     def _handle_navigation(self, index: int) -> None:
         if self.current_simulation is None:
             return
@@ -325,6 +386,8 @@ class HashTableScreen(Screen):
     def update(self, dt: float) -> None:
         self.update_back_button(dt)
         self.update_speed_buttons(dt)
+
+        self.randomize_button.update(dt)
 
         for button in self.strategy_buttons.values():
             button.update(dt)
@@ -408,7 +471,10 @@ class HashTableScreen(Screen):
             y += line_height
 
     def _render_control_panel(self) -> None:
-        panel_rect = pygame.Rect(10, 70, 250, 670)
+        # Panel height grew by _row_shift to fit the inserted
+        # Randomize row without pushing the bottom controls (load bar,
+        # step info) outside the panel.
+        panel_rect = pygame.Rect(10, 70, 250, 670 + self._row_shift)
         draw_panel(self.surface, panel_rect, elevated=True)
 
         self._draw_text("TA Controls", (25, 80), self.control_font)
@@ -416,6 +482,8 @@ class HashTableScreen(Screen):
         self._draw_text(
             "Collision Strategy", (25, 112), self.section_font, color=Color.TEXT_SECONDARY
         )
+
+        self.randomize_button.render(self.surface)
 
         for strategy, button in self.strategy_buttons.items():
             draw_toggle_button(
@@ -430,24 +498,26 @@ class HashTableScreen(Screen):
         for mode, button in self.mode_buttons.items():
             draw_toggle_button(self.surface, button, mode is self.model.mode)
 
-        self._draw_text("Capacity:", (15, 353), self.small_font, color=Color.TEXT_SECONDARY)
+        shift = self._row_shift
+
+        self._draw_text("Capacity:", (15, 353 + shift), self.small_font, color=Color.TEXT_SECONDARY)
         self.capacity_input.render(self.surface)
 
-        self._draw_text("Key:", (15, 387), self.small_font, color=Color.TEXT_SECONDARY)
+        self._draw_text("Key:", (15, 387 + shift), self.small_font, color=Color.TEXT_SECONDARY)
         self.key_input.render(self.surface)
 
-        self._draw_text("Value:", (15, 421), self.small_font, color=Color.TEXT_SECONDARY)
+        self._draw_text("Value:", (15, 421 + shift), self.small_font, color=Color.TEXT_SECONDARY)
 
         if self.model.mode is HashTableMode.MAP:
             self.value_input.render(self.surface)
         else:
-            self._draw_text("N/A (Set mode)", (160, 421), self.small_font, color=Color.TEXT_MUTED)
+            self._draw_text("N/A (Set mode)", (160, 421 + shift), self.small_font, color=Color.TEXT_MUTED)
 
         for button in self.operation_buttons:
             button.render(self.surface)
 
         self._draw_text(
-            "Simulation", (25, 588), self.section_font, color=Color.TEXT_SECONDARY
+            "Simulation", (25, 588 + shift), self.section_font, color=Color.TEXT_SECONDARY
         )
 
         self.render_speed_buttons()
@@ -473,7 +543,7 @@ class HashTableScreen(Screen):
                         f"Step: {state.step + 1}/{len(self.current_simulation.states)}"
                         f"   Collisions: {state.data.collisions}"
                     ),
-                    (15, 698),
+                    (15, 698 + shift),
                     self.small_font,
                     color=Color.TEXT_MUTED,
                 )
@@ -482,10 +552,10 @@ class HashTableScreen(Screen):
                 f"Size: {self.model.size}/{self.model.capacity}  "
                 f"Load: {self.model.load_factor:.0%}"
             )
-            self._draw_text(info, (15, 698), self.small_font, color=Color.TEXT_MUTED)
+            self._draw_text(info, (15, 698 + shift), self.small_font, color=Color.TEXT_MUTED)
 
     def _render_load_bar(self) -> None:
-        track_rect = pygame.Rect(15, 683, 220, 10)
+        track_rect = pygame.Rect(15, 683 + self._row_shift, 220, 10)
 
         pygame.draw.rect(self.surface, Color.SURFACE_RAISED, track_rect, border_radius=5)
         pygame.draw.rect(self.surface, Color.BORDER, track_rect, 1, border_radius=5)
