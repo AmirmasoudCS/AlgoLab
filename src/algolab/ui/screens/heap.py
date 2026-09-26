@@ -16,6 +16,7 @@ from algolab.topics.heap.simulation import (
     SwapHeapElementsEvent,
 )
 from algolab.ui.components.button import Button
+from algolab.ui.components.info_panel import InfoPanel
 from algolab.ui.components.numeric_input import NumericInput
 from algolab.ui.components.surface import draw_arrow, draw_item_card, draw_panel, draw_toggle_button
 from algolab.ui.screens.screen import Screen
@@ -51,6 +52,21 @@ class HeapScreen(Screen):
         self.randomize_button = Button(
             pygame.Rect(140, 192, 95, 24),
             "Randomize",
+        )
+
+        self.info_button = Button(
+            pygame.Rect(surface.get_width() - 115, 15, 100, 38),
+            "Info",
+        )
+        self.info_panel = InfoPanel(
+            "Heap — Time Complexity",
+            [
+                ("Insert", "O(log n)", "Bubbles up at most h levels"),
+                ("Peek", "O(1)", "Root is always index 0"),
+                ("Extract", "O(log n)", "Bubbles down at most h levels"),
+                ("Build Heap", "O(n)", "Not O(n log n) -- classic result"),
+                ("Clear", "O(1)", ""),
+            ],
         )
 
         for index, button in enumerate(self.speed_buttons):
@@ -133,6 +149,9 @@ class HeapScreen(Screen):
     # ------------------------------------------------------------------
 
     def handle_event(self, event: pygame.event.Event) -> None:
+        if self.info_panel.handle_event(event):
+            return
+
         if self.handle_back_event(event):
             return
 
@@ -161,6 +180,9 @@ class HeapScreen(Screen):
 
         if self.randomize_button.handle_event(event):
             self._randomize()
+
+        if self.info_button.handle_event(event):
+            self.info_panel.open()
 
         for index, button in enumerate(self.navigation_buttons):
             if button.handle_event(event):
@@ -293,6 +315,8 @@ class HeapScreen(Screen):
 
         self.randomize_button.update(dt)
 
+        self.info_button.update(dt)
+
         for button in self.navigation_buttons:
             button.update(dt)
 
@@ -330,6 +354,9 @@ class HeapScreen(Screen):
         self._render_control_panel()
         self._render_explanation_panel()
         self._render_heap()
+
+        self.info_button.render(self.surface)
+        self.info_panel.render(self.surface)
 
     def _render_control_panel(self) -> None:
         panel_rect = pygame.Rect(10, 70, 250, 620)
