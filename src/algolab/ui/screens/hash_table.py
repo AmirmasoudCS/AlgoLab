@@ -13,6 +13,7 @@ from algolab.topics.hash_table.model import (
 )
 from algolab.topics.hash_table.simulation import HashTableSimulator
 from algolab.ui.components.button import Button
+from algolab.ui.components.info_panel import InfoPanel
 from algolab.ui.components.numeric_input import NumericInput
 from algolab.ui.components.surface import (
     draw_arrow,
@@ -71,6 +72,19 @@ class HashTableScreen(Screen):
             pygame.Rect(15, 148, 220, 34),
             "Randomize",
             variant="primary",
+        )
+
+        self.info_button = Button(
+            pygame.Rect(surface.get_width() - 115, 15, 100, 38),
+            "Info",
+        )
+        self.info_panel = InfoPanel(
+            "Hash Table — Time Complexity",
+            [
+                ("Insert", "O(1) avg", "O(n) worst (many collisions)"),
+                ("Search", "O(1) avg", "O(n) worst (many collisions)"),
+                ("Delete", "O(1) avg", "O(n) worst (many collisions)"),
+            ],
         )
 
         self.strategy_buttons = {
@@ -147,6 +161,9 @@ class HashTableScreen(Screen):
     # ------------------------------------------------------------------
 
     def handle_event(self, event: pygame.event.Event) -> None:
+        if self.info_panel.handle_event(event):
+            return
+
         if self.handle_back_event(event):
             return
 
@@ -174,6 +191,9 @@ class HashTableScreen(Screen):
 
         if self.randomize_button.handle_event(event):
             self._randomize()
+
+        if self.info_button.handle_event(event):
+            self.info_panel.open()
 
         for strategy, button in self.strategy_buttons.items():
             if button.handle_event(event):
@@ -389,6 +409,8 @@ class HashTableScreen(Screen):
 
         self.randomize_button.update(dt)
 
+        self.info_button.update(dt)
+
         for button in self.strategy_buttons.values():
             button.update(dt)
 
@@ -436,6 +458,9 @@ class HashTableScreen(Screen):
         self._render_explanation_panel()
         self._render_legend()
         self._render_table()
+
+        self.info_button.render(self.surface)
+        self.info_panel.render(self.surface)
 
     def _draw_text(self, text, position, font, color=Color.TEXT_PRIMARY):
         rendered = font.render(text, True, color)
