@@ -72,14 +72,14 @@ class SortingScreen(Screen):
             "Info",
         )
         self.info_panel = InfoPanel(
-            "Sorting Time Complexity",
+            "Sorting - Time Complexity",
             [
-                ("Bubble Sort", "O(n) best", "O(n^2) avg/worst"),
-                ("Selection Sort", "O(n^2)", "Same in every case"),
-                ("Insertion Sort", "O(n) best", "O(n^2) avg/worst"),
-                ("Merge Sort", "O(n log n)", "Same in every case"),
-                ("Quick Sort", "O(n log n) avg", "O(n^2) worst (bad pivots)"),
-                ("Heap Sort", "O(n log n)", "Same in every case"),
+                ("Bubble Sort", "O(n^2) avg", "Best O(n), worst O(n^2)"),
+                ("Selection Sort", "O(n^2) avg", "Best and worst also O(n^2)"),
+                ("Insertion Sort", "O(n^2) avg", "Best O(n), worst O(n^2)"),
+                ("Merge Sort", "O(n log n) avg", "Best and worst also O(n log n)"),
+                ("Quick Sort", "O(n log n) avg", "Best O(n log n), worst O(n^2)"),
+                ("Heap Sort", "O(n log n) avg", "Best and worst also O(n log n)"),
             ],
         )
 

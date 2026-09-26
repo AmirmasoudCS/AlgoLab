@@ -59,7 +59,7 @@ class StackScreen(Screen):
             "Info",
         )
         self.info_panel = InfoPanel(
-            "Stack Time Complexity",
+            "Stack - Time Complexity",
             [
                 ("Push", "O(1)", "Amortized"),
                 ("Pop", "O(1)", ""),

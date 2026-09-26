@@ -59,7 +59,7 @@ class HeapScreen(Screen):
             "Info",
         )
         self.info_panel = InfoPanel(
-            "Heap Time Complexity",
+            "Heap - Time Complexity",
             [
                 ("Insert", "O(log n)", "Bubbles up at most h levels"),
                 ("Peek", "O(1)", "Root is always index 0"),
