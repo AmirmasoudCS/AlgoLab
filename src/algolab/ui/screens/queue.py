@@ -69,7 +69,10 @@ class QueueScreen(Screen):
 
         # Queue visual layout.
         self.queue_x = 430
-        self.queue_y = 310
+        # Pushed down from the original 310 so the REAR label (drawn
+        # well above this point, in the large control_font) doesn't
+        # land on top of the legend row rendered at a fixed y=210.
+        self.queue_y = 380
         self.item_width = 120
         self.item_height = 55
         self.item_spacing = 30
