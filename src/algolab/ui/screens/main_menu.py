@@ -54,6 +54,12 @@ class MainMenuScreen(Screen):
 
         self._create_buttons()
 
+        self.exit_button = Button(
+            pygame.Rect(surface.get_width() - 115, 15, 100, 38),
+            "Exit",
+            variant="danger",
+        )
+
     def _create_buttons(self) -> None:
         """Create one Button per topic, stacked in a single column."""
 
@@ -79,9 +85,25 @@ class MainMenuScreen(Screen):
             )
 
     def handle_event(self, event: pygame.event.Event) -> None:
+        if self.exit_button.handle_event(event):
+            self._exit_app()
+            return
+
         for index, button in enumerate(self.buttons):
             if button.handle_event(event):
                 self._select_topic(index)
+
+    def _exit_app(self) -> None:
+        """
+        Ask the application to close.
+
+        Posting a QUIT event rather than calling something on
+        Application directly means this button works with however the
+        main loop is structured -- QUIT is already handled there the
+        same way an OS window-close click would be.
+        """
+
+        pygame.event.post(pygame.event.Event(pygame.QUIT))
 
     def _select_topic(self, index: int) -> None:
         """Open the selected topic, wiring it back to a fresh menu."""
@@ -113,6 +135,8 @@ class MainMenuScreen(Screen):
         )
 
     def update(self, dt: float) -> None:
+        self.exit_button.update(dt)
+
         for button in self.buttons:
             button.update(dt)
 
@@ -122,6 +146,8 @@ class MainMenuScreen(Screen):
         self._render_header()
         self._render_topics()
         self._render_credit()
+
+        self.exit_button.render(self.surface)
 
     def _render_header(self) -> None:
         title = self.title_font.render("AlgoLab", True, Color.TEXT_PRIMARY)
