@@ -11,6 +11,7 @@ from algolab.topics.queue.simulation import (
     QueueSimulator,
 )
 from algolab.ui.components.button import Button
+from algolab.ui.components.info_panel import InfoPanel
 from algolab.ui.components.numeric_input import NumericInput
 from algolab.ui.components.surface import draw_item_card, draw_panel, draw_toggle_button
 from algolab.ui.screens.screen import Screen
@@ -52,6 +53,23 @@ class QueueScreen(Screen):
         self.randomize_button = Button(
             pygame.Rect(140, 112, 95, 24),
             "Randomize",
+        )
+
+        self.info_button = Button(
+            pygame.Rect(surface.get_width() - 115, 15, 100, 38),
+            "Info",
+        )
+        self.info_panel = InfoPanel(
+            "Queue — Time Complexity",
+            [
+                ("Enqueue", "O(1)", "Amortized"),
+                # Honest about the actual implementation: Queue.dequeue()
+                # calls list.pop(0), which is O(n) in real Python since
+                # every remaining element shifts down one slot. A
+                # deque- or linked-list-backed queue achieves O(1) here.
+                ("Dequeue", "O(n)", "list.pop(0); a deque gets O(1)"),
+                ("Peek", "O(1)", ""),
+            ],
         )
 
         for index, button in enumerate(self.speed_buttons):
@@ -190,6 +208,9 @@ class QueueScreen(Screen):
             y += line_height
 
     def handle_event(self, event: pygame.event.Event) -> None:
+        if self.info_panel.handle_event(event):
+            return
+
         if self.handle_back_event(event):
             return
 
@@ -218,6 +239,9 @@ class QueueScreen(Screen):
 
         if self.randomize_button.handle_event(event):
             self._randomize()
+
+        if self.info_button.handle_event(event):
+            self.info_panel.open()
 
         for index, button in enumerate(self.navigation_buttons):
             if button.handle_event(event):
@@ -314,6 +338,8 @@ class QueueScreen(Screen):
 
         self.randomize_button.update(dt)
 
+        self.info_button.update(dt)
+
         for button in self.navigation_buttons:
             button.update(dt)
 
@@ -345,6 +371,9 @@ class QueueScreen(Screen):
         self._render_explanation_panel()
         self._render_legend()
         self._render_queue()
+
+        self.info_button.render(self.surface)
+        self.info_panel.render(self.surface)
 
     def _render_legend(self) -> None:
         x = 280
