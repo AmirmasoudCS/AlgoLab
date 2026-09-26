@@ -14,6 +14,7 @@ from algolab.topics.bst.simulation import (
     ReplaceNodeValueEvent,
 )
 from algolab.ui.components.button import Button
+from algolab.ui.components.info_panel import InfoPanel
 from algolab.ui.components.numeric_input import NumericInput
 from algolab.ui.components.surface import draw_arrow, draw_item_card, draw_panel, draw_toggle_button
 from algolab.ui.screens.screen import Screen
@@ -58,6 +59,21 @@ class BSTScreen(Screen):
         self.randomize_button = Button(
             pygame.Rect(140, 112, 95, 24),
             "Randomize",
+        )
+
+        self.info_button = Button(
+            pygame.Rect(surface.get_width() - 115, 15, 100, 38),
+            "Info",
+        )
+        self.info_panel = InfoPanel(
+            "Binary Search Tree — Time Complexity",
+            [
+                ("Insert", "O(log n) avg", "O(n) worst (skewed tree)"),
+                ("Search", "O(log n) avg", "O(n) worst (skewed tree)"),
+                ("Delete", "O(log n) avg", "O(n) worst (skewed tree)"),
+                ("Find Min / Find Max", "O(log n) avg", "O(n) worst; really O(height)"),
+                ("In/Pre/Post-order", "O(n)", "Visits every node once"),
+            ],
         )
 
         for index, button in enumerate(self.speed_buttons):
@@ -189,6 +205,9 @@ class BSTScreen(Screen):
             y += line_height
 
     def handle_event(self, event: pygame.event.Event) -> None:
+        if self.info_panel.handle_event(event):
+            return
+
         if self.handle_back_event(event):
             return
 
@@ -217,6 +236,9 @@ class BSTScreen(Screen):
 
         if self.randomize_button.handle_event(event):
             self._randomize()
+
+        if self.info_button.handle_event(event):
+            self.info_panel.open()
 
         for index, button in enumerate(self.navigation_buttons):
             if button.handle_event(event):
@@ -344,6 +366,8 @@ class BSTScreen(Screen):
 
         self.randomize_button.update(dt)
 
+        self.info_button.update(dt)
+
         for button in self.navigation_buttons:
             button.update(dt)
 
@@ -375,6 +399,9 @@ class BSTScreen(Screen):
         self._render_explanation_panel()
         self._render_tree()
         self._render_legend()
+
+        self.info_button.render(self.surface)
+        self.info_panel.render(self.surface)
 
     def _render_control_panel(self) -> None:
         panel_rect = pygame.Rect(10, 70, 250, 620)
