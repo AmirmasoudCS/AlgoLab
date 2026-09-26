@@ -66,7 +66,7 @@ class BSTScreen(Screen):
             "Info",
         )
         self.info_panel = InfoPanel(
-            "Binary Search Tree — Time Complexity",
+            "Binary Search Tree Time Complexity",
             [
                 ("Insert", "O(log n) avg", "O(n) worst (skewed tree)"),
                 ("Search", "O(log n) avg", "O(n) worst (skewed tree)"),

@@ -86,7 +86,7 @@ class GraphScreen(Screen):
             "Info",
         )
         self.info_panel = InfoPanel(
-            "Graph — Time Complexity",
+            "Graph Time Complexity",
             [
                 ("BFS", "O(V + E)", "V = nodes, E = edges"),
                 ("DFS", "O(V + E)", ""),

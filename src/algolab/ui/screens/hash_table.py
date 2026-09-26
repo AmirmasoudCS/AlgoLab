@@ -79,7 +79,7 @@ class HashTableScreen(Screen):
             "Info",
         )
         self.info_panel = InfoPanel(
-            "Hash Table — Time Complexity",
+            "Hash Table Time Complexity",
             [
                 ("Insert", "O(1) avg", "O(n) worst (many collisions)"),
                 ("Search", "O(1) avg", "O(n) worst (many collisions)"),

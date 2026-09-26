@@ -12,7 +12,7 @@ class InfoPanel:
     Complexity, Notes).
 
     Usage from a screen:
-        self.info_panel = InfoPanel("Stack — Time Complexity", rows)
+        self.info_panel = InfoPanel("Stack Time Complexity", rows)
         # in handle_event, BEFORE any other input handling:
         if self.info_panel.handle_event(event):
             return

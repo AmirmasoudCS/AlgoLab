@@ -60,7 +60,7 @@ class QueueScreen(Screen):
             "Info",
         )
         self.info_panel = InfoPanel(
-            "Queue — Time Complexity",
+            "Queue Time Complexity",
             [
                 ("Enqueue", "O(1)", "Amortized"),
                 # Honest about the actual implementation: Queue.dequeue()

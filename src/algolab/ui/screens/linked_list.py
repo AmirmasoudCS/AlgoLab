@@ -76,7 +76,7 @@ class LinkedListScreen(Screen):
             "Info",
         )
         self.info_panel = InfoPanel(
-            "Linked List — Time Complexity",
+            "Linked List Time Complexity",
             [
                 ("Insert Beginning", "O(1)", ""),
                 # This implementation has no tail pointer, so it walks

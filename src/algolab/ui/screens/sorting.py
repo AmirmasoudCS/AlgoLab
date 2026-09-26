@@ -72,7 +72,7 @@ class SortingScreen(Screen):
             "Info",
         )
         self.info_panel = InfoPanel(
-            "Sorting — Time Complexity",
+            "Sorting Time Complexity",
             [
                 ("Bubble Sort", "O(n) best", "O(n^2) avg/worst"),
                 ("Selection Sort", "O(n^2)", "Same in every case"),
