@@ -541,12 +541,22 @@ class StackScreen(Screen):
 
         top_y = self._get_item_y(top_index, len(values))
 
-        start = (self.pointer_x + 25, self.pointer_start_y)
-        end = (self.stack_x - 10, top_y + self.item_height // 2)
+        # The line's start and end share top_center_y, so the arrow is
+        # always perfectly horizontal, whatever the stack's size. This
+        # works for any stack because the top item is always drawn in
+        # the same fixed row (_get_item_y returns stack_first_y for
+        # whatever index is currently the top one) -- the old diagonal
+        # came from anchoring the start point to a separate constant
+        # (the previous self.pointer_start_y) that had no relationship
+        # to the top item's actual on-screen height.
+        top_center_y = top_y + self.item_height // 2
+
+        start = (self.pointer_x + 25, top_center_y)
+        end = (self.stack_x - 10, top_center_y)
 
         self._draw_text(
             "TOP",
-            (self.pointer_x, self.pointer_start_y - 30),
+            (self.pointer_x, top_center_y - 30),
             self.control_font,
             color=Color.ACCENT,
         )
@@ -557,7 +567,7 @@ class StackScreen(Screen):
 
         self._draw_text(
             f"item {top_index}",
-            (self.pointer_x - 5, self.pointer_start_y + 10),
+            (self.pointer_x - 5, top_center_y + 10),
             self.pointer_font,
             color=Color.TEXT_SECONDARY,
         )
