@@ -14,6 +14,7 @@ from algolab.topics.sorting.simulation import (
     SelectionSortSimulator,
 )
 from algolab.ui.components.button import Button
+from algolab.ui.components.info_panel import InfoPanel
 from algolab.ui.components.numeric_input import NumericInput
 from algolab.ui.components.surface import draw_panel, draw_toggle_button
 from algolab.ui.screens.screen import Screen
@@ -66,6 +67,22 @@ class SortingScreen(Screen):
         self.add_button = Button(pygame.Rect(15, 253, 220, 34), "Add Value", variant="primary")
         self.clear_button = Button(pygame.Rect(15, 291, 220, 34), "Clear", variant="danger")
 
+        self.info_button = Button(
+            pygame.Rect(surface.get_width() - 115, 15, 100, 38),
+            "Info",
+        )
+        self.info_panel = InfoPanel(
+            "Sorting — Time Complexity",
+            [
+                ("Bubble Sort", "O(n) best", "O(n^2) avg/worst"),
+                ("Selection Sort", "O(n^2)", "Same in every case"),
+                ("Insertion Sort", "O(n) best", "O(n^2) avg/worst"),
+                ("Merge Sort", "O(n log n)", "Same in every case"),
+                ("Quick Sort", "O(n log n) avg", "O(n^2) worst (bad pivots)"),
+                ("Heap Sort", "O(n log n)", "Same in every case"),
+            ],
+        )
+
         self.algorithm_buttons = self._create_algorithm_buttons()
         self.navigation_buttons = self._create_navigation_buttons()
 
@@ -117,6 +134,9 @@ class SortingScreen(Screen):
     # ------------------------------------------------------------------
 
     def handle_event(self, event: pygame.event.Event) -> None:
+        if self.info_panel.handle_event(event):
+            return
+
         if self.handle_back_event(event):
             return
 
@@ -145,6 +165,9 @@ class SortingScreen(Screen):
 
         if self.clear_button.handle_event(event):
             self._clear_array()
+
+        if self.info_button.handle_event(event):
+            self.info_panel.open()
 
         for label, button in self.algorithm_buttons.items():
             if button.handle_event(event):
@@ -282,6 +305,8 @@ class SortingScreen(Screen):
         self.add_button.update(dt)
         self.clear_button.update(dt)
 
+        self.info_button.update(dt)
+
         algorithms_enabled = self.current_simulation is None and not self.model.is_empty
 
         for button in self.algorithm_buttons.values():
@@ -323,6 +348,9 @@ class SortingScreen(Screen):
         self._render_explanation_panel()
         self._render_legend()
         self._render_bars()
+
+        self.info_button.render(self.surface)
+        self.info_panel.render(self.surface)
 
     def _draw_text(self, text, position, font, color=Color.TEXT_PRIMARY):
         rendered = font.render(text, True, color)
