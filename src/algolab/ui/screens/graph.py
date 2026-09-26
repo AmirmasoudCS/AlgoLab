@@ -14,6 +14,7 @@ from algolab.topics.graph.simulation import (
     DijkstraSimulator,
 )
 from algolab.ui.components.button import Button
+from algolab.ui.components.info_panel import InfoPanel
 from algolab.ui.components.numeric_input import NumericInput
 from algolab.ui.components.surface import draw_arrow, draw_panel, draw_toggle_button
 from algolab.ui.screens.screen import Screen
@@ -78,6 +79,20 @@ class GraphScreen(Screen):
         self.randomize_button = Button(
             pygame.Rect(140, 117, 95, 24),
             "Randomize",
+        )
+
+        self.info_button = Button(
+            pygame.Rect(surface.get_width() - 115, 15, 100, 38),
+            "Info",
+        )
+        self.info_panel = InfoPanel(
+            "Graph — Time Complexity",
+            [
+                ("BFS", "O(V + E)", "V = nodes, E = edges"),
+                ("DFS", "O(V + E)", ""),
+                ("Dijkstra", "O((V+E) log V)", "Binary-heap implementation"),
+                ("Bellman-Ford", "O(V * E)", "Handles negative weights"),
+            ],
         )
 
         self.edit_buttons = self._create_edit_buttons()
@@ -203,6 +218,9 @@ class GraphScreen(Screen):
     # ------------------------------------------------------------------
 
     def handle_event(self, event: pygame.event.Event) -> None:
+        if self.info_panel.handle_event(event):
+            return
+
         if self.handle_back_event(event):
             return
 
@@ -234,6 +252,9 @@ class GraphScreen(Screen):
 
         if self.randomize_button.handle_event(event):
             self._randomize()
+
+        if self.info_button.handle_event(event):
+            self.info_panel.open()
 
         if self.edit_buttons["add_node"].handle_event(event):
             self._add_node()
@@ -549,6 +570,8 @@ class GraphScreen(Screen):
 
         self.randomize_button.update(dt)
 
+        self.info_button.update(dt)
+
         for button in self.edit_buttons.values():
             button.update(dt)
 
@@ -591,6 +614,9 @@ class GraphScreen(Screen):
         self._render_control_panel()
         self._render_explanation_panel()
         self._render_graph()
+
+        self.info_button.render(self.surface)
+        self.info_panel.render(self.surface)
 
     def _draw_text(
         self,
