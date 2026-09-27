@@ -40,8 +40,15 @@ class SortingScreen(Screen):
         (Color.STATE_SUCCESS, "Sorted"),
     ]
 
-    def __init__(self, surface: pygame.Surface, on_back=None) -> None:
+    def __init__(self, surface: pygame.Surface, on_back=None, screen_manager=None) -> None:
         super().__init__(surface, on_back)
+
+        # Only Sorting needs to navigate *forward* to another screen
+        # (the Compare screen); every other screen only ever goes back
+        # via on_back, so screen_manager stays optional here rather
+        # than being threaded through the base Screen class or the
+        # other seven screens, which have no use for it.
+        self.screen_manager = screen_manager
 
         self.model = SortArray()
         self.model.randomize(size=10, minimum=5, maximum=95)
@@ -70,6 +77,10 @@ class SortingScreen(Screen):
         self.info_button = Button(
             pygame.Rect(surface.get_width() - 115, 15, 100, 38),
             "Info",
+        )
+        self.compare_button = Button(
+            pygame.Rect(surface.get_width() - 225, 15, 100, 38),
+            "Compare",
         )
         self.info_panel = InfoPanel(
             "Sorting - Time Complexity",
@@ -169,6 +180,9 @@ class SortingScreen(Screen):
         if self.info_button.handle_event(event):
             self.info_panel.open()
 
+        if self.compare_button.handle_event(event):
+            self._open_compare_screen()
+
         for label, button in self.algorithm_buttons.items():
             if button.handle_event(event):
                 self._run_algorithm(label)
@@ -226,6 +240,43 @@ class SortingScreen(Screen):
 
         self.status_message = None
         self.error_message = None
+
+    def _open_compare_screen(self) -> None:
+        """
+        Navigate forward to the algorithm comparison screen, wiring its
+        on_back to recreate a fresh SortingScreen (mirroring the same
+        pattern MainMenuScreen uses to return to itself) rather than
+        going all the way back to the main menu.
+        """
+
+        if self.screen_manager is None:
+            # Defensive: only happens if this screen was ever
+            # constructed without a screen_manager, which shouldn't
+            # occur in normal use since MainMenuScreen always supplies
+            # one for this specific screen.
+            return
+
+        # Imported here rather than at module level to avoid a circular
+        # import: sorting_race.py has no need to import anything from
+        # this file, but keeping the import local makes that guarantee
+        # explicit rather than relying on import order.
+        from algolab.ui.screens.sorting_race import SortingRaceScreen
+
+        original_on_back = self.on_back
+        screen_manager = self.screen_manager
+
+        def return_to_sorting() -> None:
+            screen_manager.set_screen(
+                SortingScreen(
+                    self.surface,
+                    on_back=original_on_back,
+                    screen_manager=screen_manager,
+                )
+            )
+
+        screen_manager.set_screen(
+            SortingRaceScreen(self.surface, on_back=return_to_sorting)
+        )
 
     def _run_algorithm(self, label: str) -> None:
         if self.current_simulation is not None:
@@ -306,6 +357,7 @@ class SortingScreen(Screen):
         self.clear_button.update(dt)
 
         self.info_button.update(dt)
+        self.compare_button.update(dt)
 
         algorithms_enabled = self.current_simulation is None and not self.model.is_empty
 
@@ -350,6 +402,7 @@ class SortingScreen(Screen):
         self._render_bars()
 
         self.info_button.render(self.surface)
+        self.compare_button.render(self.surface)
         self.info_panel.render(self.surface)
 
     def _draw_text(self, text, position, font, color=Color.TEXT_PRIMARY):
