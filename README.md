@@ -1,6 +1,10 @@
-# AlgoLab
+<div align="center">
+  <img src="assets/icon.png" width="180"/>
 
-A desktop application built with Python and Pygame for visualizing data structures and algorithms.
+  <h1>AlgoLab</h1>
+
+  <p>A desktop application built with Python and Pygame for visualizing data structures and algorithms.</p>
+</div>
 
 Each operation is presented as a **step-by-step**, **pausable**, **rewindable** animation, with a live explanation of what is happening. AlgoLab was developed as an educational companion for a Data Structures and Algorithms course.
 
@@ -10,7 +14,7 @@ Each operation is presented as a **step-by-step**, **pausable**, **rewindable** 
 
 <img src="screenshots/main_menu.png" width="800"/>
 
-**Main Menu** — pick any of the nine topics to open its dedicated visualizer.
+**Main Menu** — Pick any of the nine topics to open its dedicated visualizer.
 
 </div>
 
@@ -18,7 +22,7 @@ Each operation is presented as a **step-by-step**, **pausable**, **rewindable** 
 
 <img src="screenshots/stack.png" width="800"/>
 
-**Stack** — push, pop, and peek animated step by step, with a live TOP pointer.
+**Stack** — Push, pop, and peek animated step by step, with a live TOP pointer.
 
 </div>
 
@@ -26,7 +30,7 @@ Each operation is presented as a **step-by-step**, **pausable**, **rewindable** 
 
 <img src="screenshots/queue.png" width="800"/>
 
-**Queue** — enqueue and dequeue animated with FRONT and REAR pointers.
+**Queue** — Enqueue and dequeue animated with FRONT and REAR pointers.
 
 </div>
 
@@ -34,7 +38,7 @@ Each operation is presented as a **step-by-step**, **pausable**, **rewindable** 
 
 <img src="screenshots/linked_list.png" width="800"/>
 
-**Linked List** — insert and delete operations, with HEAD and the algorithm's temporary PREVIOUS / CURRENT / NEW pointers shown as they move.
+**Linked List** — Insert and delete operations, with HEAD and the algorithm's temporary PREVIOUS / CURRENT / NEW pointers shown as they move.
 
 </div>
 
@@ -42,7 +46,7 @@ Each operation is presented as a **step-by-step**, **pausable**, **rewindable** 
 
 <img src="screenshots/bst.png" width="800"/>
 
-**Binary Search Tree** — insert, search, delete, and traversals, rendered as a live tree diagram.
+**Binary Search Tree** — Insert, search, delete, and traversals, rendered as a live tree diagram.
 
 </div>
 
@@ -58,7 +62,7 @@ Each operation is presented as a **step-by-step**, **pausable**, **rewindable** 
 
 <img src="screenshots/graph.png" width="800"/>
 
-**Graph** — build a custom directed/undirected, weighted/unweighted graph and run BFS, DFS, Dijkstra, or Bellman-Ford on it.
+**Graph** — Build a custom directed/undirected, weighted/unweighted graph and run BFS, DFS, Dijkstra, or Bellman-Ford on it.
 
 </div>
 
@@ -66,7 +70,7 @@ Each operation is presented as a **step-by-step**, **pausable**, **rewindable** 
 
 <img src="screenshots/merge_sort.png" width="800"/>
 
-**Sorting** — Merge Sort visualized as an animated bar chart (Bubble, Selection, Insertion, Quick, and Heap Sort are also available on the same screen).
+**Sorting** — Merge Sort visualized as an animated bar chart. Bubble, Selection, Insertion, Quick, and Heap Sort are also available on the same screen.
 
 </div>
 
@@ -74,7 +78,7 @@ Each operation is presented as a **step-by-step**, **pausable**, **rewindable** 
 
 <img src="screenshots/hash_chaing.png" width="800"/>
 
-**Hash Table** — separate chaining collision resolution with a live load factor bar (linear probing, quadratic probing, and double hashing are also supported).
+**Hash Table** — Separate chaining collision resolution with a live load factor bar. Linear probing, quadratic probing, and double hashing are also supported.
 
 </div>
 
@@ -82,7 +86,7 @@ Each operation is presented as a **step-by-step**, **pausable**, **rewindable** 
 
 <img src="screenshots/asymptotic.png" width="800"/>
 
-**Asymptotic Notation** — compare Big-O growth curves from O(1) to O(n^n) with an adjustable input size.
+**Asymptotic Notation** — Compare Big-O growth curves from O(1) to O(n^n) with an adjustable input size.
 
 </div>
 
@@ -106,7 +110,7 @@ Each operation is presented as a **step-by-step**, **pausable**, **rewindable** 
 * Color-coded operations and legends
 * Configurable data structure attributes
 * Randomize button for every topic
-* Per-topic Big-O reference table (Info button on every topic screen)
+* Per-topic Big-O reference table through the Info button on every topic screen
 * Fullscreen, auto-scaled to the machine's native resolution
 * Screenshot capture (`F12`), saved to `assets/screenshots/`
 * Keyboard shortcuts:
@@ -139,13 +143,13 @@ python -m venv .venv
 
 ### 3. Activate the Virtual Environment
 
-* **Windows:**
+**Windows:**
 
 ```bash
 .venv\Scripts\activate
 ```
 
-* **Linux / MacOS:**
+**Linux / macOS:**
 
 ```bash
 source .venv/bin/activate
@@ -159,27 +163,30 @@ pip install -r requirements.txt
 
 ### Run the Application
 
-* **Run from the source:**
+**Run from the source:**
 
 ```bash
 python -m algolab.main
 ```
 
-* **Build a standalone application:**
-AlgoLab can also be packaged as a standalone executable using Pyinstaller.
+**Build a standalone application:**
+
+AlgoLab can also be packaged as a standalone executable using PyInstaller.
+
 ```bash
 pyinstaller AlgoLab.spec
 ```
-The packages application will be available in the `dist/` directory.
+
+The packaged application will be available in the `dist/` directory.
 
 ## 🏗️ Architecture
 
 Each topic follows the same structure:
 
 ```text
-model.py       # Data structure and state
-operations.py  # Operations performed on the structure
-simulation.py  # Step-by-step simulation
+model.py        # Data structure and state
+operations.py   # Operations performed on the structure
+simulation.py   # Step-by-step simulation
 ```
 
 Simulations operate on a copy of the model's state and record each intermediate state as an immutable snapshot. The real model is only updated when the simulation completes.
@@ -191,50 +198,185 @@ Randomize actions bypass the simulation layer and use the data structure's norma
 ## 📁 Project Structure
 
 ```text
-📁 AlgoLab
+📁 
 ├── 📁 assets
+│   ├── 📁 screenshots
+│   │   ├── 🖼️ asymptotic.png
+│   │   ├── 🖼️ bst.png
+│   │   ├── 🖼️ graph.png
+│   │   ├── 🖼️ hash_chaing.png
+│   │   ├── 🖼️ heap.png
+│   │   ├── 🖼️ linked_list.png
+│   │   ├── 🖼️ main_menu.png
+│   │   ├── 🖼️ merge_sort.png
+│   │   ├── 🖼️ queue.png
+│   │   └── 🖼️ stack.png
 │   ├── 📄 icon.ico
-│   ├── 🖼️ icon.png
-│   └── 📁 screenshots      # F12 auto-captures land here (gitignored)
-├── 📁 screenshots          # curated images used in this README
+│   └── 🖼️ icon.png
 ├── 📁 config
 │   └── ⚙️ config.toml
 ├── 📁 log
-│
 ├── 📁 src
 │   └── 📁 algolab
 │       ├── 📁 core
+│       │   ├── 🐍 __init__.py
+│       │   ├── 🐍 application.py
+│       │   └── 🐍 configuration.py
 │       ├── 📁 simulation
+│       │   ├── 🐍 __init__.py
+│       │   ├── 🐍 events.py
+│       │   ├── 🐍 history.py
+│       │   ├── 🐍 simulator.py
+│       │   └── 🐍 state.py
 │       ├── 📁 topics
 │       │   ├── 📁 asymptotic
+│       │   │   ├── 🐍 __init__.py
+│       │   │   ├── 🐍 complexity.py
+│       │   │   ├── 🐍 model.py
+│       │   │   └── 🐍 visualizer.py
 │       │   ├── 📁 bst
+│       │   │   ├── 🐍 __init__.py
+│       │   │   ├── 🐍 model.py
+│       │   │   ├── 🐍 operations.py
+│       │   │   └── 🐍 simulation.py
 │       │   ├── 📁 graph
+│       │   │   ├── 🐍 __init__.py
+│       │   │   ├── 🐍 model.py
+│       │   │   └── 🐍 simulation.py
 │       │   ├── 📁 hash_table
+│       │   │   ├── 🐍 __init__.py
+│       │   │   ├── 🐍 model.py
+│       │   │   ├── 🐍 operations.py
+│       │   │   └── 🐍 simulation.py
 │       │   ├── 📁 heap
+│       │   │   ├── 🐍 __init__.py
+│       │   │   ├── 🐍 model.py
+│       │   │   ├── 🐍 operations.py
+│       │   │   └── 🐍 simulation.py
 │       │   ├── 📁 linked_list
+│       │   │   ├── 🐍 __init__.py
+│       │   │   ├── 🐍 model.py
+│       │   │   ├── 🐍 operations.py
+│       │   │   └── 🐍 simulation.py
 │       │   ├── 📁 queue
+│       │   │   ├── 🐍 __init__.py
+│       │   │   ├── 🐍 model.py
+│       │   │   ├── 🐍 operations.py
+│       │   │   └── 🐍 simulation.py
 │       │   ├── 📁 sorting
-│       │   └── 📁 stack
+│       │   │   ├── 🐍 __init__.py
+│       │   │   ├── 🐍 model.py
+│       │   │   ├── 🐍 operations.py
+│       │   │   └── 🐍 simulation.py
+│       │   ├── 📁 stack
+│       │   │   ├── 🐍 __init__.py
+│       │   │   ├── 🐍 model.py
+│       │   │   ├── 🐍 operations.py
+│       │   │   └── 🐍 simulation.py
+│       │   └── 🐍 __init__.py
 │       ├── 📁 ui
 │       │   ├── 📁 components
-│       │   └── 📁 screens
+│       │   │   ├── 🐍 __init__.py
+│       │   │   ├── 🐍 button.py
+│       │   │   ├── 🐍 checkbox.py
+│       │   │   ├── 🐍 info_panel.py
+│       │   │   ├── 🐍 numeric_input.py
+│       │   │   ├── 🐍 radio_button.py
+│       │   │   └── 🐍 surface.py
+│       │   ├── 📁 screens
+│       │   │   ├── 🐍 __init__.py
+│       │   │   ├── 🐍 asymptotic.py
+│       │   │   ├── 🐍 bst.py
+│       │   │   ├── 🐍 graph.py
+│       │   │   ├── 🐍 hash_table.py
+│       │   │   ├── 🐍 heap.py
+│       │   │   ├── 🐍 linked_list.py
+│       │   │   ├── 🐍 main_menu.py
+│       │   │   ├── 🐍 queue.py
+│       │   │   ├── 🐍 screen.py
+│       │   │   ├── 🐍 screen_manager.py
+│       │   │   ├── 🐍 sorting.py
+│       │   │   └── 🐍 stack.py
+│       │   ├── 🐍 __init__.py
+│       │   └── 🐍 theme.py
 │       ├── 📁 visualization
-│       │   └── 📁 graph
+│       │   ├── 📁 graph
+│       │   │   ├── 🐍 __init__.py
+│       │   │   ├── 🐍 bounds.py
+│       │   │   ├── 🐍 coordinate_system.py
+│       │   │   ├── 🐍 curve.py
+│       │   │   ├── 🐍 layout.py
+│       │   │   ├── 🐍 renderer.py
+│       │   │   └── 🐍 scaling.py
+│       │   └── 🐍 __init__.py
+│       ├── 🐍 __init__.py
 │       └── 🐍 main.py
-│
 ├── 📁 tests
 │   ├── 📁 core
+│   │   ├── 🐍 __init__.py
+│   │   └── 🐍 test_configuration.py
 │   ├── 📁 simulation
+│   │   ├── 🐍 __init__.py
+│   │   ├── 🐍 test_events.py
+│   │   ├── 🐍 test_history.py
+│   │   ├── 🐍 test_simulator.py
+│   │   └── 🐍 test_state.py
 │   ├── 📁 topics
+│   │   ├── 📁 asymptotic
+│   │   │   ├── 🐍 __init__.py
+│   │   │   ├── 🐍 test_complexity.py
+│   │   │   ├── 🐍 test_model.py
+│   │   │   └── 🐍 test_visualizer.py
+│   │   ├── 📁 bst
+│   │   │   ├── 🐍 test_bst_model.py
+│   │   │   ├── 🐍 test_bst_operations.py
+│   │   │   └── 🐍 test_bst_simulation.py
+│   │   ├── 📁 heap
+│   │   │   ├── 🐍 test_heap_model.py
+│   │   │   ├── 🐍 test_heap_operations.py
+│   │   │   └── 🐍 test_heap_simulation.py
+│   │   ├── 📁 linked_list
+│   │   │   ├── 🐍 test_linked_list_model.py
+│   │   │   ├── 🐍 test_operations.py
+│   │   │   └── 🐍 test_simulation.py
+│   │   ├── 📁 queue
+│   │   │   ├── 🐍 test_queue_model.py
+│   │   │   ├── 🐍 test_queue_operations.py
+│   │   │   └── 🐍 test_queue_simulation.py
+│   │   ├── 📁 stack
+│   │   │   ├── 🐍 test_stack_model.py
+│   │   │   ├── 🐍 test_stack_operations.py
+│   │   │   └── 🐍 test_stack_simulation.py
+│   │   └── 🐍 __init__.py
 │   ├── 📁 ui
-│   └── 📁 visualization
-│
+│   │   ├── 📁 compontets
+│   │   │   ├── 🐍 checkbox.py
+│   │   │   └── 🐍 radio_button.py
+│   │   ├── 📁 screens
+│   │   │   ├── 🐍 __init__.py
+│   │   │   ├── 🐍 test_asymptotic.py
+│   │   │   ├── 🐍 test_main_menu.py
+│   │   │   ├── 🐍 test_screen.py
+│   │   │   └── 🐍 test_screen_manager.py
+│   │   └── 🐍 __init__.py
+│   ├── 📁 visualization
+│   │   ├── 📁 graph
+│   │   │   ├── 🐍 __init__.py
+│   │   │   ├── 🐍 test_bounds.py
+│   │   │   ├── 🐍 test_coordinate_system.py
+│   │   │   ├── 🐍 test_curve.py
+│   │   │   ├── 🐍 test_layout.py
+│   │   │   └── 🐍 test_scaling.py
+│   │   └── 🐍 __init__.py
+│   └── 🐍 __init__.py
+├── 📄 AlgoLab.spec
 ├── ⚖️ LICENSE
 ├── ⚙️ pyproject.toml
 ├── 📘 README.md
 ├── 📝 requirements.txt
 └── 🐍 smoke_test.py
 ```
+> Generated using [Tree Printer](https://github.com/AmirmasoudCS/Tree-Printer.git)
 
 ## 🧪 Testing
 
@@ -251,7 +393,7 @@ Tests cover the core logic, simulation system, data structure operations, UI com
 * **BST Randomization** can produce highly skewed trees depending on insertion order.
 * **Heap Type Switching** rebuilds the heap when switching between Min and Max modes.
 * **Hash Tables** do not automatically resize when an open-addressing table becomes full.
-* **Queue's `dequeue`** is O(n) in this implementation (`list.pop(0)`), not the textbook O(1) — a deque- or linked-list-backed queue would achieve O(1).
+* **Queue's `dequeue`** is O(n) in this implementation (`list.pop(0)`), not the textbook O(1). A deque- or linked-list-backed queue would achieve O(1).
 
 ## ⚖️ License
 
