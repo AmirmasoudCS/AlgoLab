@@ -130,6 +130,20 @@ class MainMenuScreen(Screen):
         if screen_class is None:
             return
 
+        if screen_class is SortingScreen:
+            # Sorting is the only screen that navigates forward to
+            # another screen (the algorithm Compare screen), so it's
+            # the only one that needs a screen_manager reference passed
+            # in. Every other screen only ever goes back via on_back.
+            self.screen_manager.set_screen(
+                screen_class(
+                    self.surface,
+                    on_back=go_back,
+                    screen_manager=self.screen_manager,
+                )
+            )
+            return
+
         self.screen_manager.set_screen(
             screen_class(self.surface, on_back=go_back)
         )
