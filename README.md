@@ -14,7 +14,7 @@ Each operation is presented as a **step-by-step**, **pausable**, **rewindable** 
 
 <img src="assets/screenshots/main_menu.png" width="800"/>
 
-**Main Menu** — Pick any of the nine topics to open its dedicated visualizer.
+**Main Menu** - Pick any of the nine topics to open its dedicated visualizer.
 
 </div>
 
@@ -22,7 +22,7 @@ Each operation is presented as a **step-by-step**, **pausable**, **rewindable** 
 
 <img src="assets/screenshots/stack.png" width="800"/>
 
-**Stack** — Push, pop, and peek animated step by step, with a live TOP pointer.
+**Stack** - Push, pop, and peek animated step by step, with a live TOP pointer.
 
 </div>
 
@@ -30,7 +30,7 @@ Each operation is presented as a **step-by-step**, **pausable**, **rewindable** 
 
 <img src="assets/screenshots/queue.png" width="800"/>
 
-**Queue** — Enqueue and dequeue animated with FRONT and REAR pointers.
+**Queue** - Enqueue and dequeue animated with FRONT and REAR pointers.
 
 </div>
 
@@ -38,7 +38,7 @@ Each operation is presented as a **step-by-step**, **pausable**, **rewindable** 
 
 <img src="assets/screenshots/linked_list.png" width="800"/>
 
-**Linked List** — Insert and delete operations, with HEAD and the algorithm's temporary PREVIOUS / CURRENT / NEW pointers shown as they move.
+**Linked List** - Insert and delete operations, with HEAD and the algorithm's temporary PREVIOUS / CURRENT / NEW pointers shown as they move.
 
 </div>
 
@@ -46,7 +46,7 @@ Each operation is presented as a **step-by-step**, **pausable**, **rewindable** 
 
 <img src="assets/screenshots/bst.png" width="800"/>
 
-**Binary Search Tree** — Insert, search, delete, and traversals, rendered as a live tree diagram.
+**Binary Search Tree** - Insert, search, delete, and traversals, rendered as a live tree diagram.
 
 </div>
 
@@ -54,7 +54,7 @@ Each operation is presented as a **step-by-step**, **pausable**, **rewindable** 
 
 <img src="assets/screenshots/heap.png" width="800"/>
 
-**Heap** — Min/Max heap operations shown as both a tree and its underlying array, side by side.
+**Heap** - Min/Max heap operations shown as both a tree and its underlying array, side by side.
 
 </div>
 
@@ -62,7 +62,7 @@ Each operation is presented as a **step-by-step**, **pausable**, **rewindable** 
 
 <img src="assets/screenshots/graph.png" width="800"/>
 
-**Graph** — Build a custom directed/undirected, weighted/unweighted graph and run BFS, DFS, Dijkstra, or Bellman-Ford on it.
+**Graph** - Build a custom directed/undirected, weighted/unweighted graph and run BFS, DFS, Dijkstra, or Bellman-Ford on it.
 
 </div>
 
@@ -70,7 +70,7 @@ Each operation is presented as a **step-by-step**, **pausable**, **rewindable** 
 
 <img src="assets/screenshots/merge_sort.png" width="800"/>
 
-**Sorting** — Merge Sort visualized as an animated bar chart. Bubble, Selection, Insertion, Quick, and Heap Sort are also available on the same screen.
+**Sorting** - Merge Sort visualized as an animated bar chart. Bubble, Selection, Insertion, Quick, and Heap Sort are also available on the same screen.
 
 </div>
 
@@ -78,7 +78,7 @@ Each operation is presented as a **step-by-step**, **pausable**, **rewindable** 
 
 <img src="assets/screenshots/hash_chaing.png" width="800"/>
 
-**Hash Table** — Separate chaining collision resolution with a live load factor bar. Linear probing, quadratic probing, and double hashing are also supported.
+**Hash Table** - Separate chaining collision resolution with a live load factor bar. Linear probing, quadratic probing, and double hashing are also supported.
 
 </div>
 
@@ -86,7 +86,7 @@ Each operation is presented as a **step-by-step**, **pausable**, **rewindable** 
 
 <img src="assets/screenshots/asymptotic.png" width="800"/>
 
-**Asymptotic Notation** — Compare Big-O growth curves from O(1) to O(n^n) with an adjustable input size.
+**Asymptotic Notation** - Compare Big-O growth curves from O(1) to O(n^n) with an adjustable input size.
 
 </div>
 
