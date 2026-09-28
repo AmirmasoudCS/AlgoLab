@@ -518,8 +518,12 @@ class SortingRaceScreen(Screen):
         elif simulator.is_at_end:
             status = f"Finished in {len(simulation.states)} steps"
         else:
-            state = self._get_state(simulator)
-            current_step = state.step + 1 if state is not None else 0
+            # .step lives on the SimulationState wrapper (simulator.state
+            # itself), not on its .data payload -- .data only carries
+            # values/comparing/swapping/etc., the fields _get_state()
+            # returns for bar rendering.
+            wrapper_state = simulator.state
+            current_step = wrapper_state.step + 1 if wrapper_state is not None else 0
             status = f"Step {current_step}/{len(simulation.states)}"
 
         status_surface = self.small_font.render(status, True, Color.TEXT_SECONDARY)
