@@ -74,6 +74,12 @@ Each operation is presented as a **step-by-step**, **pausable**, **rewindable** 
 
 </div>
 
+<img src="assets/screenshots/race_mode.png" width="800"/>
+
+**Sorting (race mode)** - Race mode between Quick Sort and Merge Sort
+
+</div>
+
 <div align="center">
 
 <img src="assets/screenshots/hash_chaing.png" width="800"/>
