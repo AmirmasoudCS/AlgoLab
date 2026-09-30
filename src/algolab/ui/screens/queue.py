@@ -16,6 +16,7 @@ from algolab.topics.queue.simulation import (
     QueueSimulator,
 )
 from algolab.ui.components.button import Button
+from algolab.ui.components.checkbox import Checkbox
 from algolab.ui.components.info_panel import InfoPanel
 from algolab.ui.components.numeric_input import NumericInput
 from algolab.ui.components.surface import draw_arrow, draw_item_card, draw_panel, draw_toggle_button
@@ -107,7 +108,7 @@ class QueueScreen(Screen):
         self.mode = mode
 
     def _panel_height(self) -> int:
-        return {"linear": 460, "circular": 490, "priority": 590}[self.mode]
+        return {"linear": 460, "circular": 490, "priority": 630}[self.mode]
 
     def _active_info_panel(self) -> InfoPanel:
         return {
@@ -239,10 +240,24 @@ class QueueScreen(Screen):
         self.priority_priority_input = NumericInput(
             pygame.Rect(135, 493, 75, 30), 5
         )
-        self.priority_navigation_buttons = self._create_navigation_buttons(597)
+
+        # On by default, per the request: this is the common textbook
+        # case where a number is its own priority. When checked, the
+        # priority input is kept synced to the value input and stops
+        # accepting its own clicks/typing (see _handle_priority_event).
+        self.priority_match_value_checkbox = Checkbox(
+            pygame.Rect(25, 528, 20, 20), "Priority = Value", checked=True
+        )
+        self.priority_priority_input.set_value(self.priority_value_input.value)
+
+        # Shifted down by 35 (SHIFT) from their original positions
+        # (597/559) to make room for the checkbox row inserted above,
+        # the same cascade-shift approach used for Hash Table's
+        # Randomize row.
+        self.priority_navigation_buttons = self._create_navigation_buttons(632)
 
         self.priority_speed_button_rects = [
-            pygame.Rect(15 + index * 62, 559, 58, 28)
+            pygame.Rect(15 + index * 62, 594, 58, 28)
             for index in range(len(self.speed_buttons))
         ]
 
@@ -404,7 +419,16 @@ class QueueScreen(Screen):
 
     def _handle_priority_event(self, event: pygame.event.Event) -> None:
         self.priority_value_input.handle_event(event)
-        self.priority_priority_input.handle_event(event)
+
+        self.priority_match_value_checkbox.handle_event(event)
+
+        if self.priority_match_value_checkbox.checked:
+            # Locked to mirror Value: never processes its own click or
+            # typing while checked, and is force-synced every event so
+            # it can never drift from Value even between operations.
+            self.priority_priority_input.set_value(self.priority_value_input.value)
+        else:
+            self.priority_priority_input.handle_event(event)
 
         for index, button in enumerate(self.priority_backing_buttons):
             if button.handle_event(event):
@@ -592,10 +616,12 @@ class QueueScreen(Screen):
 
         self.priority_model.clear()
 
+        match_value = self.priority_match_value_checkbox.checked
+
         for _ in range(random.randint(4, 7)):
-            self.priority_model.insert(
-                random.randint(1, 99), random.randint(1, 20)
-            )
+            value = random.randint(1, 99)
+            priority = value if match_value else random.randint(1, 20)
+            self.priority_model.insert(value, priority)
 
         self.priority_error_message = None
         self.step_timer = 0.0
@@ -1124,11 +1150,13 @@ class QueueScreen(Screen):
         )
         self.priority_priority_input.render(self.surface)
 
+        self.priority_match_value_checkbox.render(self.surface)
+
         self._draw_text(
-            "Simulation", (25, 533), self.section_font, color=Color.TEXT_SECONDARY
+            "Simulation", (25, 568), self.section_font, color=Color.TEXT_SECONDARY
         )
 
-        info_y = 632
+        info_y = 667
         if self.priority_current_simulation is not None:
             state = self.priority_simulator.state
             if state is not None:
