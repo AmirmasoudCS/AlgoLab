@@ -7,8 +7,8 @@ from algolab.core.configuration import Configuration, get_resource_path
 from algolab.ui.screens.main_menu import MainMenuScreen
 from algolab.ui.screens.screen_manager import ScreenManager
 from algolab.ui.theme import Color, Font, Radius
-from algolab.core.storage import ExportStore, configure_store, user_settings_path
-from algolab.ui.components.file_dialog import FileDialog
+#from algolab.core.storage import ExportStore, configure_store, user_settings_path
+#from algolab.ui.components.file_dialog import FileDialog
 
 
 class Application:
@@ -53,7 +53,7 @@ class Application:
 
     def __init__(self, config: Configuration) -> None:
         self.config = config
-        configure_store(ExportStore(config.export_directory, user_settings_path()))
+ #       configure_store(ExportStore(config.export_directory, user_settings_path()))
 
         pygame.init()
 
@@ -209,9 +209,9 @@ class Application:
             # something carried over from the windowed version -- remove
             # or rebind it if you'd rather handle exiting differently.
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                if FileDialog.any_open():
-                    self.screen_manager.handle_event(self._translate_event(event))
-                    continue
+                #if FileDialog.any_open():
+                 #   self.screen_manager.handle_event(self._translate_event(event))
+                  #  continue
                 self.running = False
                 continue
 
