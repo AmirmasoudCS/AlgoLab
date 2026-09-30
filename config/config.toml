@@ -6,3 +6,10 @@ resizable = true
 
 [performance]
 fps = 60
+
+[storage]
+# Default folder for saved data structures. A relative path is resolved
+# against the application folder (the project root, or the folder that
+# contains the executable in a packaged build). Users can pick a
+# different folder inside the app; that choice is remembered separately.
+export_directory = "exports"
