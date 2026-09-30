@@ -3,6 +3,8 @@ import random
 import pygame
 
 from algolab.simulation.simulator import Simulator
+from algolab.topics.avl.model import AVLTree
+from algolab.topics.avl.simulation import AVLSimulator
 from algolab.topics.bst.model import BinarySearchTree
 from algolab.topics.bst.simulation import (
     BSTSimulation,
@@ -21,8 +23,40 @@ from algolab.ui.screens.screen import Screen
 from algolab.ui.theme import Color, Font, Spacing
 
 
+def _format_balance(balance: int) -> str:
+    """Format a balance factor as +1, -1, or plain 0 (never +0)."""
+    return "0" if balance == 0 else f"{balance:+d}"
+
+
+class _TreeMode:
+    """Everything one mode (BST or AVL) owns.
+
+    Each mode keeps its own model, Simulator, tree simulator, info
+    panel, and in-progress-simulation tracking, so switching modes is
+    purely a change of which tree is shown -- nothing is reset or lost
+    when you switch away and back (same idea as the Queue screen's
+    Linear/Circular/Priority modes).
+    """
+
+    def __init__(self, model, tree_simulator_class, info_panel) -> None:
+        self.model = model
+        self.simulator = Simulator()
+        self.tree_simulator = tree_simulator_class(model)
+        self.info_panel = info_panel
+
+        self.current_simulation: BSTSimulation | None = None
+        self.operation_committed = False
+        self.status_message: str | None = None
+
+
 class BSTScreen(Screen):
-    """Binary search tree visualization screen."""
+    """Binary search tree visualization screen (BST and AVL modes)."""
+
+    # Height of the BST / AVL toggle row inserted at the top of the
+    # control panel. Every control below the "TA Controls" title is
+    # shifted down by exactly this amount (cascade shift), and the
+    # panel grows by the same amount.
+    MODE_ROW_SHIFT = 40
 
     LEGEND = [
         (Color.STATE_COMPARING, "Comparing"),
@@ -34,17 +68,65 @@ class BSTScreen(Screen):
         (Color.STATE_REPLACE, "Replaced"),
     ]
 
+    # theme.py was not visible when this was written, so if it has no
+    # warning color yet this falls back to a local pink. Add
+    # Color.STATE_WARNING to the theme and this picks it up automatically.
+    UNBALANCED_COLOR = getattr(Color, "STATE_WARNING", (236, 72, 153))
+
+    LEGEND_AVL = [
+        (Color.STATE_COMPARING, "Comparing"),
+        (Color.STATE_ACTIVE, "Active"),
+        (Color.STATE_VISITED, "Visited"),
+        (Color.STATE_SUCCESS, "Inserted"),
+        (Color.STATE_DANGER, "Removed"),
+        (Color.STATE_RESULT, "Result"),
+        (UNBALANCED_COLOR, "Unbalanced"),
+        (Color.STATE_REPLACE, "Rotated / Replaced"),
+    ]
+
     def __init__(self, surface: pygame.Surface, on_back=None) -> None:
         super().__init__(surface, on_back)
 
-        self.model = BinarySearchTree()
-        self.simulator = Simulator()
-        self.bst_simulator = BSTSimulator(self.model)
+        shift = self.MODE_ROW_SHIFT
 
-        self.current_simulation: BSTSimulation | None = None
-        self.operation_committed = False
+        self.mode = "bst"
 
-        self.status_message: str | None = None
+        self._modes = {
+            "bst": _TreeMode(
+                BinarySearchTree(),
+                BSTSimulator,
+                InfoPanel(
+                    "Binary Search Tree - Time Complexity",
+                    [
+                        ("Insert", "O(log n) avg", "O(n) worst (skewed tree)"),
+                        ("Search", "O(log n) avg", "O(n) worst (skewed tree)"),
+                        ("Delete", "O(log n) avg", "O(n) worst (skewed tree)"),
+                        ("Find Min / Find Max", "O(log n) avg", "O(n) worst; really O(height)"),
+                        ("In/Pre/Post-order", "O(n)", "Visits every node once"),
+                    ],
+                ),
+            ),
+            "avl": _TreeMode(
+                AVLTree(),
+                AVLSimulator,
+                InfoPanel(
+                    "AVL Tree - Time Complexity",
+                    [
+                        ("Insert", "O(log n)", "Worst case too; at most 2 rotations"),
+                        ("Search", "O(log n)", "Worst case too; height <= 1.44 log2(n)"),
+                        ("Delete", "O(log n)", "May rotate at every level going up"),
+                        ("Find Min / Find Max", "O(log n)", "Follows one path; height is O(log n)"),
+                        ("In/Pre/Post-order", "O(n)", "Visits every node once"),
+                        ("Rotation", "O(1)", "Just pointer and height updates"),
+                    ],
+                ),
+            ),
+        }
+
+        self.mode_buttons = {
+            "bst": Button(pygame.Rect(15, 108, 110, 32), "BST"),
+            "avl": Button(pygame.Rect(130, 108, 105, 32), "AVL"),
+        }
 
         self.control_font = Font.H1()
         self.section_font = Font.H2()
@@ -57,7 +139,7 @@ class BSTScreen(Screen):
         self.navigation_buttons = self._create_navigation_buttons()
 
         self.randomize_button = Button(
-            pygame.Rect(140, 112, 95, 24),
+            pygame.Rect(140, 112 + shift, 95, 24),
             "Randomize",
         )
 
@@ -65,27 +147,79 @@ class BSTScreen(Screen):
             pygame.Rect(surface.get_width() - 115, 15, 100, 38),
             "Info",
         )
-        self.info_panel = InfoPanel(
-            "Binary Search Tree - Time Complexity",
-            [
-                ("Insert", "O(log n) avg", "O(n) worst (skewed tree)"),
-                ("Search", "O(log n) avg", "O(n) worst (skewed tree)"),
-                ("Delete", "O(log n) avg", "O(n) worst (skewed tree)"),
-                ("Find Min / Find Max", "O(log n) avg", "O(n) worst; really O(height)"),
-                ("In/Pre/Post-order", "O(n)", "Visits every node once"),
-            ],
-        )
 
         for index, button in enumerate(self.speed_buttons):
-            button.rect = pygame.Rect(15 + index * 62, 561, 58, 28)
+            button.rect = pygame.Rect(15 + index * 62, 561 + shift, 58, 28)
 
         self.value_input = NumericInput(
-            pygame.Rect(135, 475, 75, 30),
+            pygame.Rect(135, 475 + shift, 75, 30),
             50,
         )
 
         self.step_timer = 0.0
         self.step_interval = 1.8
+
+    # ------------------------------------------------------------------
+    # Per-mode state (delegates to whichever mode is active)
+    # ------------------------------------------------------------------
+
+    @property
+    def _mode_state(self) -> _TreeMode:
+        return self._modes[self.mode]
+
+    @property
+    def model(self):
+        return self._mode_state.model
+
+    @property
+    def simulator(self) -> Simulator:
+        return self._mode_state.simulator
+
+    @property
+    def tree_simulator(self):
+        return self._mode_state.tree_simulator
+
+    @property
+    def info_panel(self) -> InfoPanel:
+        return self._mode_state.info_panel
+
+    @property
+    def current_simulation(self) -> BSTSimulation | None:
+        return self._mode_state.current_simulation
+
+    @current_simulation.setter
+    def current_simulation(self, value: BSTSimulation | None) -> None:
+        self._mode_state.current_simulation = value
+
+    @property
+    def operation_committed(self) -> bool:
+        return self._mode_state.operation_committed
+
+    @operation_committed.setter
+    def operation_committed(self, value: bool) -> None:
+        self._mode_state.operation_committed = value
+
+    @property
+    def status_message(self) -> str | None:
+        return self._mode_state.status_message
+
+    @status_message.setter
+    def status_message(self, value: str | None) -> None:
+        self._mode_state.status_message = value
+
+    def _set_mode(self, mode: str) -> None:
+        if mode == self.mode:
+            return
+
+        self.mode = mode
+        self.step_timer = 0.0
+
+    def cancel_current_simulation(self) -> None:
+        """Cancel the active mode's in-progress simulation, if any."""
+
+        self.simulator.reset()
+        self.current_simulation = None
+        self.operation_committed = False
 
     def _create_operation_buttons(self) -> list[Button]:
         labels = [
@@ -102,7 +236,7 @@ class BSTScreen(Screen):
         buttons = []
 
         x = 25
-        y = 145
+        y = 145 + self.MODE_ROW_SHIFT
         width = 220
         height = 34
         spacing = 38
@@ -133,7 +267,7 @@ class BSTScreen(Screen):
         buttons = []
 
         x = 25
-        y = 599
+        y = 599 + self.MODE_ROW_SHIFT
         width = 40
         height = 35
         spacing = 45
@@ -214,6 +348,10 @@ class BSTScreen(Screen):
         if self.handle_speed_event(event):
             return
 
+        for mode, button in self.mode_buttons.items():
+            if button.handle_event(event):
+                self._set_mode(mode)
+
         self.value_input.handle_event(event)
 
         if event.type == pygame.KEYDOWN:
@@ -252,21 +390,21 @@ class BSTScreen(Screen):
 
         try:
             if index == 0:
-                simulation = self.bst_simulator.insert(value)
+                simulation = self.tree_simulator.insert(value)
             elif index == 1:
-                simulation = self.bst_simulator.search(value)
+                simulation = self.tree_simulator.search(value)
             elif index == 2:
-                simulation = self.bst_simulator.delete(value)
+                simulation = self.tree_simulator.delete(value)
             elif index == 3:
-                simulation = self.bst_simulator.find_min()
+                simulation = self.tree_simulator.find_min()
             elif index == 4:
-                simulation = self.bst_simulator.find_max()
+                simulation = self.tree_simulator.find_max()
             elif index == 5:
-                simulation = self.bst_simulator.in_order()
+                simulation = self.tree_simulator.in_order()
             elif index == 6:
-                simulation = self.bst_simulator.pre_order()
+                simulation = self.tree_simulator.pre_order()
             elif index == 7:
-                simulation = self.bst_simulator.post_order()
+                simulation = self.tree_simulator.post_order()
             else:
                 return
         except (IndexError, ValueError):
@@ -282,25 +420,28 @@ class BSTScreen(Screen):
 
     def _randomize(self) -> None:
         """
-        Replace the tree contents with random values, instantly and
-        without animation (same behavior as the sorting screen's
-        Randomize).
+        Replace the active tree's contents with random values, instantly
+        and without animation (same behavior as the sorting screen's
+        Randomize). In AVL mode this uses the real AVLTree.insert, so the
+        result is already balanced.
 
         Values are drawn without replacement (random.sample) so every
-        insert succeeds -- BinarySearchTree.insert() raises ValueError
-        on a duplicate, which would otherwise silently shrink the tree
-        below the intended size.
+        insert succeeds -- insert() raises ValueError on a duplicate,
+        which would otherwise silently shrink the tree below the
+        intended size.
         """
 
         self.cancel_current_simulation()
 
         self.model.clear()
 
-        # 7 unique values keeps the tree readable even in a worst-case
-        # skewed shape (a straight chain 7 nodes deep still fits the
-        # canvas at 85px per level); insert() builds whatever shape the
-        # random order produces.
-        count = random.randint(5, 7)
+        # BST: 7 unique values keeps the tree readable even in a
+        # worst-case skewed shape (a straight chain 7 nodes deep still
+        # fits the canvas at 85px per level). AVL never skews, so a
+        # slightly larger tree is fine, but 8 nodes is still the most
+        # that fits across the canvas at 90px per node plus spacing.
+        low, high = (6, 8) if self.mode == "avl" else (5, 7)
+        count = random.randint(low, high)
         values = random.sample(range(1, 100), count)
 
         for value in values:
@@ -361,6 +502,9 @@ class BSTScreen(Screen):
         self.update_back_button(dt)
         self.update_speed_buttons(dt)
 
+        for button in self.mode_buttons.values():
+            button.update(dt)
+
         for button in self.operation_buttons:
             button.update(dt)
 
@@ -404,14 +548,19 @@ class BSTScreen(Screen):
         self.info_panel.render(self.surface)
 
     def _render_control_panel(self) -> None:
-        panel_rect = pygame.Rect(10, 70, 250, 620)
+        shift = self.MODE_ROW_SHIFT
+
+        panel_rect = pygame.Rect(10, 70, 250, 620 + shift)
         draw_panel(self.surface, panel_rect, elevated=True)
 
         self._draw_text("TA Controls", (25, 80), self.control_font)
 
+        for mode, button in self.mode_buttons.items():
+            draw_toggle_button(self.surface, button, mode == self.mode)
+
         self._draw_text(
             "Operations",
-            (25, 115),
+            (25, 115 + shift),
             self.section_font,
             color=Color.TEXT_SECONDARY,
         )
@@ -423,7 +572,7 @@ class BSTScreen(Screen):
 
         self._draw_text(
             "Value:",
-            (25, 480),
+            (25, 480 + shift),
             self.section_font,
             color=Color.TEXT_SECONDARY,
         )
@@ -432,7 +581,7 @@ class BSTScreen(Screen):
 
         self._draw_text(
             "Simulation",
-            (25, 535),
+            (25, 535 + shift),
             self.section_font,
             color=Color.TEXT_SECONDARY,
         )
@@ -459,7 +608,7 @@ class BSTScreen(Screen):
                         f"Step: {state.step + 1}/"
                         f"{len(self.current_simulation.states)}"
                     ),
-                    (25, 644),
+                    (25, 644 + shift),
                     self.small_font,
                     color=Color.TEXT_MUTED,
                 )
@@ -504,15 +653,31 @@ class BSTScreen(Screen):
         )
 
     def _render_legend(self) -> None:
+        legend = self.LEGEND_AVL if self.mode == "avl" else self.LEGEND
+
         x = 295
         y = self.surface.get_height() - 90
         spacing = Spacing.LG
 
-        for color, label in self.LEGEND:
+        labels = [
+            self.small_font.render(label, True, Color.TEXT_SECONDARY)
+            for _, label in legend
+        ]
+
+        # The AVL legend is longer. If the natural spacing would run
+        # past the right edge, tighten the gaps (down to 8px) so the
+        # legend always stays on one row.
+        available = self.surface.get_width() - 15 - x
+        items_width = sum(20 + label.get_width() for label in labels)
+        gaps = max(1, len(labels) - 1)
+
+        if items_width + spacing * gaps > available:
+            spacing = max(8, (available - items_width) // gaps)
+
+        for (color, _), label_surface in zip(legend, labels):
             swatch_rect = pygame.Rect(x, y + 4, 14, 14)
             pygame.draw.rect(self.surface, color, swatch_rect, border_radius=4)
 
-            label_surface = self.small_font.render(label, True, Color.TEXT_SECONDARY)
             self.surface.blit(label_surface, (x + 20, y))
 
             x += 20 + label_surface.get_width() + spacing
@@ -570,6 +735,10 @@ class BSTScreen(Screen):
         removed_node_id = state.removed_node_id
         result_node_id = state.result_node_id
 
+        # AVL-only extras. BST states do not have these attributes.
+        unbalanced_node_id = getattr(state, "unbalanced_node_id", None)
+        rotation_node_ids = set(getattr(state, "rotation_node_ids", ()))
+
         compare_node_ids = set()
         visited_node_ids = set(state.visited_node_ids)
 
@@ -597,6 +766,8 @@ class BSTScreen(Screen):
             visited_node_ids,
             result_node_id,
             replacement_node_id,
+            unbalanced_node_id,
+            rotation_node_ids,
         )
 
         if state.traversal_values:
@@ -630,6 +801,15 @@ class BSTScreen(Screen):
             left_id = id(node.left) if node.left is not None else None
             right_id = id(node.right) if node.right is not None else None
 
+            # AVL nodes carry a stored height; plain BST nodes do not
+            # (getattr falls back to 0, and those values are unused in
+            # BST mode).
+            height = getattr(node, "height", 0)
+            balance = (
+                getattr(node.left, "height", 0)
+                - getattr(node.right, "height", 0)
+            )
+
             node_map[node_id] = type(
                 "ModelNodeState",
                 (),
@@ -638,6 +818,8 @@ class BSTScreen(Screen):
                     "value": node.value,
                     "left_id": left_id,
                     "right_id": right_id,
+                    "height": height,
+                    "balance": balance,
                 },
             )()
 
@@ -730,6 +912,8 @@ class BSTScreen(Screen):
         visited_node_ids,
         result_node_id,
         replacement_node_id,
+        unbalanced_node_id=None,
+        rotation_node_ids=(),
     ) -> tuple[int, int, int]:
         if node_id == removed_node_id:
             return Color.STATE_DANGER
@@ -739,6 +923,14 @@ class BSTScreen(Screen):
 
         if node_id == replacement_node_id:
             return Color.STATE_REPLACE
+
+        # Rotation pivots share the "replaced" color: a rotation
+        # replaces which node is the subtree's parent.
+        if node_id in rotation_node_ids:
+            return Color.STATE_REPLACE
+
+        if node_id == unbalanced_node_id:
+            return self.UNBALANCED_COLOR
 
         if node_id == result_node_id:
             return Color.STATE_RESULT
@@ -765,12 +957,15 @@ class BSTScreen(Screen):
         visited_node_ids=None,
         result_node_id=None,
         replacement_node_id=None,
+        unbalanced_node_id=None,
+        rotation_node_ids=None,
     ) -> None:
         if not node_map:
             return
 
         compare_node_ids = compare_node_ids if compare_node_ids is not None else set()
         visited_node_ids = visited_node_ids if visited_node_ids is not None else set()
+        rotation_node_ids = rotation_node_ids if rotation_node_ids is not None else set()
 
         positions = self._calculate_positions(node_map, root_id)
 
@@ -804,7 +999,14 @@ class BSTScreen(Screen):
                 visited_node_ids,
                 result_node_id,
                 replacement_node_id,
+                unbalanced_node_id,
+                rotation_node_ids,
             )
+
+            if self.mode == "avl":
+                caption = f"h{node.height} bf{_format_balance(node.balance)}"
+            else:
+                caption = f"id {node.node_id}"
 
             draw_item_card(
                 self.surface,
@@ -813,7 +1015,7 @@ class BSTScreen(Screen):
                 self.node_font,
                 node.value,
                 caption_font=self.edge_font,
-                caption=f"id {node.node_id}",
+                caption=caption,
             )
 
     def _draw_tree_edge(
