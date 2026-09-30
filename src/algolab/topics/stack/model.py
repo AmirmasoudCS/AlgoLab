@@ -1,8 +1,19 @@
 from __future__ import annotations
 
+import math
+
+
+# Values a saved stack may contain: anything plain JSON can represent.
+_JSON_SCALARS = (int, float, str, bool, type(None))
+
 
 class Stack:
     """A simple LIFO stack implementation."""
+
+    # Upper bound on items accepted when loading a file. The screen has
+    # no limit on manual pushes, but a hand-edited file with millions of
+    # items would make every frame draw millions of cards.
+    MAX_LOADED_ITEMS = 1000
 
     def __init__(self) -> None:
         self._items: list[object] = []
@@ -58,3 +69,46 @@ class Stack:
     def to_list(self) -> list[object]:
         """Return the stack contents from bottom to top."""
         return self._items.copy()
+
+    def to_dict(self) -> dict:
+        """Return a JSON-serializable snapshot (items bottom to top)."""
+        return {"items": self.to_list()}
+
+    @classmethod
+    def from_dict(cls, data: object) -> Stack:
+        """Build a stack from a dict produced by to_dict().
+
+        Everything is validated before a Stack is returned, so callers
+        can apply the result to a live screen knowing it cannot fail
+        halfway through.
+
+        Raises:
+            ValueError: If the data is malformed.
+        """
+        if not isinstance(data, dict) or "items" not in data:
+            raise ValueError("Stack data must contain an 'items' list.")
+
+        items = data["items"]
+
+        if not isinstance(items, list):
+            raise ValueError("Stack 'items' must be a list.")
+
+        if len(items) > cls.MAX_LOADED_ITEMS:
+            raise ValueError(
+                f"A stack can hold at most {cls.MAX_LOADED_ITEMS} items "
+                f"when loaded from a file (this one has {len(items)})."
+            )
+
+        for position, item in enumerate(items):
+            if not isinstance(item, _JSON_SCALARS):
+                raise ValueError(
+                    f"Item {position} is not a number, text, or null."
+                )
+
+            if isinstance(item, float) and not math.isfinite(item):
+                raise ValueError(f"Item {position} is not a finite number.")
+
+        stack = cls()
+        stack._items = list(items)
+
+        return stack
