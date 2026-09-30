@@ -13,6 +13,7 @@ from algolab.topics.stack.simulation import (
 from algolab.ui.components.button import Button
 from algolab.ui.components.info_panel import InfoPanel
 from algolab.ui.components.numeric_input import NumericInput
+from algolab.ui.components.storage_controls import StorageControls
 from algolab.ui.components.surface import draw_item_card, draw_panel, draw_toggle_button
 from algolab.ui.screens.screen import Screen
 from algolab.ui.theme import Color, Font
@@ -65,6 +66,15 @@ class StackScreen(Screen):
                 ("Pop", "O(1)", ""),
                 ("Peek", "O(1)", ""),
             ],
+        )
+
+        # Save / Load buttons (left of Info) and their dialog.
+        self.storage = StorageControls(
+            surface,
+            "stack",
+            "Stack",
+            capture=self._capture_structure,
+            restore=self._restore_structure,
         )
 
         for index, button in enumerate(self.speed_buttons):
@@ -201,6 +211,9 @@ class StackScreen(Screen):
         if self.info_panel.handle_event(event):
             return
 
+        if self.storage.handle_event(event):
+            return
+
         if self.handle_back_event(event):
             return
 
@@ -274,6 +287,39 @@ class StackScreen(Screen):
 
         self.step_timer = 0.0
 
+    # ------------------------------------------------------------------
+    # Save / Load
+    # ------------------------------------------------------------------
+
+    def _capture_structure(self) -> tuple[str | None, dict]:
+        """Current stack as (mode, data) for the Save dialog.
+
+        A stack has a single mode, so the mode is None.
+        """
+
+        return None, self.model.to_dict()
+
+    def _restore_structure(self, mode: str | None, data: dict) -> None:
+        """Replace the stack with loaded data (from the Load dialog).
+
+        Stack.from_dict() validates everything first and raises
+        ValueError on bad data, so nothing below runs for a bad file
+        and the screen is never left half-loaded. The existing model
+        object is filled in place because StackSimulator holds a
+        reference to it.
+        """
+
+        loaded = Stack.from_dict(data)
+
+        self.cancel_current_simulation()
+
+        self.model.clear()
+
+        for item in loaded.to_list():
+            self.model.push(item)
+
+        self.step_timer = 0.0
+
     def _handle_navigation(self, index: int) -> None:
         if self.current_simulation is None:
             return
@@ -323,6 +369,8 @@ class StackScreen(Screen):
 
         self.info_button.update(dt)
 
+        self.storage.update(dt)
+
         for button in self.navigation_buttons:
             button.update(dt)
 
@@ -356,6 +404,7 @@ class StackScreen(Screen):
         self._render_stack()
 
         self.info_button.render(self.surface)
+        self.storage.render(self.surface)
         self.info_panel.render(self.surface)
 
     def _render_legend(self) -> None:
