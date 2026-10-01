@@ -320,7 +320,9 @@ class ExportStore:
 
         parts = [topic]
 
-        if mode:
+        # Skip a mode that just repeats the topic (the BST screen's
+        # "bst" mode would otherwise give "bst-bst-...").
+        if mode and mode != topic:
             parts.append(mode)
 
         parts.append((today or date.today()).isoformat())
