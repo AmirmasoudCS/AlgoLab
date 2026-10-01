@@ -1,8 +1,14 @@
 from __future__ import annotations
 
+from algolab.core.serialization import checked_scalar_items
+
 
 class Queue:
     """A simple FIFO queue implementation."""
+
+    # Upper bound on items accepted when loading a file (see
+    # Stack.MAX_LOADED_ITEMS for the reasoning).
+    MAX_LOADED_ITEMS = 1000
 
     def __init__(self) -> None:
         self._items: list[object] = []
@@ -66,3 +72,25 @@ class Queue:
     def to_list(self) -> list[object]:
         """Return the queue contents from front to rear."""
         return self._items.copy()
+
+    def to_dict(self) -> dict:
+        """Return a JSON-serializable snapshot (items front to rear)."""
+        return {"items": self.to_list()}
+
+    @classmethod
+    def from_dict(cls, data: object) -> Queue:
+        """Build a queue from a dict produced by to_dict().
+
+        Raises:
+            ValueError: If the data is malformed.
+        """
+        items = checked_scalar_items(data, "Queue", cls.MAX_LOADED_ITEMS)
+
+        queue = cls()
+        queue._items = items
+
+        return queue
+
+    def replace_with(self, other: Queue) -> None:
+        """Take over another queue's contents (it should not be reused)."""
+        self._items = other._items
