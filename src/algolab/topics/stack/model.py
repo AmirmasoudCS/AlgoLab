@@ -1,10 +1,6 @@
 from __future__ import annotations
 
-import math
-
-
-# Values a saved stack may contain: anything plain JSON can represent.
-_JSON_SCALARS = (int, float, str, bool, type(None))
+from algolab.core.serialization import checked_scalar_items
 
 
 class Stack:
@@ -85,30 +81,9 @@ class Stack:
         Raises:
             ValueError: If the data is malformed.
         """
-        if not isinstance(data, dict) or "items" not in data:
-            raise ValueError("Stack data must contain an 'items' list.")
-
-        items = data["items"]
-
-        if not isinstance(items, list):
-            raise ValueError("Stack 'items' must be a list.")
-
-        if len(items) > cls.MAX_LOADED_ITEMS:
-            raise ValueError(
-                f"A stack can hold at most {cls.MAX_LOADED_ITEMS} items "
-                f"when loaded from a file (this one has {len(items)})."
-            )
-
-        for position, item in enumerate(items):
-            if not isinstance(item, _JSON_SCALARS):
-                raise ValueError(
-                    f"Item {position} is not a number, text, or null."
-                )
-
-            if isinstance(item, float) and not math.isfinite(item):
-                raise ValueError(f"Item {position} is not a finite number.")
+        items = checked_scalar_items(data, "Stack", cls.MAX_LOADED_ITEMS)
 
         stack = cls()
-        stack._items = list(items)
+        stack._items = items
 
         return stack
