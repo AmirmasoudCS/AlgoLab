@@ -23,6 +23,17 @@ class NumericInput:
     def active(self) -> bool:
         return self._active
 
+    def set_value(self, value: int) -> None:
+        """Set the value from code (not from typing).
+
+        Updates both the stored number and the text shown in the field,
+        so the two can never disagree. Used when one field mirrors
+        another, and when loading a saved structure.
+        """
+
+        self.value = value
+        self._text = str(value)
+
     def handle_event(self, event: pygame.event.Event) -> int | None:
         """Handle input and return a new value when submitted."""
 
