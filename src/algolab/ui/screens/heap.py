@@ -18,6 +18,7 @@ from algolab.topics.heap.simulation import (
 from algolab.ui.components.button import Button
 from algolab.ui.components.info_panel import InfoPanel
 from algolab.ui.components.numeric_input import NumericInput
+from algolab.ui.components.storage_controls import StorageControls
 from algolab.ui.components.surface import draw_arrow, draw_item_card, draw_panel, draw_toggle_button
 from algolab.ui.screens.screen import Screen
 from algolab.ui.theme import Color, Font
@@ -67,6 +68,15 @@ class HeapScreen(Screen):
                 ("Build Heap", "O(n)", "Not O(n log n) -- classic result"),
                 ("Clear", "O(1)", ""),
             ],
+        )
+
+        # Save / Load buttons (left of Info) and their dialog.
+        self.storage = StorageControls(
+            surface,
+            "heap",
+            "Heap",
+            capture=self._capture_structure,
+            restore=self._restore_structure,
         )
 
         for index, button in enumerate(self.speed_buttons):
@@ -150,6 +160,9 @@ class HeapScreen(Screen):
 
     def handle_event(self, event: pygame.event.Event) -> None:
         if self.info_panel.handle_event(event):
+            return
+
+        if self.storage.handle_event(event):
             return
 
         if self.handle_back_event(event):
@@ -260,6 +273,39 @@ class HeapScreen(Screen):
         self.step_timer = 0.0
 
     # ------------------------------------------------------------------
+    # Save / Load
+    # ------------------------------------------------------------------
+
+    def _capture_structure(self) -> tuple[str | None, dict]:
+        """Current heap as (mode, data) for the Save dialog.
+
+        The heap type ("min" or "max") is used as the mode so it shows
+        up in suggested file names and in the Load list.
+        """
+
+        return self.model.heap_type.value, self.model.to_dict()
+
+    def _restore_structure(self, mode: str | None, data: dict) -> None:
+        """Replace the heap with loaded data (from the Load dialog).
+
+        Heap.from_dict() validates everything first (including the heap
+        property) and raises ValueError on bad data, so nothing below
+        runs for a bad file. The heap type comes from the file, and the
+        model and its simulator are replaced together, the same way
+        switching between Min Heap and Max Heap does.
+        """
+
+        loaded = Heap.from_dict(data)
+
+        self.cancel_current_simulation()
+
+        self.model = loaded
+        self.heap_simulator = HeapSimulator(self.model)
+
+        self.status_message = None
+        self.step_timer = 0.0
+
+    # ------------------------------------------------------------------
     # Navigation
     # ------------------------------------------------------------------
 
@@ -317,6 +363,8 @@ class HeapScreen(Screen):
 
         self.info_button.update(dt)
 
+        self.storage.update(dt)
+
         for button in self.navigation_buttons:
             button.update(dt)
 
@@ -356,6 +404,7 @@ class HeapScreen(Screen):
         self._render_heap()
 
         self.info_button.render(self.surface)
+        self.storage.render(self.surface)
         self.info_panel.render(self.surface)
 
     def _render_control_panel(self) -> None:
