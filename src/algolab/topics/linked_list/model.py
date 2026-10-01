@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+from algolab.core.serialization import checked_scalar_items
+
 
 @dataclass
 class Node:
@@ -11,6 +13,10 @@ class Node:
 
 class LinkedListModel:
     """Represents the state of a singly linked list lesson."""
+
+    # Upper bound on nodes accepted when loading a file (see
+    # Stack.MAX_LOADED_ITEMS for the reasoning).
+    MAX_LOADED_ITEMS = 1000
 
     def __init__(self) -> None:
         self._head: Node | None = None
@@ -150,3 +156,36 @@ class LinkedListModel:
             current = current.next
 
         return values
+
+    def to_dict(self) -> dict:
+        """Return a JSON-serializable snapshot (items head to tail)."""
+
+        return {"items": self.to_list()}
+
+    @classmethod
+    def from_dict(cls, data: object) -> "LinkedListModel":
+        """Build a list from a dict produced by to_dict().
+
+        Raises:
+            ValueError: If the data is malformed.
+        """
+
+        items = checked_scalar_items(
+            data, "Linked list", cls.MAX_LOADED_ITEMS
+        )
+
+        model = cls()
+
+        # Build back to front so each node can point at the one after.
+        for item in reversed(items):
+            model._head = Node(data=item, next=model._head)
+
+        model._size = len(items)
+
+        return model
+
+    def replace_with(self, other: "LinkedListModel") -> None:
+        """Take over another list's nodes (it should not be reused)."""
+
+        self._head = other._head
+        self._size = other._size
