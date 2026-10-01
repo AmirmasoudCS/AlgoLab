@@ -18,6 +18,7 @@ from algolab.topics.linked_list.simulation import (
 from algolab.ui.components.button import Button
 from algolab.ui.components.info_panel import InfoPanel
 from algolab.ui.components.numeric_input import NumericInput
+from algolab.ui.components.storage_controls import StorageControls
 from algolab.ui.components.surface import draw_arrow, draw_panel, draw_toggle_button
 from algolab.ui.screens.screen import Screen
 from algolab.ui.theme import Color, Font, Radius
@@ -86,6 +87,15 @@ class LinkedListScreen(Screen):
                 ("Delete At", "O(n)", "Walks to the index"),
                 ("Search", "O(n)", ""),
             ],
+        )
+
+        # Save / Load buttons (left of Info) and their dialog.
+        self.storage = StorageControls(
+            surface,
+            "linked_list",
+            "Linked List",
+            capture=self._capture_structure,
+            restore=self._restore_structure,
         )
 
         for index, button in enumerate(self.speed_buttons):
@@ -229,6 +239,9 @@ class LinkedListScreen(Screen):
         if self.info_panel.handle_event(event):
             return
 
+        if self.storage.handle_event(event):
+            return
+
         if self.handle_back_event(event):
             return
 
@@ -316,6 +329,37 @@ class LinkedListScreen(Screen):
 
         self._reset_algorithm_pointers()
 
+    # ------------------------------------------------------------------
+    # Save / Load
+    # ------------------------------------------------------------------
+
+    def _capture_structure(self) -> tuple[str | None, dict]:
+        """Current list as (mode, data) for the Save dialog.
+
+        A linked list has a single mode, so the mode is None.
+        """
+
+        return None, self.model.to_dict()
+
+    def _restore_structure(self, mode: str | None, data: dict) -> None:
+        """Replace the list with loaded data (from the Load dialog).
+
+        LinkedListModel.from_dict() validates everything first and
+        raises ValueError on bad data, so nothing below runs for a bad
+        file. The existing model object is updated in place because
+        LinkedListSimulator holds a reference to it.
+        """
+
+        loaded = LinkedListModel.from_dict(data)
+
+        self.cancel_current_simulation()
+
+        self.model.replace_with(loaded)
+
+        self.step_timer = 0.0
+
+        self._reset_algorithm_pointers()
+
     def _handle_navigation(self, index: int) -> None:
         if self.current_simulation is None:
             return
@@ -367,6 +411,8 @@ class LinkedListScreen(Screen):
 
         self.info_button.update(dt)
 
+        self.storage.update(dt)
+
         for button in self.navigation_buttons:
             button.update(dt)
 
@@ -400,6 +446,7 @@ class LinkedListScreen(Screen):
         self._render_linked_list()
 
         self.info_button.render(self.surface)
+        self.storage.render(self.surface)
         self.info_panel.render(self.surface)
 
     def _render_legend(self) -> None:
