@@ -18,6 +18,7 @@ from algolab.topics.bst.simulation import (
 from algolab.ui.components.button import Button
 from algolab.ui.components.info_panel import InfoPanel
 from algolab.ui.components.numeric_input import NumericInput
+from algolab.ui.components.storage_controls import StorageControls
 from algolab.ui.components.surface import draw_arrow, draw_item_card, draw_panel, draw_toggle_button
 from algolab.ui.screens.screen import Screen
 from algolab.ui.theme import Color, Font, Spacing
@@ -148,6 +149,16 @@ class BSTScreen(Screen):
             "Info",
         )
 
+        # Save / Load buttons (left of Info) and their dialog. One file
+        # holds whichever tree (BST or AVL) is active when Save is clicked.
+        self.storage = StorageControls(
+            surface,
+            "bst",
+            "Binary Search Tree",
+            capture=self._capture_structure,
+            restore=self._restore_structure,
+        )
+
         for index, button in enumerate(self.speed_buttons):
             button.rect = pygame.Rect(15 + index * 62, 561 + shift, 58, 28)
 
@@ -213,13 +224,6 @@ class BSTScreen(Screen):
 
         self.mode = mode
         self.step_timer = 0.0
-
-    def cancel_current_simulation(self) -> None:
-        """Cancel the active mode's in-progress simulation, if any."""
-
-        self.simulator.reset()
-        self.current_simulation = None
-        self.operation_committed = False
 
     def _create_operation_buttons(self) -> list[Button]:
         labels = [
@@ -342,6 +346,9 @@ class BSTScreen(Screen):
         if self.info_panel.handle_event(event):
             return
 
+        if self.storage.handle_event(event):
+            return
+
         if self.handle_back_event(event):
             return
 
@@ -455,6 +462,44 @@ class BSTScreen(Screen):
         self.status_message = None
         self.step_timer = 0.0
 
+    # ------------------------------------------------------------------
+    # Save / Load
+    # ------------------------------------------------------------------
+
+    def _capture_structure(self) -> tuple[str | None, dict]:
+        """The active tree as (mode, data) for the Save dialog.
+
+        The mode is "bst" or "avl". Values are saved in pre-order, which
+        records each tree's exact shape (see BinarySearchTree.to_dict).
+        """
+
+        return self.mode, self.model.to_dict()
+
+    def _restore_structure(self, mode: str | None, data: dict) -> None:
+        """Load a saved tree (from the Load dialog), switching to its mode.
+
+        The file's own mode decides which tree it replaces. from_dict()
+        validates everything first (an AVL file must really be a
+        balanced AVL tree) and raises ValueError on bad data, so nothing
+        below runs for a bad file. Only the target mode's running
+        simulation is cancelled; the other mode is left untouched.
+        """
+
+        if mode == "bst":
+            loaded = BinarySearchTree.from_dict(data)
+        elif mode == "avl":
+            loaded = AVLTree.from_dict(data)
+        else:
+            raise ValueError(f"Unknown tree type: {mode!r}.")
+
+        self._set_mode(mode)
+        self.cancel_current_simulation()
+
+        self.model.replace_with(loaded)
+
+        self.status_message = None
+        self.step_timer = 0.0
+
     def _handle_navigation(self, index: int) -> None:
         if self.current_simulation is None:
             return
@@ -512,6 +557,8 @@ class BSTScreen(Screen):
 
         self.info_button.update(dt)
 
+        self.storage.update(dt)
+
         for button in self.navigation_buttons:
             button.update(dt)
 
@@ -545,6 +592,7 @@ class BSTScreen(Screen):
         self._render_legend()
 
         self.info_button.render(self.surface)
+        self.storage.render(self.surface)
         self.info_panel.render(self.surface)
 
     def _render_control_panel(self) -> None:
