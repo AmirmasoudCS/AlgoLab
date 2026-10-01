@@ -3,6 +3,8 @@ from __future__ import annotations
 from enum import Enum
 from typing import Generic, TypeVar
 
+from algolab.core.serialization import check_dict, checked_int_items
+
 
 T = TypeVar("T")
 
@@ -16,6 +18,9 @@ class HeapType(Enum):
 
 class Heap(Generic[T]):
     """An array-based binary heap implementation."""
+
+    # Upper bound on values accepted when loading a file.
+    MAX_LOADED_ITEMS = 1000
 
     def __init__(
         self,
@@ -105,6 +110,55 @@ class Heap(Generic[T]):
     def clear(self) -> None:
         """Remove all elements from the heap."""
         self._values.clear()
+
+    def to_dict(self) -> dict:
+        """Return a JSON-serializable snapshot.
+
+        The array is saved in its current order (not re-heapified), so
+        a loaded heap shows exactly the layout that was saved.
+        """
+
+        return {
+            "heap_type": self._heap_type.value,
+            "values": self._values.copy(),
+        }
+
+    @classmethod
+    def from_dict(cls, data: object) -> Heap:
+        """Build a heap from a dict produced by to_dict().
+
+        Besides types, the array must satisfy the heap property for the
+        saved type (no child outranks its parent), because peek() and
+        extract() rely on it.
+
+        Raises:
+            ValueError: If the data is malformed or not a valid heap.
+        """
+
+        check_dict(data, "Heap")
+
+        try:
+            heap_type = HeapType(data.get("heap_type"))
+        except ValueError:
+            raise ValueError("Heap type must be 'min' or 'max'.") from None
+
+        values = checked_int_items(
+            data, "Heap", cls.MAX_LOADED_ITEMS, key="values"
+        )
+
+        heap = cls(heap_type)
+        heap._values = values
+
+        for index in range(1, len(values)):
+            parent_index = cls._parent_index(index)
+
+            if heap._has_priority(values[index], values[parent_index]):
+                raise ValueError(
+                    f"The value at index {index} outranks its parent, so "
+                    f"this is not a valid {heap_type.value}-heap."
+                )
+
+        return heap
 
     def _bubble_up(self, index: int) -> None:
         while index > 0:
