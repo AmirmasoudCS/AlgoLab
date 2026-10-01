@@ -3,6 +3,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 
+from algolab.core.serialization import (
+    check_dict,
+    check_number,
+    check_scalar,
+    checked_list,
+)
+
 
 class PriorityBacking(Enum):
     """Which internal representation maintains the priority ordering."""
@@ -37,6 +44,9 @@ class PriorityQueue:
     uses when switching collision strategy: a heap array and a sorted
     list aren't the same structure wearing different clothes.
     """
+
+    # Upper bound on entries accepted when loading a file.
+    MAX_LOADED_ENTRIES = 1000
 
     def __init__(
         self,
@@ -247,3 +257,104 @@ class PriorityQueue:
     @staticmethod
     def _right_index(index: int) -> int:
         return 2 * index + 2
+
+    # ------------------------------------------------------------------
+    # Serialization
+    # ------------------------------------------------------------------
+
+    def to_dict(self) -> dict:
+        """Return a JSON-serializable snapshot.
+
+        Entries are saved in their internal order (heap-array order or
+        sorted order), not re-sorted, so a loaded queue animates exactly
+        like the one that was saved.
+        """
+
+        return {
+            "backing": self._backing.value,
+            "min_priority_first": self._min_priority_first,
+            "entries": [
+                {"value": entry.value, "priority": entry.priority}
+                for entry in self._entries
+            ],
+        }
+
+    @classmethod
+    def from_dict(cls, data: object) -> PriorityQueue:
+        """Build a queue from a dict produced by to_dict().
+
+        Besides types, the entries must actually satisfy the invariant
+        of the saved backing (heap property, or sorted order), because
+        peek() and extract() rely on it.
+
+        Raises:
+            ValueError: If the data is malformed or the invariant fails.
+        """
+
+        check_dict(data, "Priority queue")
+
+        try:
+            backing = PriorityBacking(data.get("backing"))
+        except ValueError:
+            raise ValueError(
+                "Backing must be 'heap' or 'sorted_list'."
+            ) from None
+
+        min_first = data.get("min_priority_first")
+
+        if not isinstance(min_first, bool):
+            raise ValueError("'min_priority_first' must be true or false.")
+
+        raw_entries = checked_list(
+            data, "Priority queue", cls.MAX_LOADED_ENTRIES, key="entries"
+        )
+
+        queue = cls(backing, min_first)
+
+        for position, raw in enumerate(raw_entries):
+            if (
+                not isinstance(raw, dict)
+                or "value" not in raw
+                or "priority" not in raw
+            ):
+                raise ValueError(
+                    f"Entry {position} needs a 'value' and a 'priority'."
+                )
+
+            check_scalar(raw["value"], f"Entry {position} value")
+            priority = check_number(
+                raw["priority"], f"Entry {position} priority"
+            )
+
+            queue._entries.append(
+                PriorityEntry(value=raw["value"], priority=priority)
+            )
+
+        entries = queue._entries
+
+        if backing is PriorityBacking.HEAP:
+            for index in range(1, len(entries)):
+                parent = cls._parent_index(index)
+
+                if queue._has_priority(entries[index], entries[parent]):
+                    raise ValueError(
+                        f"Entry {index} outranks its parent, so these "
+                        "entries do not form a valid heap."
+                    )
+        else:
+            for index in range(1, len(entries)):
+                if queue._has_priority(entries[index], entries[index - 1]):
+                    raise ValueError(
+                        f"Entry {index} is out of order, so these "
+                        "entries are not correctly sorted."
+                    )
+
+        return queue
+
+    def replace_with(self, other: PriorityQueue) -> None:
+        """Take over another queue's backing, order and entries (it
+        should not be reused)."""
+
+        self._backing = other._backing
+        self._min_priority_first = other._min_priority_first
+        self._entries = other._entries
