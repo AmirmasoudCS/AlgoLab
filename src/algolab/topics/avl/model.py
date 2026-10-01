@@ -54,6 +54,71 @@ class AVLTree(BinarySearchTree[T], Generic[T]):
         assert self._last_inserted is not None
         return self._last_inserted
 
+    @classmethod
+    def from_dict(cls, data: object) -> AVLTree:
+        """Build a tree from a dict produced by to_dict().
+
+        The saved pre-order values are placed with plain BST insertion
+        and NO rebalancing, which reproduces the saved shape exactly
+        (re-inserting through insert() could rotate and change it). The
+        result is then checked: a file whose shape is a valid search
+        tree but not a balanced AVL tree is rejected.
+
+        Raises:
+            ValueError: If the data is malformed, has duplicate values,
+                is too large, or does not describe a balanced AVL tree.
+        """
+        tree = cls()
+
+        for value in cls._validated_values(data):
+            tree._insert_without_rebalancing(value)
+
+        tree._recompute_heights(tree._root)
+
+        if not tree.is_balanced():
+            raise ValueError(
+                "These values form a search tree, but not a balanced AVL "
+                "tree (some node's subtrees differ in height by more "
+                "than 1)."
+            )
+
+        return tree
+
+    def _insert_without_rebalancing(self, value: T) -> None:
+        node = AVLNode(value)
+        self._size += 1
+
+        if self._root is None:
+            self._root = node
+            return
+
+        current = self._root
+
+        while True:
+            if value < current.value:
+                if current.left is None:
+                    current.left = node
+                    return
+
+                current = current.left
+            else:
+                if current.right is None:
+                    current.right = node
+                    return
+
+                current = current.right
+
+    def _recompute_heights(self, node: AVLNode[T] | None) -> int:
+        if node is None:
+            return 0
+
+        node.height = 1 + max(
+            self._recompute_heights(node.left),
+            self._recompute_heights(node.right),
+        )
+
+        return node.height
+
     @staticmethod
     def height_of(node: AVLNode[T] | None) -> int:
         """Return the stored height of a node (0 for a missing node)."""
