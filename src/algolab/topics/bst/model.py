@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Generic, TypeVar
 
+from algolab.core.serialization import checked_int_items
+
 
 T = TypeVar("T")
 
@@ -17,6 +19,12 @@ class TreeNode(Generic[T]):
 
 class BinarySearchTree(Generic[T]):
     """A simple binary search tree implementation."""
+
+    # Upper bound on nodes accepted when loading a file. Kept modest
+    # because several operations (traversals, simulation snapshots) are
+    # recursive, and a hand-made file describing a long chain could
+    # otherwise exceed Python's recursion limit.
+    MAX_LOADED_NODES = 200
 
     def __init__(self) -> None:
         self._root: TreeNode[T] | None = None
@@ -158,6 +166,49 @@ class BinarySearchTree(Generic[T]):
         """Remove all nodes from the tree."""
         self._root = None
         self._size = 0
+
+    def to_dict(self) -> dict:
+        """Return a JSON-serializable snapshot of the tree's exact shape.
+
+        The values are saved in pre-order. Inserting a binary search
+        tree's pre-order sequence into an empty tree reproduces the same
+        shape, so nothing else needs to be stored. This is also stored
+        flat (not as nested objects), which keeps even a long chain of
+        nodes safe for the JSON encoder.
+        """
+        return {"values": self.pre_order()}
+
+    @classmethod
+    def from_dict(cls, data: object) -> BinarySearchTree:
+        """Build a tree from a dict produced by to_dict().
+
+        Raises:
+            ValueError: If the data is malformed, has duplicate values,
+                or is larger than MAX_LOADED_NODES.
+        """
+        tree = cls()
+
+        for value in cls._validated_values(data):
+            tree.insert(value)
+
+        return tree
+
+    @classmethod
+    def _validated_values(cls, data: object) -> list[int]:
+        """Shared by BST and AVL loading: whole numbers, no duplicates."""
+        values = checked_int_items(
+            data, "Tree", cls.MAX_LOADED_NODES, key="values"
+        )
+
+        if len(set(values)) != len(values):
+            raise ValueError("A tree cannot contain duplicate values.")
+
+        return values
+
+    def replace_with(self, other: BinarySearchTree) -> None:
+        """Take over another tree's nodes (it should not be reused)."""
+        self._root = other._root
+        self._size = other._size
 
     def _delete(
         self,
