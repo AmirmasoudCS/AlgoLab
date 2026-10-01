@@ -323,6 +323,10 @@ def test_suggest_stem_includes_topic_mode_and_date(store):
     assert store.suggest_stem("bst", "avl", today=date(2026, 9, 30)) == "bst-avl-2026-09-30"
 
 
+def test_suggest_stem_skips_a_mode_that_repeats_the_topic(store):
+    assert store.suggest_stem("bst", "bst", today=date(2026, 9, 30)) == "bst-2026-09-30"
+
+
 def test_suggest_stem_avoids_existing_files(store):
     today = date(2026, 9, 30)
 
