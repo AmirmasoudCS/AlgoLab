@@ -19,6 +19,7 @@ from algolab.ui.components.button import Button
 from algolab.ui.components.checkbox import Checkbox
 from algolab.ui.components.info_panel import InfoPanel
 from algolab.ui.components.numeric_input import NumericInput
+from algolab.ui.components.storage_controls import StorageControls
 from algolab.ui.components.surface import draw_arrow, draw_item_card, draw_panel, draw_toggle_button
 from algolab.ui.screens.screen import Screen
 from algolab.ui.theme import Color, Font
@@ -36,6 +37,11 @@ class QueueScreen(Screen):
     """
 
     MODES = ("linear", "circular", "priority")
+
+    # The circular queue's capacity input is limited to this range
+    # (see _set_circular_capacity), so a loaded file must respect it too.
+    MIN_CIRCULAR_CAPACITY = 3
+    MAX_CIRCULAR_CAPACITY = 16
 
     LEGEND_LINEAR = [
         (Color.STATE_ACTIVE, "Front"),
@@ -85,6 +91,16 @@ class QueueScreen(Screen):
         self.info_button = Button(
             pygame.Rect(surface.get_width() - 115, 15, 100, 38),
             "Info",
+        )
+
+        # Save / Load buttons (left of Info) and their dialog. One file
+        # holds whichever mode is active when Save is clicked.
+        self.storage = StorageControls(
+            surface,
+            "queue",
+            "Queue",
+            capture=self._capture_structure,
+            restore=self._restore_structure,
         )
 
         self.step_timer = 0.0
@@ -354,6 +370,9 @@ class QueueScreen(Screen):
         if self._active_info_panel().handle_event(event):
             return
 
+        if self.storage.handle_event(event):
+            return
+
         if self.handle_back_event(event):
             return
 
@@ -545,7 +564,10 @@ class QueueScreen(Screen):
     def _set_circular_capacity(self, capacity: int) -> None:
         self._cancel_active_simulation()
 
-        capacity = max(3, min(16, capacity))
+        capacity = max(
+            self.MIN_CIRCULAR_CAPACITY,
+            min(self.MAX_CIRCULAR_CAPACITY, capacity),
+        )
 
         try:
             self.circular_model.set_capacity(capacity)
@@ -624,6 +646,68 @@ class QueueScreen(Screen):
             self.priority_model.insert(value, priority)
 
         self.priority_error_message = None
+        self.step_timer = 0.0
+
+    # ------------------------------------------------------------------
+    # Save / Load
+    # ------------------------------------------------------------------
+
+    def _capture_structure(self) -> tuple[str | None, dict]:
+        """The active mode's structure as (mode, data) for the Save dialog."""
+
+        if self.mode == "linear":
+            return "linear", self.linear_model.to_dict()
+
+        if self.mode == "circular":
+            return "circular", self.circular_model.to_dict()
+
+        return "priority", self.priority_model.to_dict()
+
+    def _restore_structure(self, mode: str | None, data: dict) -> None:
+        """Load a saved queue (from the Load dialog), switching to its mode.
+
+        The file's own mode decides which queue it replaces. Each
+        model's from_dict() validates everything first and raises
+        ValueError on bad data, so nothing below runs for a bad file;
+        only that mode's running simulation is cancelled.
+        """
+
+        if mode == "linear":
+            loaded = Queue.from_dict(data)
+        elif mode == "circular":
+            loaded = CircularQueue.from_dict(data)
+
+            if not (
+                self.MIN_CIRCULAR_CAPACITY
+                <= loaded.capacity
+                <= self.MAX_CIRCULAR_CAPACITY
+            ):
+                raise ValueError(
+                    "A circular queue here must have a capacity between "
+                    f"{self.MIN_CIRCULAR_CAPACITY} and "
+                    f"{self.MAX_CIRCULAR_CAPACITY}."
+                )
+        elif mode == "priority":
+            loaded = PriorityQueue.from_dict(data)
+        else:
+            raise ValueError(f"Unknown queue type: {mode!r}.")
+
+        self._set_mode(mode)
+        self._cancel_active_simulation()
+
+        if mode == "linear":
+            self.linear_model.clear()
+
+            for value in loaded.to_list():
+                self.linear_model.enqueue(value)
+        elif mode == "circular":
+            self.circular_model.replace_with(loaded)
+            self.circular_capacity_input.set_value(loaded.capacity)
+            self.circular_error_message = None
+        else:
+            self.priority_model.replace_with(loaded)
+            self.priority_error_message = None
+
         self.step_timer = 0.0
 
     # ------------------------------------------------------------------
@@ -737,6 +821,7 @@ class QueueScreen(Screen):
 
         self.update_speed_buttons(dt)
         self.info_button.update(dt)
+        self.storage.update(dt)
 
         for button in self.mode_buttons.values():
             button.update(dt)
@@ -804,6 +889,7 @@ class QueueScreen(Screen):
             self._render_priority_queue()
 
         self.info_button.render(self.surface)
+        self.storage.render(self.surface)
         self._active_info_panel().render(self.surface)
 
     def _render_control_panel(self) -> None:
