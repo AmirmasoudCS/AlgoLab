@@ -1,5 +1,12 @@
 from __future__ import annotations
 
+from algolab.core.serialization import (
+    check_dict,
+    check_int,
+    checked_list,
+    check_scalar,
+)
+
 
 class CircularQueue:
     """
@@ -11,6 +18,10 @@ class CircularQueue:
     An explicit size counter avoids that ambiguity outright and keeps
     every capacity slot usable.
     """
+
+    # Upper bound on capacity accepted when loading a file. (The screen
+    # itself only offers 3 to 16 and enforces that on load.)
+    MAX_LOADED_CAPACITY = 64
 
     def __init__(self, capacity: int = 8) -> None:
         if capacity < 1:
@@ -132,3 +143,83 @@ class CircularQueue:
         """
 
         return tuple(self._slots)
+
+    def to_dict(self) -> dict:
+        """Return a JSON-serializable snapshot of the physical ring.
+
+        The exact slot layout is saved (not just the logical contents),
+        because where FRONT sits after some wraparound is part of what
+        this structure is teaching.
+        """
+
+        return {
+            "capacity": self._capacity,
+            "front": self._front,
+            "size": self._size,
+            "slots": list(self._slots),
+        }
+
+    @classmethod
+    def from_dict(cls, data: object) -> CircularQueue:
+        """Build a queue from a dict produced by to_dict().
+
+        Beyond types and ranges, the occupied slots must be exactly the
+        `size` slots starting at `front` (wrapping), and every other slot
+        must be empty, so the ring is always internally consistent.
+
+        Raises:
+            ValueError: If the data is malformed or inconsistent.
+        """
+
+        check_dict(data, "Circular queue")
+
+        capacity = check_int(data.get("capacity"), "Capacity")
+
+        if not 1 <= capacity <= cls.MAX_LOADED_CAPACITY:
+            raise ValueError(
+                f"Capacity must be between 1 and {cls.MAX_LOADED_CAPACITY}."
+            )
+
+        front = check_int(data.get("front"), "Front")
+        size = check_int(data.get("size"), "Size")
+
+        if not 0 <= front < capacity:
+            raise ValueError("Front must be a valid slot index.")
+
+        if not 0 <= size <= capacity:
+            raise ValueError("Size must be between 0 and the capacity.")
+
+        slots = checked_list(
+            data, "Circular queue", cls.MAX_LOADED_CAPACITY, key="slots"
+        )
+
+        if len(slots) != capacity:
+            raise ValueError(
+                f"Expected {capacity} slots but found {len(slots)}."
+            )
+
+        occupied = {(front + offset) % capacity for offset in range(size)}
+
+        for index, value in enumerate(slots):
+            check_scalar(value, f"Slot {index}")
+
+            if index in occupied and value is None:
+                raise ValueError(f"Slot {index} should hold a value.")
+
+            if index not in occupied and value is not None:
+                raise ValueError(f"Slot {index} should be empty.")
+
+        queue = cls(capacity)
+        queue._slots = list(slots)
+        queue._front = front
+        queue._size = size
+
+        return queue
+
+    def replace_with(self, other: CircularQueue) -> None:
+        """Take over another queue's ring (it should not be reused)."""
+
+        self._capacity = other._capacity
+        self._slots = other._slots
+        self._front = other._front
+        self._size = other._size
