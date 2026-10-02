@@ -29,8 +29,12 @@ class StorageControls:
 
     The buttons sit immediately left of the Info button (which is at
     x = width - 115), in the toolbar strip every screen already keeps
-    clear. After a successful save or load, a short confirmation pill
-    fades in the middle of that same strip.
+    clear. A screen with extra toolbar buttons of its own (Sorting has
+    a Compare button) passes `left_of`: the x position of its leftmost
+    extra button, so Save/Load sit to the left of those instead. After
+    a successful save or load, a short confirmation pill fades in the
+    middle of that same strip, shrinking if the buttons leave it less
+    room.
 
     capture / restore are documented on FileDialog.
     """
@@ -45,11 +49,18 @@ class StorageControls:
         capture: Capture,
         restore: Restore,
         store: ExportStore | None = None,
+        left_of: int | None = None,
     ) -> None:
         width = surface.get_width()
 
-        self.save_button = Button(pygame.Rect(width - 331, 15, 100, 38), "Save")
-        self.load_button = Button(pygame.Rect(width - 223, 15, 100, 38), "Load")
+        if left_of is None:
+            left_of = width - 115
+
+        load_x = left_of - 8 - 100
+        save_x = load_x - 8 - 100
+
+        self.save_button = Button(pygame.Rect(save_x, 15, 100, 38), "Save")
+        self.load_button = Button(pygame.Rect(load_x, 15, 100, 38), "Load")
 
         self.dialog = FileDialog(
             surface.get_size(),
@@ -107,19 +118,24 @@ class StorageControls:
         self.dialog.render(surface)
 
     def _render_toast(self, surface: pygame.Surface) -> None:
-        # The pill must stay clear of the Save button (left edge at
-        # width - 331), so its width is capped and long names are cut.
-        max_text_width = 420
+        # The pill is centered, so it must stay clear of the Save
+        # button on the right: its width is capped to the room left and
+        # long names are cut.
+        half_room = self.save_button.rect.x - 12 - surface.get_width() // 2
+        max_text_width = max(100, min(420, 2 * half_room - 32))
 
         message = self._toast_message or ""
 
-        while (
-            message
-            and self.toast_font.size(message)[0] > max_text_width
-        ):
-            message = message[:-1]
+        if self.toast_font.size(message)[0] > max_text_width:
+            # Leave room for the "..." itself, so the shortened text
+            # never ends up wider than the limit.
+            while (
+                message
+                and self.toast_font.size(message.rstrip() + "...")[0]
+                > max_text_width
+            ):
+                message = message[:-1]
 
-        if message != self._toast_message:
             message = message.rstrip() + "..."
 
         text_surface = self.toast_font.render(message, True, Color.TEXT_PRIMARY)
