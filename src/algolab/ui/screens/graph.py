@@ -16,6 +16,7 @@ from algolab.topics.graph.simulation import (
 from algolab.ui.components.button import Button
 from algolab.ui.components.info_panel import InfoPanel
 from algolab.ui.components.numeric_input import NumericInput
+from algolab.ui.components.storage_controls import StorageControls
 from algolab.ui.components.surface import draw_arrow, draw_panel, draw_toggle_button
 from algolab.ui.screens.screen import Screen
 from algolab.ui.theme import Color, Font
@@ -95,6 +96,15 @@ class GraphScreen(Screen):
             ],
         )
 
+        # Save / Load buttons (left of Info) and their dialog.
+        self.storage = StorageControls(
+            surface,
+            "graph",
+            "Graph",
+            capture=self._capture_structure,
+            restore=self._restore_structure,
+        )
+
         self.edit_buttons = self._create_edit_buttons()
         self.algorithm_buttons = self._create_algorithm_buttons()
         self.navigation_buttons = self._create_navigation_buttons()
@@ -170,14 +180,20 @@ class GraphScreen(Screen):
 
         return buttons
 
-    def _next_label(self) -> str:
-        index = self._label_counter
-        self._label_counter += 1
+    @staticmethod
+    def _label_for(index: int) -> str:
+        """The label for the index-th node ever created: A, B, ... Z, A1, B1, ..."""
 
         letter = chr(ord("A") + index % 26)
         suffix = index // 26
 
         return f"{letter}{suffix}" if suffix else letter
+
+    def _next_label(self) -> str:
+        index = self._label_counter
+        self._label_counter += 1
+
+        return self._label_for(index)
 
     # ------------------------------------------------------------------
     # Canvas geometry
@@ -219,6 +235,9 @@ class GraphScreen(Screen):
 
     def handle_event(self, event: pygame.event.Event) -> None:
         if self.info_panel.handle_event(event):
+            return
+
+        if self.storage.handle_event(event):
             return
 
         if self.handle_back_event(event):
@@ -475,6 +494,77 @@ class GraphScreen(Screen):
         self._relayout()
 
     # ------------------------------------------------------------------
+    # Save / Load
+    # ------------------------------------------------------------------
+
+    def _capture_structure(self) -> tuple[str | None, dict]:
+        """Current graph as (mode, data) for the Save dialog.
+
+        The mode ("undirected", "directed-weighted", ...) describes the
+        graph in suggested file names and in the Load list; the data
+        itself says which it is.
+        """
+
+        mode = "directed" if self.model.directed else "undirected"
+
+        if self.model.weighted:
+            mode += "-weighted"
+
+        return mode, self.model.to_dict()
+
+    def _restore_structure(self, mode: str | None, data: dict) -> None:
+        """Replace the graph with loaded data (from the Load dialog).
+
+        GraphModel.from_dict() validates everything first (including
+        that every edge refers to a real node) and raises ValueError on
+        bad data, so nothing below runs for a bad file. Directed and
+        weighted come from the file.
+
+        Node positions are kept exactly as saved (clamped to the canvas
+        in case a file was edited by hand). Auto-layout is deliberately
+        NOT re-run: when some nodes were dragged, the others keep their
+        old circle positions, and recomputing them would make the
+        loaded graph look different from the saved one.
+        """
+
+        loaded = GraphModel.from_dict(data)
+
+        self.cancel_current_simulation()
+
+        self.model.replace_with(loaded)
+
+        canvas = self._canvas_rect()
+
+        for node in self.model.nodes:
+            node.x = max(
+                canvas.left + NODE_RADIUS,
+                min(canvas.right - NODE_RADIUS, node.x),
+            )
+            node.y = max(
+                canvas.top + NODE_RADIUS,
+                min(canvas.bottom - NODE_RADIUS, node.y),
+            )
+
+        # Continue labelling after the loaded nodes without ever
+        # repeating a label that is already on the canvas.
+        used = {node.label for node in self.model.nodes}
+        counter = len(used)
+
+        while self._label_for(counter) in used:
+            counter += 1
+
+        self._label_counter = counter
+
+        self.selected_nodes = []
+        self._mouse_down_node = None
+        self._mouse_down_pos = None
+        self._is_dragging = False
+
+        self.status_message = None
+        self.error_message = None
+        self.step_timer = 0.0
+
+    # ------------------------------------------------------------------
     # Algorithm running
     # ------------------------------------------------------------------
 
@@ -572,6 +662,8 @@ class GraphScreen(Screen):
 
         self.info_button.update(dt)
 
+        self.storage.update(dt)
+
         for button in self.edit_buttons.values():
             button.update(dt)
 
@@ -616,6 +708,7 @@ class GraphScreen(Screen):
         self._render_graph()
 
         self.info_button.render(self.surface)
+        self.storage.render(self.surface)
         self.info_panel.render(self.surface)
 
     def _draw_text(
