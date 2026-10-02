@@ -2,9 +2,16 @@ from __future__ import annotations
 
 import random
 
+from algolab.core.serialization import checked_int_items
+
 
 class SortArray:
     """Represents an array a student builds and sorts."""
+
+    # Upper bounds accepted when loading a file. 60 matches the most
+    # bars the screen lets a student build (see SortingScreen).
+    MAX_LOADED_VALUES = 60
+    MAX_LOADED_VALUE = 1_000_000_000
 
     def __init__(self, values: list[int] | None = None) -> None:
         self._values: list[int] = list(values) if values else []
@@ -53,3 +60,29 @@ class SortArray:
 
     def set_values(self, values: list[int]) -> None:
         self._values = list(values)
+
+    def to_dict(self) -> dict:
+        """Return a JSON-serializable snapshot (values in array order)."""
+        return {"values": self.values}
+
+    @classmethod
+    def from_dict(cls, data: object) -> SortArray:
+        """Build an array from a dict produced by to_dict().
+
+        Raises:
+            ValueError: If the data is malformed, has a negative or
+                absurdly large value, or has more than MAX_LOADED_VALUES
+                values.
+        """
+        values = checked_int_items(
+            data, "Array", cls.MAX_LOADED_VALUES, key="values"
+        )
+
+        for position, value in enumerate(values):
+            if not 0 <= value <= cls.MAX_LOADED_VALUE:
+                raise ValueError(
+                    f"Value {position} must be between 0 and "
+                    f"{cls.MAX_LOADED_VALUE}."
+                )
+
+        return cls(values)
