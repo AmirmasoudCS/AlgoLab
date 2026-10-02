@@ -3,6 +3,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 
+from algolab.core.serialization import (
+    check_dict,
+    check_int,
+    check_scalar,
+    checked_list,
+)
+
 
 class CollisionStrategy(Enum):
     """How the table resolves two keys hashing to the same index."""
@@ -50,6 +57,13 @@ _OPEN_ADDRESSING_STRATEGIES = (
 )
 
 
+def _parse_enum(enum_class, raw: object, label: str):
+    try:
+        return enum_class(raw)
+    except (ValueError, TypeError):
+        raise ValueError(f"Unknown {label}: {raw!r}.") from None
+
+
 class HashTable:
     """
     A fixed-capacity hash table supporting chaining or one of several
@@ -65,6 +79,10 @@ class HashTable:
     Quadratic probing and double hashing both behave best with a prime
     capacity; the default (11) is prime for exactly this reason.
     """
+
+    # Upper bounds accepted when loading a file.
+    MAX_LOADED_CAPACITY = 200
+    MAX_LOADED_ENTRIES = 1000
 
     def __init__(
         self,
@@ -501,3 +519,174 @@ class HashTable:
         new_table._size = self._size
 
         return new_table
+
+    # ------------------------------------------------------------------
+    # Serialization
+    # ------------------------------------------------------------------
+
+    def to_dict(self) -> dict:
+        """Return a JSON-serializable snapshot of the exact table layout.
+
+        Every bucket or slot is saved where it sits (plus which slots
+        are tombstones), rather than just the keys. Open addressing
+        depends on insertion history (which probe a key landed on, and
+        where deleted slots are), so re-inserting the keys could build
+        a different table.
+        """
+
+        return {
+            "capacity": self._capacity,
+            "collision_strategy": self._collision_strategy.value,
+            "mode": self._mode.value,
+            "hash_function": self._hash_function.value,
+            "cells": [
+                [{"key": entry.key, "value": entry.value} for entry in cell]
+                for cell in self.snapshot()
+            ],
+            "tombstones": self.tombstones(),
+        }
+
+    @classmethod
+    def from_dict(cls, data: object) -> "HashTable":
+        """Build a table from a dict produced by to_dict().
+
+        Beyond types and sizes, the layout must be one this table could
+        really have produced: every stored key has to be findable by
+        search() (so each is in its home bucket, or on its probe
+        sequence with no never-used slot in front of it), keys are
+        unique, and only empty open-addressing slots can be tombstones.
+
+        Raises:
+            ValueError: If the data is malformed or the layout is
+                inconsistent with the hash function and strategy.
+        """
+
+        check_dict(data, "Hash table")
+
+        capacity = check_int(data.get("capacity"), "Capacity")
+
+        if not 1 <= capacity <= cls.MAX_LOADED_CAPACITY:
+            raise ValueError(
+                f"Capacity must be between 1 and {cls.MAX_LOADED_CAPACITY}."
+            )
+
+        strategy = _parse_enum(
+            CollisionStrategy, data.get("collision_strategy"), "collision strategy"
+        )
+        mode = _parse_enum(HashTableMode, data.get("mode"), "mode")
+        hash_function = _parse_enum(
+            HashFunction, data.get("hash_function"), "hash function"
+        )
+
+        raw_cells = checked_list(
+            data, "Hash table", cls.MAX_LOADED_CAPACITY, key="cells"
+        )
+        raw_tombstones = checked_list(
+            data, "Hash table", cls.MAX_LOADED_CAPACITY, key="tombstones"
+        )
+
+        if len(raw_cells) != capacity:
+            raise ValueError(
+                f"Expected {capacity} cells but found {len(raw_cells)}."
+            )
+
+        if len(raw_tombstones) != capacity:
+            raise ValueError(
+                f"Expected {capacity} tombstone flags but found "
+                f"{len(raw_tombstones)}."
+            )
+
+        chaining = strategy is CollisionStrategy.CHAINING
+        cells: list[list[Entry]] = []
+        total = 0
+
+        for index, raw_cell in enumerate(raw_cells):
+            if not isinstance(raw_cell, list):
+                raise ValueError(f"Cell {index} must be a list.")
+
+            if not chaining and len(raw_cell) > 1:
+                raise ValueError(
+                    f"Slot {index} holds more than one entry, which only "
+                    "chaining allows."
+                )
+
+            cell = []
+
+            for raw_entry in raw_cell:
+                if (
+                    not isinstance(raw_entry, dict)
+                    or "key" not in raw_entry
+                    or "value" not in raw_entry
+                ):
+                    raise ValueError(
+                        f"Cell {index} has an entry without a 'key' and 'value'."
+                    )
+
+                key = raw_entry["key"]
+
+                if not isinstance(key, (int, str)) or isinstance(key, bool):
+                    raise ValueError(
+                        f"Cell {index} has a key that is not a whole number "
+                        "or text."
+                    )
+
+                check_scalar(raw_entry["value"], f"The value for key {key!r}")
+
+                total += 1
+
+                if total > cls.MAX_LOADED_ENTRIES:
+                    raise ValueError(
+                        f"A hash table can hold at most "
+                        f"{cls.MAX_LOADED_ENTRIES} entries when loaded from "
+                        "a file."
+                    )
+
+                cell.append(Entry(key, raw_entry["value"]))
+
+            cells.append(cell)
+
+        for index, flag in enumerate(raw_tombstones):
+            if not isinstance(flag, bool):
+                raise ValueError(f"Tombstone flag {index} must be true or false.")
+
+            if flag and chaining:
+                raise ValueError("A chaining table has no tombstones.")
+
+            if flag and cells[index]:
+                raise ValueError(
+                    f"Slot {index} is both occupied and marked deleted."
+                )
+
+        table = cls(capacity, strategy, mode, hash_function)
+
+        if chaining:
+            table._buckets = cells
+        else:
+            table._slots = [cell[0] if cell else None for cell in cells]
+            table._tombstones = list(raw_tombstones)
+
+        table._size = total
+
+        for cell in cells:
+            for entry in cell:
+                if table.search(entry.key) is not entry:
+                    raise ValueError(
+                        f"Key {entry.key!r} is not where this hash function "
+                        "and collision strategy would look for it (or it "
+                        "appears twice)."
+                    )
+
+        return table
+
+    def replace_with(self, other: "HashTable") -> None:
+        """Take over another table's settings and contents (it should
+        not be reused)."""
+
+        self._capacity = other._capacity
+        self._collision_strategy = other._collision_strategy
+        self._mode = other._mode
+        self._hash_function = other._hash_function
+        self._buckets = other._buckets
+        self._slots = other._slots
+        self._tombstones = other._tombstones
+        self._size = other._size
