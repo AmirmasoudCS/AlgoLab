@@ -3,6 +3,13 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field
 
+from algolab.core.serialization import (
+    check_dict,
+    check_int,
+    check_number,
+    checked_list,
+)
+
 
 @dataclass
 class GraphNode:
@@ -37,6 +44,14 @@ class GraphModel:
     graph expects the whole graph to behave consistently, not a mix
     of directed and undirected edges in the same drawing.
     """
+
+    # Upper bounds accepted when loading a file.
+    MAX_LOADED_NODES = 100
+    MAX_LOADED_EDGES = 500
+    MAX_LABEL_LENGTH = 12
+
+    # Positions beyond this are not a canvas coordinate, just garbage.
+    _MAX_COORDINATE = 100_000
 
     def __init__(
         self,
@@ -291,3 +306,167 @@ class GraphModel:
                 result[edge.target].append((edge.source, weight))
 
         return result
+
+    # ------------------------------------------------------------------
+    # Serialization
+    # ------------------------------------------------------------------
+
+    def to_dict(self) -> dict:
+        """Return a JSON-serializable snapshot of the whole graph.
+
+        Node positions and pinned flags are saved so a loaded graph
+        looks exactly as it did, and `next_node_id` is saved so ids are
+        never reused after a node was deleted. Stored weights are kept
+        even while the graph is unweighted (see set_weighted).
+        """
+
+        return {
+            "directed": self._directed,
+            "weighted": self._weighted,
+            "next_node_id": self._next_node_id,
+            "nodes": [
+                {
+                    "id": node.node_id,
+                    "label": node.label,
+                    "x": node.x,
+                    "y": node.y,
+                    "pinned": node.pinned,
+                }
+                for node in self._nodes.values()
+            ],
+            "edges": [
+                {
+                    "source": edge.source,
+                    "target": edge.target,
+                    "weight": edge.weight,
+                }
+                for edge in self._edges.values()
+            ],
+        }
+
+    @classmethod
+    def from_dict(cls, data: object) -> GraphModel:
+        """Build a graph from a dict produced by to_dict().
+
+        Raises:
+            ValueError: If the data is malformed, an edge refers to a
+                node that does not exist, a node id or edge appears
+                twice, or a self-loop is present.
+        """
+
+        check_dict(data, "Graph")
+
+        directed = data.get("directed")
+        weighted = data.get("weighted")
+
+        if not isinstance(directed, bool) or not isinstance(weighted, bool):
+            raise ValueError("'directed' and 'weighted' must be true or false.")
+
+        raw_nodes = checked_list(
+            data, "Graph", cls.MAX_LOADED_NODES, key="nodes"
+        )
+        raw_edges = checked_list(
+            data, "Graph", cls.MAX_LOADED_EDGES, key="edges"
+        )
+
+        graph = cls(directed=directed, weighted=weighted)
+
+        for position, raw in enumerate(raw_nodes):
+            if not isinstance(raw, dict):
+                raise ValueError(f"Node {position} must be an object.")
+
+            node_id = check_int(raw.get("id"), f"Node {position} id")
+
+            if node_id < 0:
+                raise ValueError(f"Node {position} id cannot be negative.")
+
+            if node_id in graph._nodes:
+                raise ValueError(f"Node id {node_id} appears twice.")
+
+            label = raw.get("label")
+
+            if (
+                not isinstance(label, str)
+                or not label
+                or len(label) > cls.MAX_LABEL_LENGTH
+                or not label.isprintable()
+            ):
+                raise ValueError(
+                    f"Node {node_id} needs a label of 1 to "
+                    f"{cls.MAX_LABEL_LENGTH} printable characters."
+                )
+
+            x = check_number(raw.get("x"), f"Node {node_id} x")
+            y = check_number(raw.get("y"), f"Node {node_id} y")
+
+            if abs(x) > cls._MAX_COORDINATE or abs(y) > cls._MAX_COORDINATE:
+                raise ValueError(f"Node {node_id} has an unreasonable position.")
+
+            pinned = raw.get("pinned")
+
+            if not isinstance(pinned, bool):
+                raise ValueError(f"Node {node_id} 'pinned' must be true or false.")
+
+            graph._nodes[node_id] = GraphNode(
+                node_id=node_id,
+                label=label,
+                x=float(x),
+                y=float(y),
+                pinned=pinned,
+            )
+
+        highest = max(graph._nodes, default=-1)
+        next_node_id = check_int(data.get("next_node_id"), "'next_node_id'")
+
+        if not highest < next_node_id <= 10**9:
+            raise ValueError(
+                "'next_node_id' must be larger than every node id."
+            )
+
+        graph._next_node_id = next_node_id
+
+        seen: set = set()
+
+        for position, raw in enumerate(raw_edges):
+            if not isinstance(raw, dict):
+                raise ValueError(f"Edge {position} must be an object.")
+
+            source = check_int(raw.get("source"), f"Edge {position} source")
+            target = check_int(raw.get("target"), f"Edge {position} target")
+
+            if source not in graph._nodes or target not in graph._nodes:
+                raise ValueError(
+                    f"Edge {position} refers to a node that does not exist."
+                )
+
+            if source == target:
+                raise ValueError(f"Edge {position} is a self-loop.")
+
+            weight = check_number(raw.get("weight"), f"Edge {position} weight")
+
+            identity = (
+                (source, target)
+                if directed
+                else frozenset((source, target))
+            )
+
+            if identity in seen:
+                raise ValueError(
+                    f"Edge {position} duplicates an earlier edge between "
+                    f"nodes {source} and {target}."
+                )
+
+            seen.add(identity)
+
+            graph._edges[(source, target)] = GraphEdge(source, target, weight)
+
+        return graph
+
+    def replace_with(self, other: GraphModel) -> None:
+        """Take over another graph's contents (it should not be reused)."""
+
+        self._nodes = other._nodes
+        self._edges = other._edges
+        self._directed = other._directed
+        self._weighted = other._weighted
+        self._next_node_id = other._next_node_id
