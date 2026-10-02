@@ -16,6 +16,7 @@ from algolab.topics.sorting.simulation import (
 from algolab.ui.components.button import Button
 from algolab.ui.components.info_panel import InfoPanel
 from algolab.ui.components.numeric_input import NumericInput
+from algolab.ui.components.storage_controls import StorageControls
 from algolab.ui.components.surface import draw_panel, draw_toggle_button
 from algolab.ui.screens.screen import Screen
 from algolab.ui.theme import Color, Font
@@ -94,6 +95,18 @@ class SortingScreen(Screen):
             ],
         )
 
+        # Save / Load buttons and their dialog. This screen already has
+        # a Compare button immediately left of Info, so Save/Load go
+        # left of Compare instead (left_of = Compare's x position).
+        self.storage = StorageControls(
+            surface,
+            "sorting",
+            "Array",
+            capture=self._capture_structure,
+            restore=self._restore_structure,
+            left_of=self.compare_button.rect.x,
+        )
+
         self.algorithm_buttons = self._create_algorithm_buttons()
         self.navigation_buttons = self._create_navigation_buttons()
 
@@ -146,6 +159,9 @@ class SortingScreen(Screen):
 
     def handle_event(self, event: pygame.event.Event) -> None:
         if self.info_panel.handle_event(event):
+            return
+
+        if self.storage.handle_event(event):
             return
 
         if self.handle_back_event(event):
@@ -240,6 +256,37 @@ class SortingScreen(Screen):
 
         self.status_message = None
         self.error_message = None
+
+    # ------------------------------------------------------------------
+    # Save / Load
+    # ------------------------------------------------------------------
+
+    def _capture_structure(self) -> tuple[str | None, dict]:
+        """Current array as (mode, data) for the Save dialog.
+
+        Only the array is saved. Clicking an algorithm button runs it
+        immediately, so there is no "selected algorithm" to remember,
+        and a sort in progress is never saved.
+        """
+
+        return None, self.model.to_dict()
+
+    def _restore_structure(self, mode: str | None, data: dict) -> None:
+        """Replace the array with loaded data (from the Load dialog).
+
+        SortArray.from_dict() validates everything first and raises
+        ValueError on bad data, so nothing below runs for a bad file.
+        """
+
+        loaded = SortArray.from_dict(data)
+
+        self._cancel_current_simulation()
+
+        self.model.set_values(loaded.values)
+
+        self.status_message = None
+        self.error_message = None
+        self.step_timer = 0.0
 
     def _open_compare_screen(self) -> None:
         """
@@ -359,6 +406,8 @@ class SortingScreen(Screen):
         self.info_button.update(dt)
         self.compare_button.update(dt)
 
+        self.storage.update(dt)
+
         algorithms_enabled = self.current_simulation is None and not self.model.is_empty
 
         for button in self.algorithm_buttons.values():
@@ -403,6 +452,7 @@ class SortingScreen(Screen):
 
         self.info_button.render(self.surface)
         self.compare_button.render(self.surface)
+        self.storage.render(self.surface)
         self.info_panel.render(self.surface)
 
     def _draw_text(self, text, position, font, color=Color.TEXT_PRIMARY):
