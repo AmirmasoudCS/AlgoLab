@@ -167,6 +167,32 @@ class GraphModel:
 
         return node_id
 
+    def add_node_at(
+        self,
+        x: float,
+        y: float,
+        label: str | None = None,
+    ) -> int:
+        """Add a node at an explicit position and return its id.
+
+        The node is pinned where it is placed, and auto-layout is NOT
+        re-run, so placing a node by hand never makes the other nodes
+        move (unlike add_node, which re-spaces every unpinned node).
+        """
+
+        node_id = self._next_node_id
+        self._next_node_id += 1
+
+        self._nodes[node_id] = GraphNode(
+            node_id=node_id,
+            label=label if label is not None else str(node_id),
+            x=float(x),
+            y=float(y),
+            pinned=True,
+        )
+
+        return node_id
+
     def remove_node(self, node_id: int) -> None:
         """Remove a node and every edge touching it."""
 
