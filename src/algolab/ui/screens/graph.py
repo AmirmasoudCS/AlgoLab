@@ -6,7 +6,7 @@ import random
 import pygame
 
 from algolab.simulation.simulator import Simulator
-from algolab.topics.graph.model import GraphModel
+from algolab.topics.graph.model import GraphEdge, GraphModel
 from algolab.topics.graph.simulation import (
     BFSSimulator,
     BellmanFordSimulator,
@@ -23,6 +23,16 @@ from algolab.ui.theme import Color, Font
 
 NODE_RADIUS = 24
 
+# How close (in pixels) a click must be to an edge's line to hit it.
+EDGE_HIT_DISTANCE = 8
+
+# A hand-placed node must be at least this far from every other node's
+# center: two radii plus a small gap, so circles never overlap.
+MIN_NODE_DISTANCE = NODE_RADIUS * 2 + 6
+
+# How many edits Undo can step back through.
+MAX_UNDO_STEPS = 50
+
 
 class GraphScreen(Screen):
     """
@@ -36,7 +46,27 @@ class GraphScreen(Screen):
     control surface flat instead of doubling it behind a mode switch,
     at the cost of "selection" doing double duty, which is called out
     in the on-screen status text so it stays legible to a student.
+
+    Drawing by hand uses a small tool palette:
+
+    select  click a node to select it, drag to move it, click empty
+            canvas to clear the selection (the original behavior).
+    node    click empty canvas to place a node right there.
+    edge    click one node, then another, to connect them (a line
+            follows the cursor in between).
+
+    In every tool, right-clicking a node deletes it (with its edges)
+    and right-clicking an edge deletes just that edge. Every edit can
+    be undone and redone (Ctrl+Z / Ctrl+Y, or the Undo and Redo
+    buttons); loading a file starts a fresh history.
     """
+
+    # The Tools row (label, Undo/Redo, three tool buttons) is inserted
+    # above the edit buttons. Everything from the edit buttons down is
+    # shifted by this amount (cascade shift) and the panel grows to match.
+    TOOLS_ROW_SHIFT = 52
+
+    TOOLS = (("select", "Select"), ("node", "Node"), ("edge", "Edge"))
 
     ALGORITHMS = {
         "BFS": BFSSimulator,
@@ -69,6 +99,13 @@ class GraphScreen(Screen):
         self._mouse_down_node: int | None = None
         self._mouse_down_pos: tuple[int, int] | None = None
         self._is_dragging = False
+
+        self.tool = "select"
+        self._edge_source: int | None = None
+
+        # Undo/redo hold complete snapshots of (graph data, label counter).
+        self._undo_stack: list[tuple[dict, int]] = []
+        self._redo_stack: list[tuple[dict, int]] = []
 
         self.directed_buttons = self._create_toggle_buttons(
             160, "Undirected", "Directed"
@@ -105,14 +142,24 @@ class GraphScreen(Screen):
             restore=self._restore_structure,
         )
 
+        shift = self.TOOLS_ROW_SHIFT
+
+        self.tool_buttons = {
+            "select": Button(pygame.Rect(15, 278, 70, 34), "Select"),
+            "node": Button(pygame.Rect(90, 278, 70, 34), "Node"),
+            "edge": Button(pygame.Rect(165, 278, 70, 34), "Edge"),
+        }
+        self.undo_button = Button(pygame.Rect(110, 246, 60, 24), "Undo")
+        self.redo_button = Button(pygame.Rect(175, 246, 60, 24), "Redo")
+
         self.edit_buttons = self._create_edit_buttons()
         self.algorithm_buttons = self._create_algorithm_buttons()
         self.navigation_buttons = self._create_navigation_buttons()
 
         for index, button in enumerate(self.speed_buttons):
-            button.rect = pygame.Rect(15 + index * 62, 588, 58, 28)
+            button.rect = pygame.Rect(15 + index * 62, 588 + shift, 58, 28)
 
-        self.weight_input = NumericInput(pygame.Rect(160, 391, 75, 30), 1)
+        self.weight_input = NumericInput(pygame.Rect(160, 391 + shift, 75, 30), 1)
 
         self.step_timer = 0.0
         self.step_interval = 1.4
@@ -133,30 +180,34 @@ class GraphScreen(Screen):
         ]
 
     def _create_edit_buttons(self) -> dict[str, Button]:
+        shift = self.TOOLS_ROW_SHIFT
+
         return {
             "add_node": Button(
-                pygame.Rect(15, 264, 110, 34), "Add Node", variant="primary"
+                pygame.Rect(15, 264 + shift, 110, 34), "Add Node", variant="primary"
             ),
             "remove_node": Button(
-                pygame.Rect(130, 264, 105, 34), "Remove Node", variant="danger"
+                pygame.Rect(130, 264 + shift, 105, 34), "Remove Node", variant="danger"
             ),
             "add_edge": Button(
-                pygame.Rect(15, 302, 110, 34), "Add Edge", variant="primary"
+                pygame.Rect(15, 302 + shift, 110, 34), "Add Edge", variant="primary"
             ),
             "remove_edge": Button(
-                pygame.Rect(130, 302, 105, 34), "Remove Edge", variant="danger"
+                pygame.Rect(130, 302 + shift, 105, 34), "Remove Edge", variant="danger"
             ),
             "clear": Button(
-                pygame.Rect(15, 340, 220, 34), "Clear Graph", variant="danger"
+                pygame.Rect(15, 340 + shift, 220, 34), "Clear Graph", variant="danger"
             ),
         }
 
     def _create_algorithm_buttons(self) -> dict[str, Button]:
+        shift = self.TOOLS_ROW_SHIFT
+
         return {
-            "BFS": Button(pygame.Rect(15, 464, 110, 34), "BFS"),
-            "DFS": Button(pygame.Rect(130, 464, 105, 34), "DFS"),
-            "Dijkstra": Button(pygame.Rect(15, 502, 110, 34), "Dijkstra"),
-            "Bellman-Ford": Button(pygame.Rect(130, 502, 105, 34), "Bellman-Ford"),
+            "BFS": Button(pygame.Rect(15, 464 + shift, 110, 34), "BFS"),
+            "DFS": Button(pygame.Rect(130, 464 + shift, 105, 34), "DFS"),
+            "Dijkstra": Button(pygame.Rect(15, 502 + shift, 110, 34), "Dijkstra"),
+            "Bellman-Ford": Button(pygame.Rect(130, 502 + shift, 105, 34), "Bellman-Ford"),
         }
 
     def _create_navigation_buttons(self) -> list[Button]:
@@ -165,7 +216,7 @@ class GraphScreen(Screen):
         buttons = []
 
         x = 15
-        y = 626
+        y = 626 + self.TOOLS_ROW_SHIFT
         width = 40
         height = 35
         spacing = 45
@@ -248,6 +299,9 @@ class GraphScreen(Screen):
 
         self.weight_input.handle_event(event)
 
+        if event.type == pygame.KEYDOWN and self._handle_history_shortcut(event):
+            return
+
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_p:
                 self._handle_navigation(4)
@@ -260,6 +314,16 @@ class GraphScreen(Screen):
                 return
 
         self._handle_canvas_event(event)
+
+        for tool, button in self.tool_buttons.items():
+            if button.handle_event(event):
+                self._set_tool(tool)
+
+        if self.undo_button.handle_event(event):
+            self._undo()
+
+        if self.redo_button.handle_event(event):
+            self._redo()
 
         for index, button in enumerate(self.directed_buttons):
             if button.handle_event(event):
@@ -306,6 +370,12 @@ class GraphScreen(Screen):
                 self._mouse_down_node = node_id
                 self._mouse_down_pos = event.pos
                 self._is_dragging = False
+            elif self._canvas_rect().collidepoint(event.pos):
+                self._click_empty_canvas(event.pos)
+
+        elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
+            if self._canvas_rect().collidepoint(event.pos):
+                self._right_click(event.pos)
 
         elif event.type == pygame.MOUSEMOTION and self._mouse_down_node is not None:
             if not self._is_dragging:
@@ -314,6 +384,9 @@ class GraphScreen(Screen):
 
                 if dx * dx + dy * dy > 25:
                     self._is_dragging = True
+
+                    # One undo step per drag, taken before the first move.
+                    self._commit(self._snapshot())
 
             if self._is_dragging:
                 canvas = self._canvas_rect()
@@ -332,11 +405,25 @@ class GraphScreen(Screen):
 
         elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
             if self._mouse_down_node is not None:
-                if not self._is_dragging and self.current_simulation is None:
-                    self._toggle_selection(self._mouse_down_node)
+                if not self._is_dragging:
+                    self._click_node(self._mouse_down_node)
 
                 self._mouse_down_node = None
                 self._is_dragging = False
+
+    def _click_empty_canvas(self, position: tuple[int, int]) -> None:
+        if self.tool == "node":
+            self._add_node_at(position)
+        elif self.tool == "edge":
+            self._edge_source = None
+        elif self.current_simulation is None:
+            self.selected_nodes = []
+
+    def _click_node(self, node_id: int) -> None:
+        if self.tool == "edge":
+            self._edge_click(node_id)
+        elif self.tool == "select" and self.current_simulation is None:
+            self._toggle_selection(node_id)
 
     def _toggle_selection(self, node_id: int) -> None:
         if node_id in self.selected_nodes:
@@ -348,49 +435,307 @@ class GraphScreen(Screen):
 
         self.selected_nodes.append(node_id)
 
+    def _edge_click(self, node_id: int) -> None:
+        """Edge tool: first click picks the source, second picks the target."""
+
+        if self._busy():
+            return
+
+        if self._edge_source is None:
+            self._edge_source = node_id
+            self.error_message = None
+            return
+
+        source = self._edge_source
+
+        # Clicking the pending node again cancels instead of looping.
+        if node_id == source:
+            self._edge_source = None
+            return
+
+        self._create_edge(source, node_id)
+        self._edge_source = None
+
+    def _right_click(self, position: tuple[int, int]) -> None:
+        """Right-click: delete the node or edge under the cursor, or
+        cancel a pending edge / clear the selection on empty canvas."""
+
+        node_id = self._node_at(position)
+        edge = None if node_id is not None else self._edge_at(position)
+
+        if node_id is None and edge is None:
+            self._edge_source = None
+
+            if self.current_simulation is None:
+                self.selected_nodes = []
+
+            return
+
+        if self._busy():
+            return
+
+        if node_id is not None:
+            self._remove_node(node_id)
+        else:
+            self._delete_edge(edge)
+
+    # ------------------------------------------------------------------
+    # Hit testing
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _distance_to_segment(
+        point: tuple[float, float],
+        start: tuple[float, float],
+        end: tuple[float, float],
+    ) -> float:
+        """Shortest distance from a point to the segment start-end."""
+
+        dx = end[0] - start[0]
+        dy = end[1] - start[1]
+        length_squared = dx * dx + dy * dy
+
+        if length_squared == 0:
+            return math.hypot(point[0] - start[0], point[1] - start[1])
+
+        t = ((point[0] - start[0]) * dx + (point[1] - start[1]) * dy) / length_squared
+        t = max(0.0, min(1.0, t))
+
+        return math.hypot(
+            point[0] - (start[0] + t * dx),
+            point[1] - (start[1] + t * dy),
+        )
+
+    def _edge_at(self, position: tuple[int, int]) -> GraphEdge | None:
+        """The edge whose line passes closest to `position`, if any is
+        within EDGE_HIT_DISTANCE. Nodes are tested first by callers."""
+
+        best: GraphEdge | None = None
+        best_distance = EDGE_HIT_DISTANCE
+
+        for edge in self.model.edges:
+            source = self.model.get_node(edge.source)
+            target = self.model.get_node(edge.target)
+
+            if source is None or target is None:
+                continue
+
+            distance = self._distance_to_segment(
+                position, (source.x, source.y), (target.x, target.y)
+            )
+
+            if distance <= best_distance:
+                best = edge
+                best_distance = distance
+
+        return best
+
+    def _find_edge(self, first: int, second: int) -> GraphEdge | None:
+        """The stored edge joining two nodes (either way when undirected)."""
+
+        for edge in self.model.edges:
+            if (edge.source, edge.target) == (first, second):
+                return edge
+
+            if not self.model.directed and (edge.source, edge.target) == (second, first):
+                return edge
+
+        return None
+
+    # ------------------------------------------------------------------
+    # Undo / redo
+    # ------------------------------------------------------------------
+
+    def _snapshot(self) -> tuple[dict, int]:
+        """Everything an edit can change: the graph and the label counter."""
+
+        return self.model.to_dict(), self._label_counter
+
+    def _commit(self, before: tuple[dict, int]) -> None:
+        """Record `before` as an undo step. Call after a successful edit."""
+
+        self._undo_stack.append(before)
+        del self._undo_stack[:-MAX_UNDO_STEPS]
+        self._redo_stack.clear()
+
+    def _apply_snapshot(self, snapshot: tuple[dict, int]) -> bool:
+        data, counter = snapshot
+
+        try:
+            loaded = GraphModel.from_dict(data)
+        except ValueError as error:
+            self.error_message = f"Could not restore that state: {error}"
+            return False
+
+        self.model.replace_with(loaded)
+        self._label_counter = counter
+
+        self.selected_nodes = []
+        self._edge_source = None
+        self._mouse_down_node = None
+        self._is_dragging = False
+        self.error_message = None
+
+        return True
+
+    def _undo(self) -> None:
+        if self.current_simulation is not None or not self._undo_stack:
+            return
+
+        current = self._snapshot()
+
+        if self._apply_snapshot(self._undo_stack.pop()):
+            self._redo_stack.append(current)
+
+    def _redo(self) -> None:
+        if self.current_simulation is not None or not self._redo_stack:
+            return
+
+        current = self._snapshot()
+
+        if self._apply_snapshot(self._redo_stack.pop()):
+            self._undo_stack.append(current)
+
+    def _handle_history_shortcut(self, event: pygame.event.Event) -> bool:
+        """Ctrl+Z undo, Ctrl+Shift+Z / Ctrl+Y redo (Cmd on a Mac)."""
+
+        modifiers = getattr(event, "mod", 0)
+
+        if not modifiers & (pygame.KMOD_CTRL | pygame.KMOD_META):
+            return False
+
+        if event.key == pygame.K_z:
+            if modifiers & pygame.KMOD_SHIFT:
+                self._redo()
+            else:
+                self._undo()
+
+            return True
+
+        if event.key == pygame.K_y:
+            self._redo()
+            return True
+
+        return False
+
     # ------------------------------------------------------------------
     # Editing actions
     # ------------------------------------------------------------------
 
+    def _set_tool(self, tool: str) -> None:
+        self.tool = tool
+        self._edge_source = None
+        self.error_message = None
+
+    def _busy(self) -> bool:
+        """True (with a message) while an algorithm is running, since
+        editing the graph under it would make the animation meaningless."""
+
+        if self.current_simulation is None:
+            return False
+
+        self.error_message = "Let the algorithm finish before editing."
+
+        return True
+
+    def _node_limit_reached(self) -> bool:
+        if len(self.model.nodes) < GraphModel.MAX_LOADED_NODES:
+            return False
+
+        self.error_message = (
+            f"A graph here can have at most {GraphModel.MAX_LOADED_NODES} nodes."
+        )
+
+        return True
+
     def _set_directed(self, directed: bool) -> None:
-        if self.current_simulation is not None:
+        if directed == self.model.directed or self._busy():
             return
 
+        before = self._snapshot()
+
         self.model.set_directed(directed)
+
+        self._commit(before)
         self.error_message = None
 
     def _set_weighted(self, weighted: bool) -> None:
-        if self.current_simulation is not None:
+        if weighted == self.model.weighted or self._busy():
             return
 
+        before = self._snapshot()
+
         self.model.set_weighted(weighted)
+
+        self._commit(before)
         self.error_message = None
 
     def _add_node(self) -> None:
-        if self.current_simulation is not None:
+        if self._busy() or self._node_limit_reached():
             return
+
+        before = self._snapshot()
 
         self.model.add_node(label=self._next_label())
         self._relayout()
+
+        self._commit(before)
         self.error_message = None
 
+    def _add_node_at(self, position: tuple[int, int]) -> None:
+        """Node tool: place a node where the canvas was clicked."""
+
+        if self._busy() or self._node_limit_reached():
+            return
+
+        canvas = self._canvas_rect()
+
+        x = max(canvas.left + NODE_RADIUS, min(canvas.right - NODE_RADIUS, position[0]))
+        y = max(canvas.top + NODE_RADIUS, min(canvas.bottom - NODE_RADIUS, position[1]))
+
+        if self._too_close_to_a_node(x, y):
+            self.error_message = "Too close to another node."
+            return
+
+        before = self._snapshot()
+
+        self.model.add_node_at(x, y, label=self._next_label())
+
+        self._commit(before)
+        self.error_message = None
+
+    def _too_close_to_a_node(self, x: float, y: float) -> bool:
+        return any(
+            math.hypot(node.x - x, node.y - y) < MIN_NODE_DISTANCE
+            for node in self.model.nodes
+        )
+
     def _remove_selected_node(self) -> None:
-        if self.current_simulation is not None:
+        if self._busy():
             return
 
         if len(self.selected_nodes) != 1:
             self.error_message = "Select exactly one node to remove it."
             return
 
-        node_id = self.selected_nodes[0]
+        self._remove_node(self.selected_nodes[0])
+
+    def _remove_node(self, node_id: int) -> None:
+        before = self._snapshot()
+
         self.model.remove_node(node_id)
         self._relayout()
 
-        self.selected_nodes = []
+        self.selected_nodes = [n for n in self.selected_nodes if n != node_id]
+
+        if self._edge_source == node_id:
+            self._edge_source = None
+
+        self._commit(before)
         self.error_message = None
 
     def _add_edge(self) -> None:
-        if self.current_simulation is not None:
+        if self._busy():
             return
 
         if len(self.selected_nodes) != 2:
@@ -398,19 +743,46 @@ class GraphScreen(Screen):
             return
 
         source, target = self.selected_nodes
+
+        if self._create_edge(source, target):
+            self.selected_nodes = []
+
+    def _create_edge(self, source: int, target: int) -> bool:
+        """Add an edge (or, when weighted, update an existing edge's
+        weight). Returns True if the graph changed."""
+
         weight = self.weight_input.value if self.model.weighted else 1.0
+        existing = self._find_edge(source, target)
+
+        if existing is not None:
+            if not self.model.weighted:
+                self.error_message = "Those nodes are already connected."
+                return False
+
+            if existing.weight == weight:
+                self.error_message = f"Already connected with weight {weight:g}."
+                return False
+        elif len(self.model.edges) >= GraphModel.MAX_LOADED_EDGES:
+            self.error_message = (
+                f"A graph here can have at most {GraphModel.MAX_LOADED_EDGES} edges."
+            )
+            return False
+
+        before = self._snapshot()
 
         try:
             self.model.add_edge(source, target, weight)
         except (KeyError, ValueError) as error:
             self.error_message = str(error)
-            return
+            return False
 
-        self.selected_nodes = []
+        self._commit(before)
         self.error_message = None
 
+        return True
+
     def _remove_edge(self) -> None:
-        if self.current_simulation is not None:
+        if self._busy():
             return
 
         if len(self.selected_nodes) != 2:
@@ -418,25 +790,40 @@ class GraphScreen(Screen):
             return
 
         source, target = self.selected_nodes
+        edge = self._find_edge(source, target)
 
-        try:
-            self.model.remove_edge(source, target)
-        except KeyError as error:
-            self.error_message = str(error)
+        if edge is None:
+            labels = [self.model.get_node(n).label for n in (source, target)]
+            self.error_message = f"No edge between {labels[0]} and {labels[1]}."
             return
 
+        self._delete_edge(edge)
         self.selected_nodes = []
+
+    def _delete_edge(self, edge: GraphEdge) -> None:
+        before = self._snapshot()
+
+        self.model.remove_edge(edge.source, edge.target)
+
+        self._commit(before)
         self.error_message = None
 
     def _clear_graph(self) -> None:
-        if self.current_simulation is not None:
+        if self._busy():
             return
+
+        before = self._snapshot()
+        changed = not self.model.is_empty or self._label_counter != 0
 
         self.model.clear()
         self.selected_nodes = []
+        self._edge_source = None
         self._label_counter = 0
         self.status_message = None
         self.error_message = None
+
+        if changed:
+            self._commit(before)
 
     def _randomize(self) -> None:
         """
@@ -451,10 +838,13 @@ class GraphScreen(Screen):
         add_edge() never sees a self-loop or a missing node.
         """
 
+        before = self._snapshot()
+
         self.cancel_current_simulation()
 
         self.model.clear()
         self.selected_nodes = []
+        self._edge_source = None
         self._label_counter = 0
         self.status_message = None
         self.error_message = None
@@ -492,6 +882,8 @@ class GraphScreen(Screen):
                 continue
 
         self._relayout()
+
+        self._commit(before)
 
     # ------------------------------------------------------------------
     # Save / Load
@@ -556,9 +948,14 @@ class GraphScreen(Screen):
         self._label_counter = counter
 
         self.selected_nodes = []
+        self._edge_source = None
         self._mouse_down_node = None
         self._mouse_down_pos = None
         self._is_dragging = False
+
+        # A loaded file is a fresh start: nothing before it can be undone.
+        self._undo_stack.clear()
+        self._redo_stack.clear()
 
         self.status_message = None
         self.error_message = None
@@ -581,6 +978,8 @@ class GraphScreen(Screen):
 
         start_node_id = self.selected_nodes[0]
         simulator_class = self.ALGORITHMS[label]
+
+        self._edge_source = None
 
         try:
             simulation = simulator_class(self.model).run(start_node_id)
@@ -664,6 +1063,12 @@ class GraphScreen(Screen):
 
         self.storage.update(dt)
 
+        for button in self.tool_buttons.values():
+            button.update(dt)
+
+        self.undo_button.update(dt)
+        self.redo_button.update(dt)
+
         for button in self.edit_buttons.values():
             button.update(dt)
 
@@ -729,8 +1134,15 @@ class GraphScreen(Screen):
         for button in self.algorithm_buttons.values():
             button.enabled = algorithm_enabled
 
+        idle = self.current_simulation is None
+
+        self.undo_button.enabled = idle and bool(self._undo_stack)
+        self.redo_button.enabled = idle and bool(self._redo_stack)
+
     def _render_control_panel(self) -> None:
-        panel_rect = pygame.Rect(10, 70, 250, 630)
+        shift = self.TOOLS_ROW_SHIFT
+
+        panel_rect = pygame.Rect(10, 70, 250, 630 + shift)
         draw_panel(self.surface, panel_rect, elevated=True)
 
         self._draw_text("TA Controls", (25, 80), self.control_font)
@@ -747,12 +1159,25 @@ class GraphScreen(Screen):
         self._render_toggle_row(self.directed_buttons, self.model.directed)
         self._render_toggle_row(self.weighted_buttons, self.model.weighted)
 
+        self._draw_text(
+            "Tools",
+            (25, 249),
+            self.section_font,
+            color=Color.TEXT_SECONDARY,
+        )
+
+        self.undo_button.render(self.surface)
+        self.redo_button.render(self.surface)
+
+        for tool, button in self.tool_buttons.items():
+            draw_toggle_button(self.surface, button, tool == self.tool)
+
         for button in self.edit_buttons.values():
             button.render(self.surface)
 
         self._draw_text(
             "Edge Weight:",
-            (15, 396),
+            (15, 396 + shift),
             self.small_font,
             color=Color.TEXT_SECONDARY,
         )
@@ -762,7 +1187,7 @@ class GraphScreen(Screen):
         else:
             self._draw_text(
                 "1 (unweighted)",
-                (160, 396),
+                (160, 396 + shift),
                 self.small_font,
                 color=Color.TEXT_MUTED,
             )
@@ -774,7 +1199,7 @@ class GraphScreen(Screen):
 
         self._draw_text(
             "Simulation",
-            (25, 562),
+            (25, 562 + shift),
             self.section_font,
             color=Color.TEXT_SECONDARY,
         )
@@ -801,7 +1226,7 @@ class GraphScreen(Screen):
                         f"Step: {state.step + 1}/"
                         f"{len(self.current_simulation.states)}"
                     ),
-                    (15, 669),
+                    (15, 669 + shift),
                     self.small_font,
                     color=Color.TEXT_MUTED,
                 )
@@ -817,11 +1242,21 @@ class GraphScreen(Screen):
             is_on = (index == 1) == active
             draw_toggle_button(self.surface, button, is_on)
 
+    TOOL_HINTS = {
+        "select": "Click nodes to select them. Drag to move.",
+        "node": "Click empty space to add a node.",
+        "edge": "Click one node, then another, to connect them.",
+    }
+
     def _render_selection_status(self) -> None:
         if self.error_message is not None:
             text = self.error_message
             color = Color.STATE_DANGER
-        elif self.selected_nodes:
+        elif self.tool == "edge" and self._edge_source is not None:
+            source = self.model.get_node(self._edge_source)
+            text = f"Edge from {source.label}: click the target node."
+            color = Color.ACCENT
+        elif self.tool == "select" and self.selected_nodes:
             labels = [
                 self.model.get_node(node_id).label
                 for node_id in self.selected_nodes
@@ -830,10 +1265,10 @@ class GraphScreen(Screen):
             text = "Selected: " + ", ".join(labels)
             color = Color.TEXT_SECONDARY
         else:
-            text = "Click nodes to select them."
+            text = self.TOOL_HINTS[self.tool]
             color = Color.TEXT_MUTED
 
-        area = pygame.Rect(15, 428, 220, 32)
+        area = pygame.Rect(15, 428 + self.TOOLS_ROW_SHIFT, 220, 32)
         self._draw_wrapped_text(text, area, self.small_font, color)
 
     def _draw_wrapped_text(
@@ -898,8 +1333,9 @@ class GraphScreen(Screen):
             description = self.status_message
         else:
             description = (
-                "Build a graph, then select one node and choose an "
-                "algorithm to run it from there."
+                "Build a graph with the Node and Edge tools (or the buttons), "
+                "then select one node and choose an algorithm to run it from "
+                "there. Right-click a node or an edge to delete it."
             )
 
         description_rect = pygame.Rect(295, 112, panel_rect.width - 30, 75)
@@ -921,17 +1357,72 @@ class GraphScreen(Screen):
         if self.model.is_empty:
             area = self._canvas_rect()
             text = self.explanation_font.render(
-                "Graph is empty. Add a node to begin.",
+                "Graph is empty. Add a node, or pick the Node tool and click here.",
                 True,
                 Color.TEXT_MUTED,
             )
             self.surface.blit(text, text.get_rect(center=area.center))
+            self._render_node_ghost()
             return
 
         state = self._get_algorithm_state()
 
         self._render_edges(state)
+        self._render_pending_edge()
         self._render_nodes(state)
+        self._render_node_ghost()
+
+    def _render_pending_edge(self) -> None:
+        """Edge tool: a line from the chosen node to the cursor."""
+
+        if self.tool != "edge" or self._edge_source is None:
+            return
+
+        source = self.model.get_node(self._edge_source)
+        mouse = pygame.mouse.get_pos()
+
+        if source is None or not self._canvas_rect().collidepoint(mouse):
+            return
+
+        hovered = self._node_at(mouse)
+        source_pos = (source.x, source.y)
+
+        if hovered is not None and hovered != self._edge_source:
+            target = self.model.get_node(hovered)
+            start, end = self._shrink_to_radius(source_pos, (target.x, target.y))
+        else:
+            start, _ = self._shrink_to_radius(source_pos, mouse)
+            end = mouse
+
+        if self.model.directed:
+            draw_arrow(self.surface, start, end, Color.ACCENT, width=2)
+        else:
+            pygame.draw.line(self.surface, Color.ACCENT, start, end, 2)
+
+    def _render_node_ghost(self) -> None:
+        """Node tool: a ring where a click would place a node, red when
+        that spot is not allowed (too close to a node, or at the limit)."""
+
+        if self.tool != "node" or self.current_simulation is not None:
+            return
+
+        mouse = pygame.mouse.get_pos()
+        canvas = self._canvas_rect()
+
+        if not canvas.collidepoint(mouse):
+            return
+
+        x = max(canvas.left + NODE_RADIUS, min(canvas.right - NODE_RADIUS, mouse[0]))
+        y = max(canvas.top + NODE_RADIUS, min(canvas.bottom - NODE_RADIUS, mouse[1]))
+
+        allowed = (
+            len(self.model.nodes) < GraphModel.MAX_LOADED_NODES
+            and not self._too_close_to_a_node(x, y)
+        )
+
+        color = Color.STATE_SUCCESS if allowed else Color.STATE_DANGER
+
+        pygame.draw.circle(self.surface, color, (int(x), int(y)), NODE_RADIUS, 2)
 
     def _active_edge_matches(
         self,
@@ -1026,7 +1517,7 @@ class GraphScreen(Screen):
 
             return Color.STATE_DEFAULT
 
-        if node_id in self.selected_nodes:
+        if node_id in self.selected_nodes or node_id == self._edge_source:
             return Color.STATE_COMPARING
 
         return Color.STATE_DEFAULT
