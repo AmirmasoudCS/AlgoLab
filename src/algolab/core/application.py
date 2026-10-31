@@ -65,14 +65,33 @@ class Application:
         self.virtual_width = window_config["width"]
         self.virtual_height = window_config["height"]
 
-        # SCALED asks SDL to treat the window as a fixed
-        # virtual_width x virtual_height canvas and scale it to the
-        # real display with the aspect ratio preserved (letterboxed).
-        # SDL also translates mouse coordinates back into canvas
-        # space, so no manual scaling or mouse patching is needed.
+        # A borderless window covering the whole desktop behaves like
+        # fullscreen but avoids exclusive-fullscreen mode switching and
+        # pygame.SCALED, both of which misbehave on some Windows setups
+        # when the canvas is taller than the display.
+        desktop_width, desktop_height = pygame.display.get_desktop_sizes()[0]
+
         self.screen = pygame.display.set_mode(
-            (self.virtual_width, self.virtual_height),
-            pygame.SCALED | pygame.FULLSCREEN,
+            (desktop_width, desktop_height),
+            pygame.NOFRAME,
+        )
+
+        # Trust what the OS actually gave us.
+        self.real_width, self.real_height = self.screen.get_size()
+
+        # Uniform scale so proportions are preserved, centered with
+        # letterbox bars on a mismatched aspect ratio.
+        self.scale = min(
+            self.real_width / self.virtual_width,
+            self.real_height / self.virtual_height,
+        )
+        self.scaled_size = (
+            round(self.virtual_width * self.scale),
+            round(self.virtual_height * self.scale),
+        )
+        self.offset = (
+            (self.real_width - self.scaled_size[0]) // 2,
+            (self.real_height - self.scaled_size[1]) // 2,
         )
 
         # Screens draw onto this surface and it is blitted 1:1 to the
@@ -114,16 +133,32 @@ class Application:
                 self.screen_manager,
             )
         )
+        real_get_pos = pygame.mouse.get_pos
+        pygame.mouse.get_pos = lambda: self._real_to_virtual(real_get_pos())
+
+    def _real_to_virtual(self, position: tuple[int, int]) -> tuple[int, int]:
+        """Convert a point in real screen pixels to virtual-surface coordinates."""
+
+        real_x, real_y = position
+
+        return (
+            int((real_x - self.offset[0]) / self.scale),
+            int((real_y - self.offset[1]) / self.scale),
+        )
 
     def _translate_event(self, event: pygame.event.Event) -> pygame.event.Event:
         """
-        Return the event unchanged.
-
-        pygame.SCALED makes SDL deliver mouse positions in virtual
-        canvas coordinates already, so no translation is needed here.
+        Return a copy of event with its `pos` field converted from real
+        screen coordinates to virtual coordinates.
         """
 
-        return event
+        if not hasattr(event, "pos"):
+            return event
+
+        attributes = dict(event.dict)
+        attributes["pos"] = self._real_to_virtual(event.pos)
+
+        return pygame.event.Event(event.type, attributes)
 
     def run(self) -> None:
         """Run the main application loop."""
@@ -206,20 +241,12 @@ class Application:
         if self._toast_timer > 0:
             self._render_toast()
 
-        # TEMPORARY DEBUG: red border = edge of the virtual canvas,
-        # green line = y=768 (the laptop's real screen height).
-        pygame.draw.rect(
-            self.virtual_surface, (255, 0, 0),
-            self.virtual_surface.get_rect(), 3,
-        )
-        pygame.draw.line(
-            self.virtual_surface, (0, 255, 0),
-            (0, 768), (self.virtual_width, 768), 1,
-        )
+        self.screen.fill(Color.BG)
 
-        # The display surface is the virtual canvas itself; SDL scales
-        # it to the real screen and letterboxes it on its own.
-        self.screen.blit(self.virtual_surface, (0, 0))
+        scaled_surface = pygame.transform.smoothscale(
+            self.virtual_surface, self.scaled_size
+        )
+        self.screen.blit(scaled_surface, self.offset)
 
         pygame.display.flip()
 
