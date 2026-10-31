@@ -117,19 +117,13 @@ class Application:
 
     def _translate_event(self, event: pygame.event.Event) -> pygame.event.Event:
         """
-        Return a copy of event with its `pos` field (if any) converted
-        from real screen coordinates to virtual coordinates, so every
-        screen's handle_event() keeps working against the same
-        coordinate space its button rects were written in.
+        Return the event unchanged.
+
+        pygame.SCALED makes SDL deliver mouse positions in virtual
+        canvas coordinates already, so no translation is needed here.
         """
 
-        if not hasattr(event, "pos"):
-            return event
-
-        attributes = dict(event.dict)
-        attributes["pos"] = self._real_to_virtual(event.pos)
-
-        return pygame.event.Event(event.type, attributes)
+        return event
 
     def run(self) -> None:
         """Run the main application loop."""
