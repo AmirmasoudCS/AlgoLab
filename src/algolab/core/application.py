@@ -72,14 +72,20 @@ class Application:
         # no longer affects the display mode, since a fixed fullscreen
         # window has nothing to resize; the key is left in window.ini
         # harmlessly unused rather than requiring a config file change.
-        display_info = pygame.display.Info()
-        self.real_width = display_info.current_w
-        self.real_height = display_info.current_h
+        #
+        # get_desktop_sizes() reports the real size of each monitor and
+        # is more reliable than display.Info() on multi-monitor and
+        # scaled displays. The first entry is the primary monitor.
+        desktop_sizes = pygame.display.get_desktop_sizes()
+        self.real_width, self.real_height = desktop_sizes[0]
 
         self.screen = pygame.display.set_mode(
             (self.real_width, self.real_height),
             pygame.FULLSCREEN,
         )
+
+        # Trust what the OS actually gave us over what we asked for.
+        self.real_width, self.real_height = self.screen.get_size()
 
         self.virtual_surface = pygame.Surface(
             (self.virtual_width, self.virtual_height)
