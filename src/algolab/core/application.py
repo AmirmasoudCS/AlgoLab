@@ -206,7 +206,7 @@ class Application:
         if self._toast_timer > 0:
             self._render_toast()
 
-    # TEMPORARY DEBUG: red border = edge of the virtual canvas,
+        # TEMPORARY DEBUG: red border = edge of the virtual canvas,
         # green line = y=768 (the laptop's real screen height).
         pygame.draw.rect(
             self.virtual_surface, (255, 0, 0),
