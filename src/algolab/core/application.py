@@ -115,33 +115,6 @@ class Application:
             )
         )
 
-    def _install_mouse_position_patch(self) -> None:
-        """
-        Make pygame.mouse.get_pos() transparently return virtual
-        coordinates everywhere in the process, for the reason explained
-        in this class's docstring: hover-detection code inside Button
-        and elsewhere reads the mouse position directly rather than
-        through a translated event, and that code lives outside files
-        this class can edit.
-        """
-
-        real_get_pos = pygame.mouse.get_pos
-
-        def virtual_get_pos():
-            return self._real_to_virtual(real_get_pos())
-
-        pygame.mouse.get_pos = virtual_get_pos
-
-    def _real_to_virtual(self, position: tuple[int, int]) -> tuple[int, int]:
-        """Convert a point in real screen pixels to virtual-surface coordinates."""
-
-        real_x, real_y = position
-
-        virtual_x = (real_x - self.offset[0]) / self.scale
-        virtual_y = (real_y - self.offset[1]) / self.scale
-
-        return (int(virtual_x), int(virtual_y))
-
     def _translate_event(self, event: pygame.event.Event) -> pygame.event.Event:
         """
         Return a copy of event with its `pos` field (if any) converted
