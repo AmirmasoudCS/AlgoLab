@@ -206,6 +206,17 @@ class Application:
         if self._toast_timer > 0:
             self._render_toast()
 
+    # TEMPORARY DEBUG: red border = edge of the virtual canvas,
+        # green line = y=768 (the laptop's real screen height).
+        pygame.draw.rect(
+            self.virtual_surface, (255, 0, 0),
+            self.virtual_surface.get_rect(), 3,
+        )
+        pygame.draw.line(
+            self.virtual_surface, (0, 255, 0),
+            (0, 768), (self.virtual_width, 768), 1,
+        )
+
         # The display surface is the virtual canvas itself; SDL scales
         # it to the real screen and letterboxes it on its own.
         self.screen.blit(self.virtual_surface, (0, 0))
