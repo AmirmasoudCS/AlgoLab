@@ -206,22 +206,9 @@ class Application:
         if self._toast_timer > 0:
             self._render_toast()
 
-        # Letterbox background matches the app's own dark theme so the
-        # bars (visible only when the real screen's aspect ratio doesn't
-        # exactly match the virtual one) blend in rather than showing as
-        # plain black borders.
-        self.screen.fill(Color.BG)
-
-        # smoothscale (bilinear) over scale (nearest-neighbor) trades a
-        # small amount of per-frame cost for noticeably cleaner text and
-        # rounded edges at non-integer scale factors. If this becomes a
-        # performance problem on lower-end hardware, swap this for
-        # pygame.transform.scale instead.
-        scaled_surface = pygame.transform.smoothscale(
-            self.virtual_surface, self.scaled_size
-        )
-
-        self.screen.blit(scaled_surface, self.offset)
+        # The display surface is the virtual canvas itself; SDL scales
+        # it to the real screen and letterboxes it on its own.
+        self.screen.blit(self.virtual_surface, (0, 0))
 
         pygame.display.flip()
 
