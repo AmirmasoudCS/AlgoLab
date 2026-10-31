@@ -61,63 +61,32 @@ class Application:
         performance_config = self.config.performance
 
         # The virtual resolution is exactly the size every screen's
-        # hardcoded layout was designed against. Screens never see the
-        # real display surface directly; they only ever draw onto a
-        # Surface of this fixed size.
+        # hardcoded layout was designed against.
         self.virtual_width = window_config["width"]
         self.virtual_height = window_config["height"]
 
-        # Detect the machine's actual screen resolution and always run
-        # in true fullscreen at that resolution. window_config["resizable"]
-        # no longer affects the display mode, since a fixed fullscreen
-        # window has nothing to resize; the key is left in window.ini
-        # harmlessly unused rather than requiring a config file change.
-        #
-        # get_desktop_sizes() reports the real size of each monitor and
-        # is more reliable than display.Info() on multi-monitor and
-        # scaled displays. The first entry is the primary monitor.
-        desktop_sizes = pygame.display.get_desktop_sizes()
-        self.real_width, self.real_height = desktop_sizes[0]
-
+        # SCALED asks SDL to treat the window as a fixed
+        # virtual_width x virtual_height canvas and scale it to the
+        # real display with the aspect ratio preserved (letterboxed).
+        # SDL also translates mouse coordinates back into canvas
+        # space, so no manual scaling or mouse patching is needed.
         self.screen = pygame.display.set_mode(
-            (self.real_width, self.real_height),
-            pygame.FULLSCREEN,
+            (self.virtual_width, self.virtual_height),
+            pygame.SCALED | pygame.FULLSCREEN,
         )
 
-        # Trust what the OS actually gave us over what we asked for.
-        self.real_width, self.real_height = self.screen.get_size()
-
+        # Screens draw onto this surface and it is blitted 1:1 to the
+        # scaled display each frame (see _render).
         self.virtual_surface = pygame.Surface(
             (self.virtual_width, self.virtual_height)
         ).convert()
 
-        # Uniform scale factor (same for both axes) so proportions are
-        # preserved; letterbox offset centers the scaled image within
-        # whatever space is left over on a mismatched aspect ratio.
-        self.scale = min(
-            self.real_width / self.virtual_width,
-            self.real_height / self.virtual_height,
-        )
-
-        scaled_width = round(self.virtual_width * self.scale)
-        scaled_height = round(self.virtual_height * self.scale)
-        self.scaled_size = (scaled_width, scaled_height)
-
-        self.offset = (
-            (self.real_width - scaled_width) // 2,
-            (self.real_height - scaled_height) // 2,
-        )
-
-        self._install_mouse_position_patch()
-
-        # Screenshots save the clean virtual surface (before scaling and
-        # letterboxing), so a screenshot always looks the same 1280x820
-        # image regardless of what real screen resolution it was taken
-        # on. The path is relative to wherever the app is run from, not
+        # Screenshots save the clean virtual surface, so a screenshot
+        # always looks the same regardless of the real screen size. The
+        # path is relative to wherever the app is run from, not
         # resolved through get_resource_path -- that helper is for
         # reading bundled assets, and its behavior for a *writable*
-        # directory in a packaged/frozen build is untested here, so a
-        # plain relative path is the safer, more literal choice.
+        # directory in a packaged/frozen build is untested here.
         self.screenshot_dir = Path("assets/screenshots")
         self._screenshot_counter = 0
 
@@ -139,10 +108,6 @@ class Application:
 
         self.screen_manager = ScreenManager()
 
-        # Every screen receives the fixed-size virtual surface, never
-        # the real display surface, so self.surface.get_width()/height()
-        # inside any screen always returns the virtual resolution
-        # regardless of the machine's actual screen size.
         self.screen_manager.set_screen(
             MainMenuScreen(
                 self.virtual_surface,
